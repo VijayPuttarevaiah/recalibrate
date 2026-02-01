@@ -15,8 +15,13 @@ dependencies = [
     "pydantic[email]>=2.12.5",
     "pyjwt>=2.11.0",
     "pytest>=9.0.2",
+    "httpx>=0.28.1",
     "python-jose>=3.5.0",
     "python-multipart>=0.0.22",
     "sqlalchemy>=2.0.46",
     "uvicorn>=0.40.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

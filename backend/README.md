@@ -1,16 +1,20 @@
 # 🚀 Backend API
 
-This is a FastAPI backend. This project uses [uv](https://github.com/astral-sh/uv) for lightning-fast dependency management.
+This is a robust FastAPI backend designed for scalability and ease of development. It handles user registration, email verification, authentication (JWT), and session management (Logout).
 
 ---
 
 ## ✨ Features
 
-- **⚡ FastAPI**: Built for speed and ease of use.
-- **📦 uv Native**: Uses the modern Python package manager for reliable builds.
-- **🗄️ Database Ready**: SQLAlchemy integration with Alembic for seamless schema migrations.
-- **🔐 Secure Auth**: Built-in login and registration endpoints.
-- **🧪 Testing**: Pre-configured with Pytest for standard verification.
+- **⚡ FastAPI**: High-performance web framework for building APIs.
+- **📦 uv Native**: Modern Python package management for faster builds and deterministic dependencies.
+- **🗄️ Database**: SQLAlchemy ORM with **Alembic** migrations.
+- **🔐 Secure Auth**: 
+  - JWT-based authentication.
+  - Password hashing via `bcrypt`.
+  - Token blacklisting on logout.
+- **📧 Email Service**: Integrated email verification flow.
+- **🧪 Testing**: Comprehensive test suite using `pytest` with in-memory database isolation.
 
 ---
 
@@ -26,95 +30,93 @@ This is a FastAPI backend. This project uses [uv](https://github.com/astral-sh/u
 
 ## 📋 Prerequisites
 
-Before you begin, ensure you have **uv** installed:
+Ensure you have **uv** installed for dependency management:
 
 ```powershell
 # Windows
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-```bash
-# macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
 ---
 
-## 🚀 Quick Start
+## 🚀 Getting Started
 
-### 1. Initialize the Environment
-Clone the repository and sync the dependencies. `uv` will automatically create a virtual environment for you.
-
+### 1. Setup Environment
+Clone the repo and install dependencies:
 ```bash
 uv sync
 ```
 
-
-### 2. Configure the Database
-
-To initialize alembic
-```bash
-uv run alembic init alembic
-```
-Edit `alembic.ini` to set your database URL:
-
+### 2. Configuration
+The application uses `config/config.ini`. Update your credentials (SMTP, DB URL, JWT secrets) there:
 ```ini
-sqlalchemy.url = sqlite:///./backend.db  # Example for SQLite
+[database]
+url = sqlite:///./backend.db
+
+[email]
+smtp_server = smtp.gmail.com
+smtp_port = 587
+smtp_user = your-email@gmail.com
+smtp_password = your-app-password
+
+[oauth2]
+secret_key = your-very-secret-key
 ```
 
-### 3. Run Migrations
-Initialize your database schema using Alembic:
+### 3. Database Migrations
+We use Alembic to manage database schema changes.
 
-```bash
-uv run alembic upgrade head
-```
+- **Initialize migrations** (if not already done): `uv run alembic init alembic`
+- **Generate a new migration**: 
+  ```bash
+  uv run alembic revision --autogenerate -m "description of changes"
+  ```
+- **Apply migrations**: 
+  ```bash
+  uv run alembic upgrade head
+  ```
 
-### 4. Start the Application
-Launch the development server with auto-reload enabled:
-
+### 4. Run the Application
+Start the server with auto-reload:
 ```bash
 uv run uvicorn main:app --reload
 ```
-
-The API will be available at:
-- **API**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- **Docs**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Docs (Swagger)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ---
 
-## 🛠️ Development Commands
+## 🏗️ Architecture & How It Works
 
-| Task | Command |
-| :--- | :--- |
-| **Sync/Install** | `uv sync` |
-| **Add Package** | `uv add <package>` |
-| **Run Tests** | `uv run pytest` |
-| **Create Migration** | `uv run alembic revision --autogenerate -m "description"` |
-| **Apply Migration** | `uv run alembic upgrade head` |
+### 🧩 Core Components
+1. **`main.py`**: The entry point. It initializes the FastAPI app, registers routers, and sets up the database lifespan.
+2. **`models/`**: Defines the database schema using SQLAlchemy. 
+   - `User`: Handles user data and verification status.
+   - `BlacklistedToken`: Stores invalidated tokens after logout.
+3. **`routers/`**: Contains API endpoints grouped by functionality.
+   - `register.py`: User signup.
+   - `login.py`: Authenticates users and issues JWTs.
+   - `logout.py`: Invalidates JWTs by blacklisting them.
+   - `email_verification.py`: Handles verification codes and email delivery.
+4. **`utils/`**: Shared helper functions.
+   - `db_session.py`: Singleton for database connections.
+   - `password.py`: Security logic for hashing.
+   - `email_sender.py`: SMTP logic.
+
+### 🔄 Authentication Flow
+1. User **Registers** -> Account created with `is_verified=False`.
+2. User **Verify Email** -> Code sent via SMTP; user submits code to activate account.
+3. User **Login** -> Validates password and returns a JWT `access_token`.
+4. User **Access Protected Routes** -> Frontend sends JWT in `Authorization: Bearer <token>` header.
+5. User **Logout** -> Token is sent to `/logout` and added to `blacklisted_tokens` in DB.
 
 ---
 
-## 📁 Project Structure
+## 🧪 Testing
 
-```text
-backend/
-├── alembic/          # Database migration logic
-├── models/           # SQLAlchemy database models
-├── routers/          # FastAPI route handlers
-├── tests/            # Pytest test suite
-├── main.py           # Application entry point
-├── pyproject.toml    # Dependency & project configuration
-└── uv.lock           # Deterministic dependency lock file
+Run tests to ensure everything is working correctly:
+```bash
+uv run pytest
 ```
-
----
-
-## 🤝 Contributing
-
-1. Fork the project.
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
+*Note: Tests use an in-memory SQLite database (`conftest.py`) to prevent data corruption in your development DB.*
 
 ---
