@@ -21,7 +21,18 @@ class Config:
         config = configparser.ConfigParser()
         # Resolve the absolute path to the config.ini file located in the same directory
         config_path = os.path.join(os.path.dirname(__file__), 'config.ini')
-        config.read(config_path)
+        
+        if not os.path.exists(config_path):
+            # Fallback to example if the main config is missing (useful for fresh installs)
+            example_path = config_path + ".example"
+            if os.path.exists(example_path):
+                config.read(example_path)
+            else:
+                # Create empty config object if no files found
+                pass
+        else:
+            config.read(config_path)
+            
         self.config = config
         
         # Mark the instance as initialized

@@ -1,10 +1,10 @@
 # Tests for utils/password.py
 import pytest
-from backend.utils import password
+from utils.password import hash_password, verify_password
 
 def test_hash_and_verify_password():
     pw = "SuperSecret123!"
-    hashed = password.hash_password(pw)
+    hashed = hash_password(pw)
     assert hashed != pw
-    assert password.verify_password(pw, hashed)
-    assert not password.verify_password("WrongPassword", hashed)
+    assert verify_password(pw, hashed)
+    assert not verify_password("WrongPassword", hashed)

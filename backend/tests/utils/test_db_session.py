@@ -1,5 +1,5 @@
 # Tests for utils/db_session.py
-from backend.utils.db_session import DBSession
+from utils.db_session import DBSession
 
 def test_db_session_singleton():
     db1 = DBSession()

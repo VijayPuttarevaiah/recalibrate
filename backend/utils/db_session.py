@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from backend.config.config import Config
+from config.config import Config
 
 # Singleton class to manage the SQLAlchemy database engine and session factory
 class DBSession:
@@ -32,7 +32,8 @@ class DBSession:
         # Initialize the SQLAlchemy engine
         self.engine = create_engine(
             self.DATABASE_URL,
-            connect_args=connect_args
+            connect_args=connect_args,
+            pool_pre_ping=True
         )
         # Create a session factory for generating new database sessions
         self.SessionLocal = sessionmaker(

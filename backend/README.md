@@ -85,6 +85,27 @@ uv run uvicorn main:app --reload
 
 ---
 
+## 🐳 Docker Deployment
+
+The application uses **MySQL 8.0** as the production database when running in Docker.
+
+### 1. Run with Docker Compose
+```bash
+docker-compose up --build
+```
+This will:
+- Spin up a **MySQL** container (`db`).
+- Build the `api` service and wait for MySQL to be healthy.
+- **Automatically apply database migrations** via `start.sh`.
+- Expose the API on `http://127.0.0.1:8000`.
+
+### 2. Manual Migration Management (Optional)
+If you need to manually manage migrations while the container is running:
+- **Apply migrations**: `docker-compose exec api uv run alembic upgrade head`
+- **Create new migration**: `docker-compose exec api uv run alembic revision --autogenerate -m "description"`
+
+---
+
 ## 🏗️ Architecture & How It Works
 
 ### 🧩 Core Components

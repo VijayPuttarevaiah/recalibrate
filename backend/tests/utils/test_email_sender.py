@@ -1,6 +1,6 @@
 # Tests for utils/email_sender.py
 import pytest
-from backend.utils import email_sender
+from utils.email_sender import config, send_email
 import smtplib
 
 import os
@@ -19,7 +19,7 @@ def test_send_email(monkeypatch):
         def __enter__(self): return self
         def __exit__(self, *a): pass
     monkeypatch.setattr(smtplib, 'SMTP', DummySMTP)
-    monkeypatch.setattr(email_sender.config, 'config', {
+    monkeypatch.setattr(config, 'config', {
         'email': {
             'smtp_server': 'smtp.example.com',
             'smtp_port': 587,
@@ -27,4 +27,4 @@ def test_send_email(monkeypatch):
             'smtp_password': 'password',
         }
     })
-    email_sender.send_email('to@example.com', 'Test Subject', 'Test Body')
+    send_email('to@example.com', 'Test Subject', 'Test Body')

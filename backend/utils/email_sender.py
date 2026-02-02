@@ -2,7 +2,7 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from backend.config.config import Config
+from config.config import Config
 
 # Initialize configuration
 config = Config()
