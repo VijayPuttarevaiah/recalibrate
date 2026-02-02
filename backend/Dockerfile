@@ -37,4 +37,4 @@ ENV PYTHONUNBUFFERED=1
 
 # Command to run the application
 # We run migrations and tests before starting the server
-CMD ["sh", "-c", "uv run alembic upgrade head && uv run pytest && uv run uvicorn main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "uv run pytest && uv run uvicorn main:app --host 0.0.0.0 --port 8000"]

@@ -32,5 +32,17 @@ services:
       - DATABASE_URL=mysql+pymysql://user:password@db:3306/backend_db
     restart: always
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NODE_ENV=development
+    restart: always
+
 volumes:
   mysql_data:

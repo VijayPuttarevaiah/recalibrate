@@ -1,0 +1,112 @@
+/**
+ * @file index.css
+ * @description Global Design System for the Adaptive Goal Planner.
+ * Implements a "Dark Mode" theme using CSS custom properties (tokens).
+ */
+
+:root {
+  /* Design Tokens: Centralized color and spacing variables to ensure 
+     visual consistency across all frontend components. */
+  --Bg: #0b1020;
+  --Card: rgba(255, 255, 255, 0.08);
+  --Card2: rgba(255, 255, 255, 0.06);
+  --Text: rgba(255, 255, 255, 0.92);
+  --Muted: rgba(255, 255, 255, 0.68);
+  --Border: rgba(255, 255, 255, 0.14);
+  --Shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* Reset and Base Styles */
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  /* Dynamic radial background for a modern "Glassmorphism" aesthetic. */
+  background:
+    radial-gradient(1200px 600px at 20% 0%, rgba(126, 87, 194, 0.35), transparent 55%),
+    radial-gradient(900px 500px at 85% 15%, rgba(0, 188, 212, 0.25), transparent 55%),
+    var(--Bg);
+  color: var(--Text);
+}
+
+/* Standardized Typography and Links */
+a { color: rgba(255, 255, 255, 0.9); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Layout Containers */
+.Container { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+/* Authentication UI Components (AuthLayout) */
+.AuthShell { min-height: 100vh; display: grid; place-items: center; padding: 28px; }
+
+.AuthCard {
+  width: 100%; max-width: 460px;
+  background: linear-gradient(180deg, var(--Card), var(--Card2));
+  border: 1px solid var(--Border);
+  border-radius: 18px;
+  box-shadow: var(--Shadow);
+  padding: 22px 22px 18px;
+  backdrop-filter: blur(10px); /* Modern frosted-glass effect */
+}
+
+/* Form and Input Design System */
+.Form { display: grid; gap: 12px; margin-top: 10px; }
+.Field { display: grid; gap: 6px; }
+.FieldLabel { font-size: 13px; color: var(--Muted); }
+
+.Input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--Border);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--Text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.Input:focus { border-color: rgba(255, 255, 255, 0.28); }
+
+/* Interactive Elements: Buttons */
+.Button {
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--Text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.Button:hover { background: rgba(255, 255, 255, 0.18); }
+.Button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* UI Feedback: Alerts and Hints */
+.Alert {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--Border);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+}
+
+/* Navigation System Styles */
+.Navbar {
+  position: sticky; top: 0;
+  background: rgba(10, 14, 28, 0.7);
+  border-bottom: 1px solid var(--Border);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+}
+
+/* Internal Application Panels (AppLayout) */
+.Panel {
+  border: 1px solid var(--Border);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 18px;
+}

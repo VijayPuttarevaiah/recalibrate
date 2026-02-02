@@ -13,7 +13,7 @@ router = APIRouter()
 # In-memory store: {email: (code, expiry_time)} used briefly for demonstration
 # In production, this should be in Redis or a database table
 verification_codes = {}
-CODE_EXPIRY_SECONDS = 10 * 60  # Codes expire after 10 minutes
+CODE_EXPIRY_SECONDS = 70  # Codes expire after 70 seconds
 
 # Helper function to generate a random alphanumeric verification code
 def generate_code(length=6):
@@ -39,6 +39,7 @@ def get_db():
 # Endpoint to generate and send a verification code to a user's email
 @router.post("/send-code")
 def send_code(request: SendCodeRequest):
+   
     code = generate_code()
     expiry = time.time() + CODE_EXPIRY_SECONDS
     # Store the code and its expiry time in the in-memory store

@@ -56,4 +56,5 @@ def register(user: RegisterRequest, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=400, detail="Email already registered")
     # Return a success message
+    
     return {"msg": "User registered successfully"}
