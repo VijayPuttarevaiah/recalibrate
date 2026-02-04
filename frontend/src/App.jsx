@@ -17,6 +17,7 @@ import Register from "./pages/Register.jsx";
 import Login from "./pages/Login.jsx";
 import VerifyEmail from "./pages/VerifyEmail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import CreateGoal from "./pages/CreateGoal.jsx";
 
 // Component Imports: Authorization gates.
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
+        <Route path="/create-goal" element = {<CreateGoal></CreateGoal>} />
 
         {/* Private Routes: Requires a valid session via the ProtectedRoute authorization gate. */}
         <Route element={<AppLayout />}>
@@ -47,6 +49,18 @@ export default function App() {
               /* ProtectedRoute: High-order component enforcing the security boundary. */
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+        {/* Private Routes: Requires a valid session via the ProtectedRoute authorization gate. */}
+        <Route element={<AppLayout />}>
+          <Route
+            path="/create-goal2"
+            element={
+              /* ProtectedRoute: High-order component enforcing the security boundary. */
+              <ProtectedRoute>
+                <CreateGoal />
               </ProtectedRoute>
             }
           />
