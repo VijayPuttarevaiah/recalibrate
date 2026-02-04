@@ -28,8 +28,28 @@ export default function VerifyEmail() {
   const [email, setEmail] = useState(prefilled_email);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  /**
+   * handle_resend: Triggers a new verification code to be sent.
+   */
+  async function handle_resend() {
+    if (!email) return setError("Please enter an email address first.");
+    
+    setError("");
+    setSuccessMsg("");
+    setResending(true);
+    try {
+      await AuthApi.send_verification_code({ email: email.trim() });
+      setSuccessMsg("Verification code sent!");
+    } catch (err) {
+      setError(err.message || "Failed to resend code.");
+    } finally {
+      setResending(false);
+    }
+  }
 
   /**
    * can_submit: Logic gate for the submission button.
@@ -47,7 +67,7 @@ export default function VerifyEmail() {
   async function handle_submit(e) {
     e.preventDefault();
     setError("");
-    setSuccess(false);
+    setSuccessMsg("");
 
     setLoading(true);
     try {
@@ -56,7 +76,7 @@ export default function VerifyEmail() {
        * Decoupled from the specific backend implementation.
        */
       await AuthApi.verify_email({ email: email.trim(), code: code.trim() });
-      setSuccess(true);
+      setSuccessMsg("Email verified successfully! You can now log in.");
     } catch (err) {
       // Maps backend/mock errors to a readable UI alert.
       setError(err.message || "Verification failed.");
@@ -68,7 +88,7 @@ export default function VerifyEmail() {
   return (
     <div>
       <h2 className="PageTitle">Verify your email</h2>
-      <p className="Muted">Enter the code sent to your email. (Mock accepts 123456)</p>
+      <p className="Muted">Enter the code sent to your email.</p>
 
       <form className="Form" onSubmit={handle_submit}>
         {/* Email Identification Field */}
@@ -87,20 +107,32 @@ export default function VerifyEmail() {
         {/* Verification Code Input */}
         <label className="Field">
           <span className="FieldLabel">Verification code</span>
-          <input
-            className="Input"
-            type="text"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="123456"
-            inputMode="numeric"
-          />
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input
+              className="Input"
+              style={{ flex: 1 }}
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="123456"
+              inputMode="numeric"
+            />
+            <button 
+              type="button" 
+              className="Button ButtonSecondary" 
+              onClick={handle_resend} 
+              disabled={resending || !email}
+              style={{ width: "auto", padding: "0 1rem" }}
+            >
+              {resending ? "..." : "Resend"}
+            </button>
+          </div>
         </label>
 
         {/* Conditional rendering for success feedback */}
-        {success ? (
+        {successMsg ? (
           <div className="Alert AlertSuccess">
-            Email verified. You can now log in.
+            {successMsg}
           </div>
         ) : null}
 

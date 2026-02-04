@@ -18,6 +18,8 @@ export default function Register() {
   
   // Local State: Manages form inputs and UI feedback states.
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,7 @@ export default function Register() {
    * Implements a declarative "Submit" gate to ensure the button is only 
    * enabled when all business rules are satisfied and no request is pending.
    */
-  const can_submit = is_valid_email(email) && !pw_error && !loading;
+  const can_submit = is_valid_email(email) && firstName && lastName && !pw_error && !loading;
 
   /**
    * handle_submit: Orchestrates the registration process.
@@ -56,8 +58,16 @@ export default function Register() {
        * The component expects the backend to trigger an email verification 
        * process upon successful registration.
        */
-      await AuthApi.register_user({ email: email.trim(), password });
+      await AuthApi.register_user({ 
+        email: email.trim(), 
+        password,
+        first_name: firstName.trim(),
+        last_name: lastName.trim()
+      });
       
+      // // Send the verification code immediately after registration
+      await AuthApi.send_verification_code({ email: email.trim() });
+
       // Navigate to verification screen, passing email as a query param for better UX.
       navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`);
     } catch (err) {
@@ -74,6 +84,32 @@ export default function Register() {
       <h2 className="PageTitle">Create account</h2>
 
       <form className="Form" onSubmit={handle_submit}>
+        {/* Identity Fields */}
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <label className="Field" style={{ flex: 1 }}>
+            <span className="FieldLabel">First name</span>
+            <input
+              className="Input"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Alex"
+              required
+            />
+          </label>
+          <label className="Field" style={{ flex: 1 }}>
+            <span className="FieldLabel">Last name</span>
+            <input
+              className="Input"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Smith"
+              required
+            />
+          </label>
+        </div>
+
         {/* Email Input Field */}
         <label className="Field">
           <span className="FieldLabel">Email</span>

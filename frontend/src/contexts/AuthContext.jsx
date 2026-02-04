@@ -5,6 +5,7 @@
  */
 
 import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import { safe_storage } from "../utils/storage.js";
 
 // Persistent storage key for session recovery.
 const STORAGE_KEY = "agp_auth_token";
@@ -28,7 +29,7 @@ export function AuthProvider({ children }) {
    * Note: For production-level security, this should transition to httpOnly cookies to prevent XSS.
    */
   useEffect(() => {
-    const saved_token = localStorage.getItem(STORAGE_KEY);
+    const saved_token = safe_storage.getItem(STORAGE_KEY);
     if (saved_token) setToken(saved_token);
   }, []);
 
@@ -41,7 +42,7 @@ export function AuthProvider({ children }) {
    */
   const set_session = useCallback((new_token) => {
     setToken(new_token);
-    localStorage.setItem(STORAGE_KEY, new_token);
+    safe_storage.setItem(STORAGE_KEY, new_token);
   }, []);
 
   /**
@@ -50,7 +51,7 @@ export function AuthProvider({ children }) {
    */
   const clear_session = useCallback(() => {
     setToken(null);
-    localStorage.removeItem(STORAGE_KEY);
+    safe_storage.removeItem(STORAGE_KEY);
   }, []);
 
   /**
