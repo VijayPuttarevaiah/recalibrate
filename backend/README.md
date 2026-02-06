@@ -8,6 +8,8 @@ This is a robust FastAPI backend designed for scalability and ease of developmen
 
 - **⚡ FastAPI**: High-performance web framework for building APIs.
 - **📦 uv Native**: Modern Python package management for faster builds and deterministic dependencies.
+- **🏗️ Clean Architecture**: Decoupled design using Repositories, Services, and Pydantic Schemas (DTOs).
+- **📝 Comprehensive Logging**: Integrated `loguru` with a Singleton manager for structured console and file logging.
 - **🗄️ Database**: SQLAlchemy ORM with **Alembic** migrations.
 - **🔐 Secure Auth**: 
   - JWT-based authentication.
@@ -24,6 +26,7 @@ This is a robust FastAPI backend designed for scalability and ease of developmen
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white)
 ![Alembic](https://img.shields.io/badge/Alembic-FB7185?style=for-the-badge&logo=python&logoColor=white)
+![Loguru](https://img.shields.io/badge/Loguru-5EAD2F?style=for-the-badge&logo=python&logoColor=white)
 ![uv](https://img.shields.io/badge/uv-2C2C2C?style=for-the-badge&logo=python&logoColor=white)
 
 ---
@@ -61,6 +64,10 @@ smtp_password = your-app-password
 
 [oauth2]
 secret_key = your-very-secret-key
+
+[logging]
+level = INFO
+file_path = logs/backend.log
 ```
 
 ### 3. Database Migrations
@@ -106,29 +113,32 @@ If you need to manually manage migrations while the container is running:
 
 ---
 
-## 🏗️ Architecture & How It Works
+## 🏗️ Architecture & Design Patterns
+
+The application follows a **Clean Architecture** (Layered) approach to ensure maintainability and testability.
+
+### 📐 Design Patterns
+- **Singleton Pattern**: Used in `DBSession`, `Config`, and `LogManager` to ensure centralized control and resource efficiency.
+- **Repository Pattern**: Abstracts database operations into dedicated classes (`repositories/`), decoupling business logic from ORM details.
+- **Service Layer Pattern**: Contains all business logic (`services/`), orchestrating calls between repositories and external utilities (like email).
+- **DTO (Data Transfer Objects)**: Implemented using Pydantic `schemas/` for strict request/response validation.
+- **Dependency Injection**: Utilized via FastAPI's `Depends` for providing database sessions and services to external endpoints.
 
 ### 🧩 Core Components
-1. **`main.py`**: The entry point. It initializes the FastAPI app, registers routers, and sets up the database lifespan.
-2. **`models/`**: Defines the database schema using SQLAlchemy. 
-   - `User`: Handles user data and verification status.
-   - `BlacklistedToken`: Stores invalidated tokens after logout.
-3. **`routers/`**: Contains API endpoints grouped by functionality.
-   - `register.py`: User signup.
-   - `login.py`: Authenticates users and issues JWTs.
-   - `logout.py`: Invalidates JWTs by blacklisting them.
-   - `email_verification.py`: Handles verification codes and email delivery.
-4. **`utils/`**: Shared helper functions.
-   - `db_session.py`: Singleton for database connections.
-   - `password.py`: Security logic for hashing.
-   - `email_sender.py`: SMTP logic.
+1. **`main.py`**: Entry point that initializes FastAPI, middlewares, and centralized logging.
+2. **`schemas/`**: Pydantic models defining data structures for API requests and responses.
+3. **`services/`**: The "brain" of the app. Handles logic like password hashing, token generation, and verification workflows.
+4. **`repositories/`**: Handles all CRUD operations for SQLAlchemy models.
+5. **`models/`**: SQLAlchemy database entities (User, BlacklistedToken).
+6. **`routers/`**: Lean API controllers that delegate work to the Service layer.
+7. **`utils/`**: Shared infrastructure logic (DB session management, email sender, logging configuration).
 
 ### 🔄 Authentication Flow
-1. User **Registers** -> Account created with `is_verified=False`.
-2. User **Verify Email** -> Code sent via SMTP; user submits code to activate account.
-3. User **Login** -> Validates password and returns a JWT `access_token`.
-4. User **Access Protected Routes** -> Frontend sends JWT in `Authorization: Bearer <token>` header.
-5. User **Logout** -> Token is sent to `/logout` and added to `blacklisted_tokens` in DB.
+1. User **Registers** -> Request validated by `RegisterRequest` schema -> `AuthService` hashes password -> `UserRepository` persists user -> Email sent via `VerificationService`.
+2. User **Verify Email** -> `VerificationService` validates code -> `UserRepository` updates user status.
+3. User **Login** -> `AuthService` validates credentials -> JWT generated.
+4. User **Access Protected Routes** -> Token validated; checked against `TokenRepository` blacklist.
+5. User **Logout** -> Token added to `BlacklistedToken` via `AuthService` and `TokenRepository`.
 
 ---
 

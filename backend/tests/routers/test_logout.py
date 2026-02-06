@@ -1,5 +1,5 @@
 import pytest
-from models.user_models import BlacklistedToken
+from models.token_models import BlacklistedToken
 
 def test_logout_success(client, db_session):
     """

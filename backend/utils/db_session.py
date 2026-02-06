@@ -2,6 +2,9 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from config.config import Config
+from .logging_config import LogManager
+
+logger = LogManager.get_logger()
 
 # Singleton class to manage the SQLAlchemy database engine and session factory
 class DBSession:
@@ -22,6 +25,7 @@ class DBSession:
         # Retrieve the database URL from configuration or environment variable
         db_url = self.config['database']['url']
         self.DATABASE_URL = os.getenv("DATABASE_URL", db_url)
+        logger.debug(f"Connecting to database at: {self.DATABASE_URL.split('@')[-1] if '@' in self.DATABASE_URL else self.DATABASE_URL}")
 
         # Configure connection arguments specific to the database type
         # For SQLite, we must disable thread checking to allow multiple requests to use the same connection
@@ -43,3 +47,13 @@ class DBSession:
         )
 
         self._initialized = True
+
+# Dependency to get a local database session
+def get_db():
+    logger.debug("Creating new DB session")
+    db = DBSession().SessionLocal()
+    try:
+        yield db
+    finally:
+        logger.debug("Closing DB session")
+        db.close()
