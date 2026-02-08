@@ -5,15 +5,17 @@
  */
 
 :root {
-  /* Design Tokens: Centralized color and spacing variables to ensure 
-     visual consistency across all frontend components. */
-  --Bg: #0b1020;
-  --Card: rgba(255, 255, 255, 0.08);
-  --Card2: rgba(255, 255, 255, 0.06);
-  --Text: rgba(255, 255, 255, 0.92);
-  --Muted: rgba(255, 255, 255, 0.68);
-  --Border: rgba(255, 255, 255, 0.14);
-  --Shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  /* Design Tokens: Focus & Aspiration Theme */
+  --Bg: #FAFAFA; /* Crisp White */
+  --Card: rgba(255, 255, 255, 0.95);
+  --Card2: rgba(255, 255, 255, 0.85);
+  --Text: #111827; /* Deepest Gray */
+  --Muted: #6B7280;
+  --Border: #E5E7EB;
+  --Primary: #6366F1; /* Indigo: Wisdom, Focus, Ambition */
+  --PrimaryHover: #4F46E5;
+  --Accent: #F59E0B; /* Amber: Energy & Optimism */
+  --Shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.15);
 }
 
 /* Reset and Base Styles */
@@ -23,18 +25,18 @@ html, body { height: 100%; }
 
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  /* Dynamic radial background for a modern "Glassmorphism" aesthetic. */
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  /* Dynamic background: Indigo for focus, Amber for energy */
   background:
-    radial-gradient(1200px 600px at 20% 0%, rgba(126, 87, 194, 0.35), transparent 55%),
-    radial-gradient(900px 500px at 85% 15%, rgba(0, 188, 212, 0.25), transparent 55%),
+    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.12) 0%, transparent 45%),
     var(--Bg);
   color: var(--Text);
 }
 
 /* Standardized Typography and Links */
-a { color: rgba(255, 255, 255, 0.9); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a { color: var(--Primary); text-decoration: none; font-weight: 500; }
+a:hover { text-decoration: underline; color: var(--PrimaryHover); }
 
 /* Layout Containers */
 .Container { max-width: 960px; margin: 0 auto; padding: 24px; }
@@ -44,71 +46,139 @@ a:hover { text-decoration: underline; }
 
 .AuthCard {
   width: 100%; max-width: 460px;
-  background: linear-gradient(180deg, var(--Card), var(--Card2));
-  border: 1px solid var(--Border);
-  border-radius: 18px;
-  box-shadow: var(--Shadow);
-  padding: 22px 22px 18px;
-  backdrop-filter: blur(10px); /* Modern frosted-glass effect */
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px; /* Softer, friendlier corners */
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.05),
+    0 4px 6px -2px rgba(0, 0, 0, 0.025),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  padding: 32px;
+  backdrop-filter: blur(12px);
 }
 
 /* Form and Input Design System */
-.Form { display: grid; gap: 12px; margin-top: 10px; }
-.Field { display: grid; gap: 6px; }
-.FieldLabel { font-size: 13px; color: var(--Muted); }
+.Form { display: grid; gap: 16px; margin-top: 16px; }
+.Field { display: grid; gap: 8px; }
+.FieldLabel { font-size: 14px; color: var(--Text); font-weight: 500; }
 
 .Input {
   width: 100%;
-  padding: 11px 12px;
+  padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid var(--Border);
-  background: rgba(0, 0, 0, 0.18);
+  background: #FFFFFF;
   color: var(--Text);
   outline: none;
-  transition: border-color 0.2s;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.Input:focus { border-color: rgba(255, 255, 255, 0.28); }
+.Input:focus { 
+  border-color: var(--Primary); 
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
 
 /* Interactive Elements: Buttons */
 .Button {
-  padding: 11px 12px;
+  padding: 12px 20px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.14);
-  color: var(--Text);
+  border: none;
+  background: var(--Primary);
+  color: white;
   font-weight: 600;
+  font-size: 15px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.25);
 }
 
-.Button:hover { background: rgba(255, 255, 255, 0.18); }
-.Button:disabled { opacity: 0.55; cursor: not-allowed; }
+.Button:hover { 
+  background: var(--PrimaryHover); 
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.35);
+}
+.Button:active { transform: translateY(0); }
+.Button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.ButtonGhost {
+  background: transparent;
+  color: var(--Muted);
+  box-shadow: none;
+}
+.ButtonGhost:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--Text);
+  box-shadow: none;
+}
 
 /* UI Feedback: Alerts and Hints */
 .Alert {
-  padding: 10px 12px;
+  padding: 12px 16px;
   border-radius: 12px;
-  border: 1px solid var(--Border);
-  background: rgba(0, 0, 0, 0.18);
-  font-size: 13px;
+  border: 1px solid #FECACA;
+  background: #FEF2F2;
+  color: #B91C1C;
+  font-size: 14px;
 }
 
 /* Navigation System Styles */
 .Navbar {
   position: sticky; top: 0;
-  background: rgba(10, 14, 28, 0.7);
+  background: rgba(255, 255, 255, 0.8);
   border-bottom: 1px solid var(--Border);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px);
   z-index: 1000;
 }
+
+.NavbarInner {
+  max-width: 960px; margin: 0 auto; padding: 0 24px;
+  height: 64px; display: flex; align-items: center; justify-content: space-between;
+}
+
+.NavbarBrand { font-weight: 700; font-size: 18px; color: var(--Primary); letter-spacing: -0.5px; }
+.NavbarLinks { display: flex; gap: 24px; align-items: center; }
+.NavbarLink { color: var(--Muted); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.NavbarLink:hover { color: var(--Primary); text-decoration: none; }
+
+/* Special Typography for Headers */
+.AuthHeader { text-align: center; margin-bottom: 32px; }
+.AuthBadge {
+  display: inline-block;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--Primary);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.AuthTitle { margin: 0; font-size: 32px; font-weight: 800; color: var(--Text); letter-spacing: -1px; }
+.AuthSubtitle { margin: 12px 0 0; color: var(--Muted); font-size: 16px; line-height: 1.6; }
+.AuthFootnote { 
+  text-align: center; color: var(--Muted); 
+  font-size: 13px; margin-top: 32px; opacity: 0.8; 
+}
+.AuthLink {
+  color: var(--Primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.AuthLink:hover { text-decoration: none; color: var(--PrimaryHover); }
 
 /* Internal Application Panels (AppLayout) */
 .Panel {
   border: 1px solid var(--Border);
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  padding: 18px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .ResendRow {
@@ -117,4 +187,29 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 12px;
   margin-top: 12px;
+}
+
+/* Page & Panel Typography */
+.PageTitle {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 20px 0;
+  color: var(--Text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+.PanelTitle {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--Text);
+}
+
+.PanelText {
+  color: var(--Muted);
+  line-height: 1.6;
+  margin: 0;
 }
