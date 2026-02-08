@@ -139,5 +139,33 @@ export function create_auth_api() {
         throw new Error(get_error_message(err, "Login failed"));
       }
     },
+
+        async request_password_reset(payload) {
+      try {
+        // Suggested: POST /auth/forgot-password -> { ok: true }
+        return await post_json("/auth/forgot-password", payload);
+      } catch (err) {
+        throw new Error(get_error_message(err, "Could not send reset code"));
+      }
+    },
+
+    async reset_password(payload) {
+      try {
+        // Suggested: POST /auth/reset-password -> { ok: true }
+        return await post_json("/auth/reset-password", payload);
+      } catch (err) {
+        throw new Error(get_error_message(err, "Could not reset password"));
+      }
+    },
+
+    async resend_verification(payload) {
+      try {
+        // Suggested: POST /auth/resend-verification -> { ok: true }
+        return await post_json("/auth/resend-verification", payload);
+      } catch (err) {
+        throw new Error(get_error_message(err, "Could not resend verification code"));
+      }
+    },
+
   };
 }

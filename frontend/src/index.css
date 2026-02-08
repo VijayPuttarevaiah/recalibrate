@@ -110,3 +110,11 @@ a:hover { text-decoration: underline; }
   border-radius: 16px;
   padding: 18px;
 }
+
+.ResendRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
