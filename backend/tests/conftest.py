@@ -1,15 +1,18 @@
 # Import TestClient to simulate API requests during testing
 from fastapi.testclient import TestClient
 import pytest 
+import os
+from models.user_models import User
+
+# Set environment variable before importing app to ensure DBSession uses it
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 from main import app
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from models.base import Base
-from routers.login import get_db as login_get_db
-from routers.register import get_db as register_get_db
-from routers.email_verification import get_db as email_get_db
-from routers.logout import get_db as logout_get_db
+from utils.db_session import get_db
 
 # Use an in-memory SQLite database to ensure tests are fast and isolated
 DATABASE_URL = "sqlite:///:memory:"
@@ -48,10 +51,7 @@ def client_fixture(db_session):
             pass
 
     # Apply database dependency overrides for all relevant routers
-    app.dependency_overrides[login_get_db] = override_get_db
-    app.dependency_overrides[register_get_db] = override_get_db
-    app.dependency_overrides[email_get_db] = override_get_db
-    app.dependency_overrides[logout_get_db] = override_get_db
+    app.dependency_overrides[get_db] = override_get_db
     
     # Yield the TestClient instance
     with TestClient(app) as test_client:
@@ -59,3 +59,89 @@ def client_fixture(db_session):
     
     # Clear dependency overrides after each test to avoid side effects
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def clear_code_stores():
+    from services.verification_service import verification_codes
+    from services.password_reset_service import reset_codes
+
+    verification_codes.clear()
+    reset_codes.clear()
+    yield
+    verification_codes.clear()
+    reset_codes.clear()
+
+
+@pytest.fixture(autouse=True)
+def mock_email_sender(monkeypatch):
+    sent_emails = []
+
+    def fake_send_email(to_email: str, subject: str, body: str):
+        sent_emails.append({"to": to_email, "subject": subject, "body": body})
+
+    monkeypatch.setattr("utils.email_sender.send_email", fake_send_email)
+    monkeypatch.setattr("services.verification_service.send_email", fake_send_email)
+    monkeypatch.setattr("services.password_reset_service.send_email", fake_send_email)
+    return sent_emails
+
+
+@pytest.fixture
+def register_user(client):
+    def _register(
+        email: str,
+        password: str = "Password123",
+        first_name: str = "Test",
+        last_name: str = "User",
+    ):
+        return client.post(
+            "/register",
+            json={
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "password": password,
+            },
+        )
+
+    return _register
+
+
+@pytest.fixture
+def verify_user(db_session):
+    def _verify(email: str, verified: bool = True):
+        user = db_session.query(User).filter(User.email == email).first()
+        if user:
+            user.is_verified = verified
+            db_session.commit()
+        return user
+
+    return _verify
+
+
+@pytest.fixture
+def verification_code(monkeypatch):
+    code = "VERIFY1"
+
+    def _generate(self, length: int = 6):
+        return code
+
+    monkeypatch.setattr(
+        "services.verification_service.VerificationService.generate_code",
+        _generate,
+    )
+    return code
+
+
+@pytest.fixture
+def password_reset_code(monkeypatch):
+    code = "RESET123"
+
+    def _generate(self, length: int = 8):
+        return code
+
+    monkeypatch.setattr(
+        "services.password_reset_service.PasswordResetService.generate_code",
+        _generate,
+    )
+    return code

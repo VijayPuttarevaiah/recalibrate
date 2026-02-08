@@ -139,5 +139,37 @@ export function create_auth_api() {
         throw new Error(get_error_message(err, "Login failed"));
       }
     },
+
+    async request_password_reset(payload) {
+      try {
+        return await post_json("/forgot-password", payload);
+      } catch (err) {
+        throw new Error(get_error_message(err, "Failed to request password reset"));
+      }
+    },
+
+    async resend_password_reset(payload) {
+      try {
+        return await post_json("/resend-reset-code", payload);
+      } catch (err) {
+        throw new Error(get_error_message(err, "Failed to resend reset code"));
+      }
+    },
+
+    async verify_reset_code(payload) {
+      try {
+        return await post_json("/verify-reset-code", payload);
+      } catch (err) {
+        throw new Error(get_error_message(err, "Invalid or expired reset code"));
+      }
+    },
+
+    async reset_password(payload) {
+      try {
+        return await post_json("/reset-password", payload);
+      } catch (err) {
+        throw new Error(get_error_message(err, "Password reset failed"));
+      }
+    },
   };
 }

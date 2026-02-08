@@ -37,3 +37,11 @@ class Config:
         
         # Mark the instance as initialized
         self._initialized = True
+
+    def get_logging_config(self):
+        return {
+            "level": self.config.get("logging", "level", fallback="INFO"),
+            "file_path": self.config.get("logging", "file_path", fallback="logs/backend.log"),
+            "rotation": self.config.get("logging", "rotation", fallback="10 MB"),
+            "retention": self.config.get("logging", "retention", fallback="1 week"),
+        }
