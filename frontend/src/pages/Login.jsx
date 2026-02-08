@@ -126,8 +126,9 @@ export default function Login() {
           New here? <Link to="/register">Create account</Link>
         </p>
         <p className="Muted">
-          <Link to="/verify-email">Verify email</Link>
+          <Link to="/forgot-password">Forgot password?</Link>
         </p>
+
       </div>
     </div>
   );

@@ -17,10 +17,15 @@ import Register from "./pages/Register.jsx";
 import Login from "./pages/Login.jsx";
 import VerifyEmail from "./pages/VerifyEmail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import VerifyResetCode from "./pages/VerifyResetCode.jsx";
+import SetNewPassword from "./pages/SetNewPassword.jsx";
+
 import CreateGoal from "./pages/CreateGoal.jsx";
 
 // Component Imports: Authorization gates.
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
 
 export default function App() {
   return (
@@ -38,6 +43,10 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-reset" element={<VerifyResetCode />} />
+          <Route path="/set-new-password" element={<SetNewPassword />} />
+
         </Route>
         <Route path="/create-goal" element = {<CreateGoal></CreateGoal>} />
 

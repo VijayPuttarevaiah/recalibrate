@@ -25,12 +25,3 @@ class User(Base):
     user_sms_enabled = Column(Boolean, default=False)
     # Flag indicating whether the user's email has been verified
     is_verified = Column(Boolean, default=False, nullable=False)
-
-# Model to store tokens that have been invalidated (logged out) before their expiration
-class BlacklistedToken(Base):
-    __tablename__ = "blacklisted_tokens"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    # The actual JWT token string
-    token = Column(String(512), unique=True, nullable=False)
-    # Timestamp when the token was blacklisted
-    blacklisted_on = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

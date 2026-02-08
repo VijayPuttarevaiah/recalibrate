@@ -63,5 +63,32 @@ export function create_mock_auth_api() {
        */
       return { token: `mock.${btoa(email)}.token` };
     },
+
+    async request_password_reset({ email }) {
+      await wait_ms(350);
+      if (!email) throw new Error("Missing email");
+      return { ok: true };
+    },
+
+    async resend_password_reset({ email }) {
+      await wait_ms(300);
+      if (!email) throw new Error("Missing email");
+      return { ok: true };
+    },
+
+    async verify_reset_code({ email, code }) {
+      await wait_ms(300);
+      if (!email || !code) throw new Error("Missing fields");
+      if (code !== "123456") throw new Error("Invalid reset code (try 123456)");
+      return { ok: true };
+    },
+
+    async reset_password({ email, code, new_password }) {
+      await wait_ms(350);
+      if (!email || !code || !new_password) throw new Error("Missing fields");
+      if (code !== "123456") throw new Error("Invalid reset code (try 123456)");
+      if (String(new_password).length < 8) throw new Error("Password must be at least 8 characters.");
+      return { ok: true };
+    },
   };
 }
