@@ -141,31 +141,25 @@ export function create_auth_api() {
     },
 
         async request_password_reset(payload) {
-      try {
-        // Suggested: POST /auth/forgot-password -> { ok: true }
-        return await post_json("/auth/forgot-password", payload);
-      } catch (err) {
-        throw new Error(get_error_message(err, "Could not send reset code"));
-      }
-    },
+  // POST /auth/forgot-password { email } -> { ok: true }
+  return await post_json("/auth/forgot-password", payload);
+},
 
-    async reset_password(payload) {
-      try {
-        // Suggested: POST /auth/reset-password -> { ok: true }
-        return await post_json("/auth/reset-password", payload);
-      } catch (err) {
-        throw new Error(get_error_message(err, "Could not reset password"));
-      }
-    },
+async resend_password_reset(payload) {
+  // POST /auth/resend-reset-code { email } -> { ok: true }
+  return await post_json("/auth/resend-reset-code", payload);
+},
 
-    async resend_verification(payload) {
-      try {
-        // Suggested: POST /auth/resend-verification -> { ok: true }
-        return await post_json("/auth/resend-verification", payload);
-      } catch (err) {
-        throw new Error(get_error_message(err, "Could not resend verification code"));
-      }
-    },
+async verify_reset_code(payload) {
+  // POST /auth/verify-reset-code { email, code } -> { ok: true }
+  return await post_json("/auth/verify-reset-code", payload);
+},
+
+async reset_password(payload) {
+  // POST /auth/reset-password { email, code, new_password } -> { ok: true }
+  return await post_json("/auth/reset-password", payload);
+},
+
 
   };
 }

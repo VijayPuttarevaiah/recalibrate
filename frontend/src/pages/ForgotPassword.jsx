@@ -29,11 +29,11 @@ export default function ForgotPassword() {
       await AuthApi.request_password_reset({ email: email.trim() });
 
       setInfo("If an account exists for this email, we sent a reset code.");
-      navigate(`/reset-password?email=${encodeURIComponent(email.trim())}`);
+      navigate(`/verify-reset?email=${encodeURIComponent(email.trim())}`);
     } catch (err) {
       // Keep message generic to avoid account enumeration.
       setInfo("If an account exists for this email, we sent a reset code.");
-      navigate(`/reset-password?email=${encodeURIComponent(email.trim())}`);
+      navigate(`/verify-reset?email=${encodeURIComponent(email.trim())}`);
     } finally {
       setLoading(false);
     }
