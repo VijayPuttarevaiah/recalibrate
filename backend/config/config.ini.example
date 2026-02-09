@@ -1,6 +1,6 @@
 [database]
 # Default for local development. Docker environment variable will override this.
-url = mysql+pymysql://user:password@localhost:3306/backend_db
+url = mysql+pymysql://root:Vijay123@127.0.0.1:3306/backend_db
 
 [oauth2]
 secret_key = your_secret_key_here
@@ -12,3 +12,8 @@ smtp_server = smtp.gmail.com
 smtp_port = 587
 smtp_user = your_email@gmail.com
 smtp_password = your_app_password_here
+
+[groq]
+api_key = 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
+model = llama-3.3-70b-versatile
+base_url = https://api.groq.com/openai/v1
