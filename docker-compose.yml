@@ -30,6 +30,8 @@ services:
       - ./backend/config:/app/config
     environment:
       - DATABASE_URL=mysql+pymysql://user:password@db:3306/backend_db
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     restart: always
 
   frontend:
