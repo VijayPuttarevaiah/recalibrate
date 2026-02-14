@@ -5,3 +5,4 @@ __pycache__
 test.db
 backend/config/config.ini
 backend/logs/
+.env
