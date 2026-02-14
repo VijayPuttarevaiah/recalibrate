@@ -19,9 +19,9 @@ export default function AuthLayout() {
       <div className="AuthCard">
         <div className="AuthHeader">
           {/* Brand Identity: AGP (Adaptive Goal Planner) */}
-          <div className="AuthBadge">AGP</div>
-          <h1 className="AuthTitle">Welcome</h1>
-          <p className="AuthSubtitle">Sign in or create an account to continue</p>
+          <div className="AuthBadge">Adaptive Goal Planner</div>
+          <h1 className="AuthTitle">Achieve More</h1>
+          <p className="AuthSubtitle">Turn your aspirations into actionable goals today.</p>
         </div>
 
         {/* Outlet: A placeholder for child routes. 
@@ -32,7 +32,7 @@ export default function AuthLayout() {
       </div>
       
       {/* Footnote: Provides academic context for the project (CSCI 5308). */}
-      <p className="AuthFootnote">CSCI 5308 · Group Project</p>
+      <p className="AuthFootnote">© 2026 Adaptive Goal Planner · CSCI 5308 Group Project</p>
     </div>
   );
 }

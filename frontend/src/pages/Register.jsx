@@ -131,7 +131,7 @@ export default function Register() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder="Min 8 chars, upper, lower, digit, symbol"
             autoComplete="new-password"
           />
           {/* Conditional rendering for validation hints */}

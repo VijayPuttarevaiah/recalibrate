@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import date
@@ -17,3 +18,10 @@ class GoalCategoryDetectResponse(BaseModel):
     follow_up_questions: list[str] = Field(default_factory=list)
 
 
+class GoalCreate(BaseModel):
+    user_id: int
+    goal: str
+    category: str
+    start_date: date
+    end_date: date
+    notes: str | None = None

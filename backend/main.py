@@ -8,6 +8,7 @@ from routers.register import router as register_router
 from routers.email_verification import router as email_verification_router
 from routers.logout import router as logout_router
 from routers.password_reset import router as password_reset_router
+from routers.goals import router as goal_router
 from routers.goal_router import router as goal_router
 from routers.health_router import router as health_router
 
@@ -54,5 +55,6 @@ app.include_router(register_router, tags=["auth"])
 app.include_router(email_verification_router, tags=["verification"])
 app.include_router(logout_router, tags=["auth"])
 app.include_router(password_reset_router, tags=["auth"])
+app.include_router(goal_router,tags=['auth'])
 app.include_router(goal_router, tags=["goals"])
 app.include_router(health_router, tags=["health"])
