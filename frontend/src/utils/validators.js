@@ -26,10 +26,11 @@ export function is_valid_email(email) {
 export function password_error(password) {
   const p = String(password || "");
 
-  if (p.length < 8) {
-    return "Password must be at least 8 characters.";
-  }
+  if (p.length < 8) return "Password must be at least 8 characters.";
+  if (!/[A-Z]/.test(p)) return "Must include at least one uppercase letter.";
+  if (!/[a-z]/.test(p)) return "Must include at least one lowercase letter.";
+  if (!/[0-9]/.test(p)) return "Must include at least one digit.";
+  if (!/[^A-Za-z0-9]/.test(p)) return "Must include at least one special character.";
 
-  // Logic can be extended here for complexity (uppercase, symbols) as per professor's feedback.
   return null;
 }

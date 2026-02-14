@@ -73,7 +73,7 @@ export default function SetNewPassword() {
             type="password"
             value={new_password}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder="Min 8 chars, upper, lower, digit, symbol"
             autoComplete="new-password"
           />
           {new_password && pw_error ? <p className="Hint HintError">{pw_error}</p> : null}

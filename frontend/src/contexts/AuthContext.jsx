@@ -4,7 +4,7 @@
  * Implements the Context API to manage user sessions across the application.
  */
 
-import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useMemo, useState } from "react";
 import { safe_storage } from "../utils/storage.js";
 
 // Persistent storage key for session recovery.
@@ -21,17 +21,9 @@ export const AuthContext = createContext(null);
  * Manages the lifecycle of the authentication token.
  */
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(null);
-
-  /**
-   * Session Restoration: 
-   * On initial mount, check local storage to maintain the user's session after a page refresh.
-   * Note: For production-level security, this should transition to httpOnly cookies to prevent XSS.
-   */
-  useEffect(() => {
-    const saved_token = safe_storage.getItem(STORAGE_KEY);
-    if (saved_token) setToken(saved_token);
-  }, []);
+  // Initialize token synchronously from storage so the first render
+  // already knows the auth state — prevents a flash-redirect to /login.
+  const [token, setToken] = useState(() => safe_storage.getItem(STORAGE_KEY));
 
   // Derived state: boolean flag for quick authentication checks.
   const is_authenticated = Boolean(token);
