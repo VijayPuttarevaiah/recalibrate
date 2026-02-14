@@ -60,3 +60,11 @@ class AuthService:
         token_repo.blacklist_token(token)
         logger.success("Token blacklisted successfully")
         return {"msg": "Successfully logged out"}
+    
+    def get_current_user_id(self, token: str) -> int:
+        """Extract user_id from a valid JWT."""
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("id")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return user_id

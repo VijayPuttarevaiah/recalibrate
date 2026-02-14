@@ -19,6 +19,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = auth_service.authenticate_user(form_data.username, form_data.password)
     
     # Generate and return the access token
-    access_token = auth_service.create_access_token(data={"sub": user.email})
+    access_token = auth_service.create_access_token(data={"sub": user.email, "id": user.id})
     logger.info(f"Login successful for user: {user.email}")
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "user_id": user.id}

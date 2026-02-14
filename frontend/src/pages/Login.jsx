@@ -58,8 +58,9 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await AuthApi.login_user({ email: email.trim(), password });
-      const token = data?.token;
-
+     
+      const token = data?.access_token;
+      const user_id = data?.user_id;  
       // Defensive Check: Ensure the backend/mock returned a valid session token.
       if (!token) throw new Error("Login succeeded but token was missing.");
 
@@ -68,8 +69,7 @@ export default function Login() {
        * Updates the AuthContext, which in turn triggers a re-render 
        * allowing ProtectedRoutes to open.
        */
-      set_session(token);
-      
+      set_session({ access_token: token, user_id }); // Pass user_id for session management
       // Navigate to destination. 'replace: true' prevents back-button issues.
       navigate(redirect_to, { replace: true });
     } catch (err) {
