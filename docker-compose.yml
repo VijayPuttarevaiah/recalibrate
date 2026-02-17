@@ -30,14 +30,10 @@ services:
       - ./backend/config:/app/config
     environment:
       - DATABASE_URL=mysql+pymysql://user:password@db:3306/backend_db
-<<<<<<< Updated upstream
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - SERPER_API_KEY=${SERPER_API_KEY}
-=======
-      - GOOGLE_API_KEY=AIzaSyBU9eb_vuRqUj8388gvCcYF3PFvfwsTlLM
-      - OPENROUTER_API_KEY=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
->>>>>>> Stashed changes
+
     restart: always
 
   frontend:
