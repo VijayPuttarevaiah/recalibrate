@@ -4,7 +4,54 @@ from models.goal_models import Goal
 from models.task_models import Task
 from services.llm_service import generate_tasks_llm
 from services.web_search_service import gather_research
+from fastapi import HTTPException, status
 
+
+def get_user_goals(db, user_id: int):
+    goals = db.query(Goal).filter(Goal.user_id == user_id).all()
+
+    result = []
+    for goal in goals:
+        task_count = db.query(Task).filter(Task.goal_id == goal.id).count()
+        result.append({
+            "id": goal.id,
+            "title": goal.title,
+            "category": goal.category,
+            "notes": goal.notes,
+            "start_date": goal.start_date,
+            "end_date": goal.end_date,
+            "status": goal.status,
+            "task_count": task_count,
+        })
+
+    return result
+
+
+def get_goal_tasks(db, user_id: int, goal_id: int):
+    goal = db.query(Goal).filter(
+        Goal.id == goal_id,
+        Goal.user_id == user_id,
+    ).first()
+
+    if not goal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Goal not found or does not belong to this user",
+        )
+
+    tasks = db.query(Task).filter(Task.goal_id == goal_id).order_by(Task.due_date).all()
+
+    return {
+        "id": goal.id,
+        "title": goal.title,
+        "category": goal.category,
+        "notes": goal.notes,
+        "start_date": goal.start_date,
+        "end_date": goal.end_date,
+        "status": goal.status,
+        "task_count": len(tasks),
+        "tasks": tasks,
+    }
 
 def create_goal_with_tasks(db, goal_data):
     goal = Goal(
