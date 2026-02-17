@@ -1,18 +1,18 @@
 /**
  * @file App.jsx
- * @description Central Routing Module for the Adaptive Goal Planner.
- * Implements a "Clean Architecture" by separating public (Auth) and private (App) views.
+ * Clean, Proper Route Structure with Auth + Toast
  */
 
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
+import { ToastProvider } from "./components/Toast";
 
-// Layout Imports: Establishes visual and structural boundaries.
+// Layouts
 import AuthLayout from "./layouts/AuthLayout.jsx";
 import AppLayout from "./layouts/AppLayout.jsx";
 
-// Page Imports: Modular functional components.
+// Pages
 import Register from "./pages/Register.jsx";
 import Login from "./pages/Login.jsx";
 import VerifyEmail from "./pages/VerifyEmail.jsx";
@@ -20,65 +20,48 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import VerifyResetCode from "./pages/VerifyResetCode.jsx";
 import SetNewPassword from "./pages/SetNewPassword.jsx";
-
 import CreateGoal from "./pages/CreateGoal.jsx";
+import GoalTasksPage from "./pages/GoalTask.jsx";
 
-// Component Imports: Authorization gates.
+
+// Auth Gate
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
-
 
 export default function App() {
   return (
-    /**
-     * AuthProvider: Encapsulates the application state to manage user sessions.
-     * This provides a consistent boundary for data/business logic.
-     */
-    <AuthProvider>
-      <Routes>
-        
-        {/* Public Routes: Wrapped in AuthLayout for consistent styling of login/registration forms. */}
-        <Route element={<AuthLayout />}>
-          {/* Root path redirect to ensure a defined landing experience. */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/verify-reset" element={<VerifyResetCode />} />
-          <Route path="/set-new-password" element={<SetNewPassword />} />
+    <ToastProvider>
+      <AuthProvider>
+        <Routes>
 
-        </Route>
-        <Route path="/create-goal" element = {<CreateGoal></CreateGoal>} />
+          {/* ---------------- PUBLIC ROUTES ---------------- */}
+          <Route element={<AuthLayout />}>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-reset" element={<VerifyResetCode />} />
+            <Route path="/set-new-password" element={<SetNewPassword />} />
+          </Route>
 
-        {/* Private Routes: Requires a valid session via the ProtectedRoute authorization gate. */}
-        <Route element={<AppLayout />}>
+          {/* ---------------- PRIVATE ROUTES ---------------- */}
           <Route
-            path="/dashboard"
             element={
-              /* ProtectedRoute: High-order component enforcing the security boundary. */
               <ProtectedRoute>
-                <Dashboard />
+                <AppLayout />
               </ProtectedRoute>
             }
-          />
-        </Route>
-        {/* Private Routes: Requires a valid session via the ProtectedRoute authorization gate. */}
-        <Route element={<AppLayout />}>
-          <Route
-            path="/create-goal2"
-            element={
-              /* ProtectedRoute: High-order component enforcing the security boundary. */
-              <ProtectedRoute>
-                <CreateGoal />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/goals/:goalId/tasks" element={<GoalTasksPage />} />
+            <Route path="/create-goal" element={<CreateGoal />} />
+          </Route>
 
-        {/* Fallback Route: Global 404 handling that redirects to the primary entry point. */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-        
-      </Routes>
-    </AuthProvider>
+          {/* ---------------- FALLBACK ---------------- */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+
+        </Routes>
+      </AuthProvider>
+    </ToastProvider>
   );
 }

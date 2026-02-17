@@ -1,63 +1,75 @@
 /**
  * @file index.css
  * @description Global Design System for the Adaptive Goal Planner.
- * Implements a "Dark Mode" theme using CSS custom properties (tokens).
+ * Clean, uniform background — no gradient artifacts.
  */
 
 :root {
-  /* Design Tokens: Focus & Aspiration Theme */
-  --Bg: #FAFAFA; /* Crisp White */
+  --Bg: #F0F2F7;
   --Card: rgba(255, 255, 255, 0.95);
   --Card2: rgba(255, 255, 255, 0.85);
-  --Text: #111827; /* Deepest Gray */
+  --Text: #111827;
   --Muted: #6B7280;
   --Border: #E5E7EB;
-  --Primary: #6366F1; /* Indigo: Wisdom, Focus, Ambition */
+  --Primary: #6366F1;
   --PrimaryHover: #4F46E5;
-  --Accent: #F59E0B; /* Amber: Energy & Optimism */
+  --Accent: #F59E0B;
   --Shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.15);
 }
 
-/* Reset and Base Styles */
-* { box-sizing: border-box; }
+/* Reset */
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body { height: 100%; }
-
-body {
-  margin: 0;
-  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  /* Dynamic background: Indigo for focus, Amber for energy */
-  background:
-    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.12) 0%, transparent 45%),
-    var(--Bg);
-  color: var(--Text);
+html {
+  height: 100%;
 }
 
-/* Standardized Typography and Links */
+body {
+  min-height: 100%;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  /* ONE solid color — no gradients, no radials, no amber */
+  background-color: var(--Bg);
+  background-image: none;
+  color: var(--Text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: var(--Bg);
+  background-image: none;
+}
+
+/* Typography and Links */
 a { color: var(--Primary); text-decoration: none; font-weight: 500; }
 a:hover { text-decoration: underline; color: var(--PrimaryHover); }
 
 /* Layout Containers */
 .Container { max-width: 960px; margin: 0 auto; padding: 24px; }
 
-/* Authentication UI Components (AuthLayout) */
-.AuthShell { min-height: 100vh; display: grid; place-items: center; padding: 28px; }
-
-.AuthCard {
-  width: 100%; max-width: 460px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 24px; /* Softer, friendlier corners */
-  box-shadow: 
-    0 10px 15px -3px rgba(0, 0, 0, 0.05),
-    0 4px 6px -2px rgba(0, 0, 0, 0.025),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-  padding: 32px;
-  backdrop-filter: blur(12px);
+/* ===== AUTH ===== */
+.AuthShell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background-color: var(--Bg);
 }
 
-/* Form and Input Design System */
+.AuthCard {
+  width: 100%;
+  max-width: 460px;
+  background: #FFFFFF;
+  border: 1px solid var(--Border);
+  border-radius: 24px;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.06),
+    0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  padding: 32px;
+}
+
+/* ===== FORMS ===== */
 .Form { display: grid; gap: 16px; margin-top: 16px; }
 .Field { display: grid; gap: 8px; }
 .FieldLabel { font-size: 14px; color: var(--Text); font-weight: 500; }
@@ -75,12 +87,12 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.Input:focus { 
-  border-color: var(--Primary); 
+.Input:focus {
+  border-color: var(--Primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
-/* Interactive Elements: Buttons */
+/* ===== BUTTONS ===== */
 .Button {
   padding: 12px 20px;
   border-radius: 12px;
@@ -94,8 +106,8 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.25);
 }
 
-.Button:hover { 
-  background: var(--PrimaryHover); 
+.Button:hover {
+  background: var(--PrimaryHover);
   transform: translateY(-1px);
   box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.35);
 }
@@ -111,9 +123,10 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   background: rgba(0,0,0,0.05);
   color: var(--Text);
   box-shadow: none;
+  transform: none;
 }
 
-/* UI Feedback: Alerts and Hints */
+/* ===== ALERTS ===== */
 .Alert {
   padding: 12px 16px;
   border-radius: 12px;
@@ -123,27 +136,69 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   font-size: 14px;
 }
 
-/* Navigation System Styles */
+/* ===== NAVBAR ===== */
 .Navbar {
-  position: sticky; top: 0;
-  background: rgba(255, 255, 255, 0.8);
+  position: sticky;
+  top: 0;
+  background: rgba(240, 242, 247, 0.92);
   border-bottom: 1px solid var(--Border);
   backdrop-filter: blur(16px);
   z-index: 1000;
 }
 
 .NavbarInner {
-  max-width: 960px; margin: 0 auto; padding: 0 24px;
-  height: 64px; display: flex; align-items: center; justify-content: space-between;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.NavbarBrand { font-weight: 700; font-size: 18px; color: var(--Primary); letter-spacing: -0.5px; }
-.NavbarLinks { display: flex; gap: 24px; align-items: center; }
-.NavbarLink { color: var(--Muted); font-size: 14px; font-weight: 500; transition: color 0.2s; }
-.NavbarLink:hover { color: var(--Primary); text-decoration: none; }
+.NavbarBrand {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--Primary);
+  letter-spacing: -0.5px;
+}
 
-/* Special Typography for Headers */
+.NavbarLinks {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.NavbarLink {
+  text-decoration: none;
+  color: var(--Muted);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.NavbarLink:hover {
+  color: var(--Primary);
+  background: rgba(99, 102, 241, 0.06);
+  text-decoration: none;
+}
+
+.NavbarLinkActive {
+  color: white;
+  background: var(--Primary);
+  font-weight: 600;
+}
+
+.NavbarLinkActive:hover {
+  color: white;
+  background: var(--PrimaryHover);
+}
+
+/* ===== AUTH TYPOGRAPHY ===== */
 .AuthHeader { text-align: center; margin-bottom: 32px; }
+
 .AuthBadge {
   display: inline-block;
   background: rgba(99, 102, 241, 0.1);
@@ -160,9 +215,9 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
 
 .AuthTitle { margin: 0; font-size: 32px; font-weight: 800; color: var(--Text); letter-spacing: -1px; }
 .AuthSubtitle { margin: 12px 0 0; color: var(--Muted); font-size: 16px; line-height: 1.6; }
-.AuthFootnote { 
-  text-align: center; color: var(--Muted); 
-  font-size: 13px; margin-top: 32px; opacity: 0.8; 
+.AuthFootnote {
+  text-align: center; color: var(--Muted);
+  font-size: 13px; margin-top: 32px; opacity: 0.8;
 }
 .AuthLink {
   color: var(--Primary);
@@ -172,7 +227,7 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
 }
 .AuthLink:hover { text-decoration: none; color: var(--PrimaryHover); }
 
-/* Internal Application Panels (AppLayout) */
+/* ===== PANELS ===== */
 .Panel {
   border: 1px solid var(--Border);
   background: #FFFFFF;
@@ -189,7 +244,7 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   margin-top: 12px;
 }
 
-/* Page & Panel Typography */
+/* ===== PAGE TYPOGRAPHY ===== */
 .PageTitle {
   font-size: 18px;
   font-weight: 600;
@@ -212,4 +267,39 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   color: var(--Muted);
   line-height: 1.6;
   margin: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .AuthCard {
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+
+  .AuthTitle {
+    font-size: 26px;
+  }
+
+  .NavbarInner {
+    padding: 0 16px;
+    height: 56px;
+  }
+
+  .NavbarLinks {
+    gap: 4px;
+  }
+
+  .NavbarLink {
+    font-size: 13px;
+    padding: 5px 10px;
+  }
+
+  .Container {
+    padding: 16px;
+  }
+
+  .Panel {
+    padding: 18px;
+    border-radius: 16px;
+  }
 }

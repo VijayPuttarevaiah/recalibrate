@@ -10,33 +10,28 @@ logger = LogManager.get_logger()
 
 class LLMClient:
     def __init__(self, timeout_seconds: float = 12.0):
-        self.provider = "google"
-        self.api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GOAL_CATEGORY_LLM_API_KEY")
+        # Use OpenRouter instead of Google
+        self.provider = "openrouter"
+        self.api_key = os.getenv("OPENROUTER_API_KEY")
 
-        configured_model = os.getenv("GOAL_CATEGORY_LLM_MODEL") or os.getenv("LLM_MODEL") or "gemini-2.0-flash"
-        self.model = self._normalize_model_name(configured_model)
+        # Model selection
+        configured_model = os.getenv("LLM_MODEL") or "openai/gpt-4o-mini"
+        self.model = configured_model
 
-        configured_base_url = os.getenv("GOAL_CATEGORY_LLM_BASE_URL") or os.getenv("LLM_BASE_URL") or ""
-        if "generativelanguage.googleapis.com" in configured_base_url:
-            self.base_url = configured_base_url.rstrip("/")
-        else:
-            # Avoid accidental OpenRouter/other base URLs for Google generateContent API.
-            self.base_url = "https://generativelanguage.googleapis.com/v1beta"
+        # OpenRouter base URL
+        self.base_url = "https://openrouter.ai/api/v1"
         self.timeout_seconds = timeout_seconds
 
-    def _normalize_model_name(self, model_name: str) -> str:
-        normalized = model_name.strip()
-        if normalized.startswith("models/"):
-            normalized = normalized.split("models/", 1)[1]
-        return normalized
-
     def _call_generate_content(self, model_name: str, payload: dict) -> tuple[int, dict]:
-        normalized_model = self._normalize_model_name(model_name)
-        url = f"{self.base_url}/models/{normalized_model}:generateContent?key={self.api_key}"
+        url = f"{self.base_url}/chat/completions"
+
         try:
             response = httpx.post(
                 url,
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
                 json=payload,
                 timeout=self.timeout_seconds,
             )
@@ -51,31 +46,11 @@ class LLMClient:
 
         if response.status_code != 200:
             logger.warning(f"LLM API error: {response.status_code}")
-            message = f"LLM upstream returned HTTP {response.status_code}."
-            retryable = response.status_code >= 500
-            status_code = 502
-            error_code = "llm_upstream_error"
-            try:
-                error_body = response.json()
-                upstream_message = error_body.get("error", {}).get("message")
-                if upstream_message:
-                    message = upstream_message
-                    lowered = upstream_message.lower()
-                    if "quota" in lowered or "rate limit" in lowered or "rate-limits" in lowered:
-                        error_code = "llm_quota_exceeded"
-                        status_code = 429
-                        retryable = True
-                    elif "not found" in lowered or "not supported" in lowered:
-                        error_code = "llm_model_not_found"
-                        status_code = 502
-                        retryable = False
-            except ValueError:
-                pass
             raise LLMClientError(
-                message,
-                status_code=status_code,
-                error_code=error_code,
-                retryable=retryable,
+                f"LLM upstream returned HTTP {response.status_code}.",
+                status_code=response.status_code,
+                error_code="llm_upstream_error",
+                retryable=response.status_code >= 500,
             )
 
         try:
@@ -88,6 +63,7 @@ class LLMClient:
                 error_code="llm_invalid_response",
                 retryable=True,
             ) from exc
+
         return response.status_code, body
 
     def analyze_goal(
@@ -116,40 +92,24 @@ class LLMClient:
         }
 
         payload = {
-            "contents": [
+            "model": self.model,
+            "messages": [
                 {
                     "role": "user",
-                    "parts": [{"text": f"{prompt}\n\nInput JSON:\n{json.dumps(user_payload)}"}],
+                    "content": f"{prompt}\n\nInput JSON:\n{json.dumps(user_payload)}",
                 }
             ],
-            "generationConfig": {"temperature": 0, "responseMimeType": "application/json"},
+            "temperature": 0,
         }
 
-        # Retry with known supported variants if model selection is wrong/unavailable.
-        candidate_models: list[str] = []
-        for candidate in [self.model, "gemini-2.0-flash", "gemini-2.0-flash-lite"]:
-            normalized = self._normalize_model_name(candidate)
-            if normalized not in candidate_models:
-                candidate_models.append(normalized)
-
-        last_http_error: LLMClientError | None = None
-        for model_name in candidate_models:
-            try:
-                _, body = self._call_generate_content(model_name, payload)
-                break
-            except LLMClientError as exc:
-                if exc.error_code == "llm_model_not_found":
-                    last_http_error = exc
-                    continue
-                raise
-        else:
-            if last_http_error:
-                raise last_http_error
-            raise LLMClientError("LLM request failed.", status_code=502, error_code="llm_upstream_error")
+        # Only one model needed
+        try:
+            _, body = self._call_generate_content(self.model, payload)
+        except LLMClientError:
+            raise
 
         try:
-            parts = body["candidates"][0]["content"]["parts"]
-            content = "".join(part.get("text", "") for part in parts if isinstance(part, dict))
+            content = body["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
             logger.warning(f"LLM response parsing failed: {exc}")
             raise LLMClientError(
@@ -167,12 +127,15 @@ class LLMClient:
                 error_code="llm_invalid_response",
                 retryable=True,
             )
+
         return parsed
 
     def _parse_json(self, content: str | None) -> dict | None:
         if not content:
             return None
+
         text = content.strip()
+
         try:
             parsed = json.loads(text)
             return parsed if isinstance(parsed, dict) else None
@@ -186,6 +149,7 @@ class LLMClient:
                 except json.JSONDecodeError:
                     logger.warning("LLM response is not valid JSON")
                     return None
+
             logger.warning("LLM response is not valid JSON")
             return None
 
@@ -197,9 +161,11 @@ class LLMClient:
                 error_code="llm_config_error",
                 retryable=False,
             )
+
         try:
             response = httpx.get(
-                f"{self.base_url}/models?key={self.api_key}",
+                f"{self.base_url}/models",
+                headers={"Authorization": f"Bearer {self.api_key}"},
                 timeout=self.timeout_seconds,
             )
         except httpx.HTTPError as exc:
@@ -209,6 +175,7 @@ class LLMClient:
                 error_code="llm_connection_error",
                 retryable=True,
             ) from exc
+
         if response.status_code != 200:
             raise LLMClientError(
                 f"LLM upstream returned HTTP {response.status_code}.",
