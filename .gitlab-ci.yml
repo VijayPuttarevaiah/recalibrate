@@ -3,6 +3,7 @@
 #
 # Flow:  develop → DEV  |  qa → TEST  |  main → PRODUCTION
 #
+<<<<<<< Updated upstream
 # How it works:
 #   1. Test stage runs in GitLab runner (lint, pytest)
 #   2. Deploy stage SCPs the code to VM and runs docker-compose
@@ -29,10 +30,68 @@ test_backend:
     - uv sync --frozen --no-dev
   script:
     - uv run pytest tests/ -v --tb=short || echo "No tests found yet, skipping"
+=======
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+#
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+ 
+stages:
+  - build
+  - test
+  - publish
+  - deploy
+ 
+build:
+  stage: build
+  image: python:3.11
+  before_script:
+    - pip install uv
+  script:
+    - python --version
+    - cd backend
+    - uv sync
+    - echo "Dependencies installed successfully"
+ 
+test:
+  stage: test
+  image: python:3.11
+  before_script:
+    - pip install uv
+  script:
+    - cd backend
+    - uv sync
+    - uv run pytest || echo "No tests found, skipping"
+ 
+ 
+publish:
+  image: docker:latest
+  stage: publish
+  tags:
+    - Project2
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: "tcp://docker:2375"
+  services:
+    - docker:dind
+  script:
+    - pwd
+    - echo $SERVER_IP
+    - docker --version
+    - echo $DOCKER_PAT | docker login -u vijayputtarevaiah --password-stdin
+    - docker build -t docker.io/vijayputtarevaiah/projectgroup2:$CI_COMMIT_SHORT_SHA .
+    - docker push docker.io/vijayputtarevaiah/projectgroup2:$CI_COMMIT_SHORT_SHA
+>>>>>>> Stashed changes
   only:
     - develop
     - qa
     - main
+<<<<<<< Updated upstream
 
 test_frontend:
   stage: test
@@ -264,6 +323,21 @@ deploy_prod:
         docker system prune -f
         echo "=== $ENV_NAME deployed on ports $API_PORT / $WEB_PORT ==="
       ENDSSH
+=======
+ 
+deploy:
+  image: alpine:latest
+  stage: deploy
+  tags:
+    - Project2
+  script:
+    - chmod 400 $ID_RSA
+    - apk update && apk add openssh-client
+    - ssh -i $ID_RSA -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "echo '$DOCKER_PAT' | docker login -u vijayputtarevaiah --password-stdin"
+    - ssh -i $ID_RSA -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker pull docker.io/vijayputtarevaiah/projectgroup2:$CI_COMMIT_SHORT_SHA"
+    - ssh -i $ID_RSA -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker container rm -f my-app || true"
+    - ssh -i $ID_RSA -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker run -d -p 8073:8073 --name my-app docker.io/vijayputtarevaiah/projectgroup2:$CI_COMMIT_SHORT_SHA"
+>>>>>>> Stashed changes
   environment:
     name: production
     url: http://csci5308-vm3.research.cs.dal.ca
