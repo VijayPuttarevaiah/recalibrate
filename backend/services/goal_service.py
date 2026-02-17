@@ -54,10 +54,12 @@ def get_goal_tasks(db, user_id: int, goal_id: int):
     }
 
 def create_goal_with_tasks(db, goal_data):
+    category_value = goal_data.category.value if hasattr(goal_data.category, "value") else goal_data.category
+
     goal = Goal(
         user_id=goal_data.user_id,
         title=goal_data.goal,
-        category=goal_data.category,
+        category=category_value,
         start_date=goal_data.start_date,
         end_date=goal_data.end_date,
         notes=goal_data.notes,
@@ -84,7 +86,7 @@ def create_goal_with_tasks(db, goal_data):
 
         tasks = generate_tasks_llm(
             goal_data.goal,
-            goal_data.category,
+            category_value,
             current_start,
             current_end,
             goal_data.notes,
