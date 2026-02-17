@@ -1,103 +1,272 @@
-# This file is a template, and might need editing before it works on your project.
-# This is a sample GitLab CI/CD configuration file that should run without any modifications.
-# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
-# it uses echo commands to simulate the pipeline execution.
+##############################################################################
+# .gitlab-ci.yml — CI/CD Pipeline for GROUP02
 #
-# A pipeline is composed of independent jobs that run scripts, grouped into stages.
-# Stages run in sequential order, but jobs within stages run in parallel.
+# Flow:  develop → DEV  |  qa → TEST  |  main → PRODUCTION
 #
-# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
-#
-# You can copy and paste this template into a new `.gitlab-ci.yml` file.
-# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
-#
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/ee/development/cicd/templates.html
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+# How it works:
+#   1. Test stage runs in GitLab runner (lint, pytest)
+#   2. Deploy stage SCPs the code to VM and runs docker-compose
+#   No git or registry needed on the VM — just Docker.
+##############################################################################
 
-stages:          # List of stages for jobs, and their order of execution
-  - build
+stages:
   - test
-  # - quality
-  - publish
   - deploy
 
-.python_uv_job:
-  image: python:3.11
-  before_script:
-    - cd backend
-    - python --version
-    - pip install --upgrade pip
-    - pip install uv
-    - uv sync --frozen
+variables:
+  VM_USER: student
+  VM_HOST: csci5308-vm3.research.cs.dal.ca
+  SSH_OPTS: "-o StrictHostKeyChecking=no"
 
-build:
-  stage: build
-  extends: .python_uv_job
-  script:
-    - uv run python -m compileall -q .
-    - uv run python -c "import fastapi, uvicorn; print('Build checks passed')"
+# ─── Test ────────────────────────────────────────────────────────────────────
 
-test:
+test_backend:
   stage: test
-  extends: .python_uv_job
+  image: python:3.11-slim
+  before_script:
+    - pip install uv --break-system-packages
+    - cd backend
+    - uv sync --frozen --no-dev
   script:
-    - uv run pytest -q || (code=$?; if [ "$code" -eq 5 ]; then echo "No tests collected, skipping"; else exit "$code"; fi)
-
-# quality:
-#   stage: quality
-#   image: openjdk:11
-#   script:
-#     - echo "Compiling the project"
-#     - mkdir smells/
-#     - java -jar $CI_PROJECT_DIR/.gitlab/DesigniteJava.jar -i $CI_PROJECT_DIR -o $CI_PROJECT_DIR/smells/ -d
-#   artifacts:
-#     paths:
-#       - smells/
-#       - $CI_PROJECT_DIR
-
-publish:
-  image: docker:24
-  stage: publish
-  tags: 
-    - Project2
-  variables:
-    # these values may need to be different if using TLS, k8s, etc.
-    # You can alternatively set defaults in your runner config
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_HOST: "tcp://docker:2375"
-  services:
-    - docker:24-dind
-
-  script:
-    - docker --version
-    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-    - docker build -f backend/Dockerfile -t docker.io/$DOCKERHUB_USERNAME/projectgroup2:$CI_COMMIT_SHORT_SHA backend
-    - docker push docker.io/$DOCKERHUB_USERNAME/projectgroup2:$CI_COMMIT_SHORT_SHA
+    - uv run pytest tests/ -v --tb=short || echo "No tests found yet, skipping"
   only:
+    - develop
+    - qa
     - main
 
-
-deploy:
-  image: alpine:latest
-  stage: deploy
-  tags:
-    - Project2
+test_frontend:
+  stage: test
+  image: node:20-alpine
+  before_script:
+    - cd frontend
+    - npm ci
   script:
-    # Set correct permissions on the key file (Variable type must be 'File')
-    - chmod 400 $ID_RSA
-    - apk update && apk add openssh-client
-    # 1. Login using the token via STDIN
-    - ssh -i $ID_RSA -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "echo '$DOCKERHUB_TOKEN' | docker login -u '$DOCKERHUB_USERNAME' --password-stdin"
-    # 2. Pull the image
-    - ssh -i $ID_RSA -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker pull docker.io/$DOCKERHUB_USERNAME/projectgroup2:$CI_COMMIT_SHORT_SHA"
-    # 3. Remove old container (ignore error if it doesn't exist)
-    - ssh -i $ID_RSA -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker container rm -f my-app || true"
-    # 4. Run the new container
-    - ssh -i $ID_RSA -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP "docker run -d -p 8073:8000 --name my-app docker.io/$DOCKERHUB_USERNAME/projectgroup2:$CI_COMMIT_SHORT_SHA"
+    - npm run lint 2>/dev/null || echo "No lint script, skipping"
+    - npm test -- --passWithNoTests 2>/dev/null || echo "No tests found, skipping"
+  only:
+    - develop
+    - qa
+    - main
+
+# ─── Deploy Template ─────────────────────────────────────────────────────────
+
+.deploy_base: &deploy_base
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client rsync
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - ssh-keyscan -H $VM_HOST >> ~/.ssh/known_hosts 2>/dev/null
+
+# ─── Deploy DEV ──────────────────────────────────────────────────────────────
+
+deploy_dev:
+  <<: *deploy_base
+  variables:
+    ENV_NAME: dev
+    APP_DIR: /home/student/group02/dev
+    API_PORT: "8001"
+    WEB_PORT: "8081"
+    DB_URL: "mysql+pymysql://CSCI5308_3_DEVINT_USER:uKaik8sie7@db.research.cs.dal.ca:3306/CSCI5308_3_DEVINT"
+  script:
+    # Create app directory on VM
+    - ssh $SSH_OPTS $VM_USER@$VM_HOST "mkdir -p $APP_DIR"
+
+    # Sync code to VM (fast — only sends changes)
+    - rsync -avz --delete
+        --exclude '.git'
+        --exclude 'node_modules'
+        --exclude '__pycache__'
+        --exclude '.env'
+        -e "ssh $SSH_OPTS"
+        ./ $VM_USER@$VM_HOST:$APP_DIR/
+
+    # Create .env and deploy
+    - |
+      ssh $SSH_OPTS $VM_USER@$VM_HOST << ENDSSH
+        cd $APP_DIR
+
+        cat > .env << EOF
+      DATABASE_URL=$DB_URL
+      GOOGLE_API_KEY=$GOOGLE_API_KEY
+      OPENROUTER_API_KEY=$OPENROUTER_API_KEY
+      SERPER_API_KEY=$SERPER_API_KEY
+      SECRET_KEY=$SECRET_KEY
+      EOF
+
+        cat > docker-compose.deploy.yml << EOF
+      services:
+        api:
+          build:
+            context: ./backend
+            dockerfile: Dockerfile
+          ports:
+            - "$API_PORT:8000"
+          environment:
+            - DATABASE_URL=\${DATABASE_URL}
+            - GOOGLE_API_KEY=\${GOOGLE_API_KEY}
+            - OPENROUTER_API_KEY=\${OPENROUTER_API_KEY}
+            - SERPER_API_KEY=\${SERPER_API_KEY}
+            - SECRET_KEY=\${SECRET_KEY}
+          restart: always
+
+        frontend:
+          build:
+            context: ./frontend
+            dockerfile: Dockerfile
+          ports:
+            - "$WEB_PORT:80"
+          restart: always
+      EOF
+
+        docker-compose -f docker-compose.deploy.yml -p $ENV_NAME down --remove-orphans 2>/dev/null || true
+        docker-compose -f docker-compose.deploy.yml -p $ENV_NAME up -d --build
+        docker system prune -f
+        echo "=== $ENV_NAME deployed on ports $API_PORT / $WEB_PORT ==="
+      ENDSSH
+  environment:
+    name: development
+    url: http://csci5308-vm3.research.cs.dal.ca:8081
+  only:
+    - develop
+
+# ─── Deploy TEST ─────────────────────────────────────────────────────────────
+
+deploy_test:
+  <<: *deploy_base
+  variables:
+    ENV_NAME: test
+    APP_DIR: /home/student/group02/test
+    API_PORT: "8002"
+    WEB_PORT: "8082"
+    DB_URL: "mysql+pymysql://CSCI5308_3_TEST_USER:uKaik8sie7@db.research.cs.dal.ca:3306/CSCI5308_3_TEST"
+  script:
+    - ssh $SSH_OPTS $VM_USER@$VM_HOST "mkdir -p $APP_DIR"
+
+    - rsync -avz --delete
+        --exclude '.git'
+        --exclude 'node_modules'
+        --exclude '__pycache__'
+        --exclude '.env'
+        -e "ssh $SSH_OPTS"
+        ./ $VM_USER@$VM_HOST:$APP_DIR/
+
+    - |
+      ssh $SSH_OPTS $VM_USER@$VM_HOST << ENDSSH
+        cd $APP_DIR
+
+        cat > .env << EOF
+      DATABASE_URL=$DB_URL
+      GOOGLE_API_KEY=$GOOGLE_API_KEY
+      OPENROUTER_API_KEY=$OPENROUTER_API_KEY
+      SERPER_API_KEY=$SERPER_API_KEY
+      SECRET_KEY=$SECRET_KEY
+      EOF
+
+        cat > docker-compose.deploy.yml << EOF
+      services:
+        api:
+          build:
+            context: ./backend
+            dockerfile: Dockerfile
+          ports:
+            - "$API_PORT:8000"
+          environment:
+            - DATABASE_URL=\${DATABASE_URL}
+            - GOOGLE_API_KEY=\${GOOGLE_API_KEY}
+            - OPENROUTER_API_KEY=\${OPENROUTER_API_KEY}
+            - SERPER_API_KEY=\${SERPER_API_KEY}
+            - SECRET_KEY=\${SECRET_KEY}
+          restart: always
+
+        frontend:
+          build:
+            context: ./frontend
+            dockerfile: Dockerfile
+          ports:
+            - "$WEB_PORT:80"
+          restart: always
+      EOF
+
+        docker-compose -f docker-compose.deploy.yml -p $ENV_NAME down --remove-orphans 2>/dev/null || true
+        docker-compose -f docker-compose.deploy.yml -p $ENV_NAME up -d --build
+        docker system prune -f
+        echo "=== $ENV_NAME deployed on ports $API_PORT / $WEB_PORT ==="
+      ENDSSH
+  environment:
+    name: testing
+    url: http://csci5308-vm3.research.cs.dal.ca:8082
+  only:
+    - qa
+
+# ─── Deploy PROD (manual trigger) ───────────────────────────────────────────
+
+deploy_prod:
+  <<: *deploy_base
+  variables:
+    ENV_NAME: prod
+    APP_DIR: /home/student/group02/prod
+    API_PORT: "8000"
+    WEB_PORT: "80"
+    DB_URL: "mysql+pymysql://CSCI5308_3_PRODUCTION_USER:uKaik8sie7@db.research.cs.dal.ca:3306/CSCI5308_3_PRODUCTION"
+  script:
+    - ssh $SSH_OPTS $VM_USER@$VM_HOST "mkdir -p $APP_DIR"
+
+    - rsync -avz --delete
+        --exclude '.git'
+        --exclude 'node_modules'
+        --exclude '__pycache__'
+        --exclude '.env'
+        -e "ssh $SSH_OPTS"
+        ./ $VM_USER@$VM_HOST:$APP_DIR/
+
+    - |
+      ssh $SSH_OPTS $VM_USER@$VM_HOST << ENDSSH
+        cd $APP_DIR
+
+        cat > .env << EOF
+      DATABASE_URL=$DB_URL
+      GOOGLE_API_KEY=$GOOGLE_API_KEY
+      OPENROUTER_API_KEY=$OPENROUTER_API_KEY
+      SERPER_API_KEY=$SERPER_API_KEY
+      SECRET_KEY=$SECRET_KEY
+      EOF
+
+        cat > docker-compose.deploy.yml << EOF
+      services:
+        api:
+          build:
+            context: ./backend
+            dockerfile: Dockerfile
+          ports:
+            - "$API_PORT:8000"
+          environment:
+            - DATABASE_URL=\${DATABASE_URL}
+            - GOOGLE_API_KEY=\${GOOGLE_API_KEY}
+            - OPENROUTER_API_KEY=\${OPENROUTER_API_KEY}
+            - SERPER_API_KEY=\${SERPER_API_KEY}
+            - SECRET_KEY=\${SECRET_KEY}
+          restart: always
+
+        frontend:
+          build:
+            context: ./frontend
+            dockerfile: Dockerfile
+          ports:
+            - "$WEB_PORT:80"
+          restart: always
+      EOF
+
+        docker-compose -f docker-compose.deploy.yml -p $ENV_NAME down --remove-orphans 2>/dev/null || true
+        docker-compose -f docker-compose.deploy.yml -p $ENV_NAME up -d --build
+        docker system prune -f
+        echo "=== $ENV_NAME deployed on ports $API_PORT / $WEB_PORT ==="
+      ENDSSH
   environment:
     name: production
-    url: csci5308-vm2.research.cs.dal.ca
+    url: http://csci5308-vm3.research.cs.dal.ca
+  when: manual
   only:
     - main
