@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from utils.groq_client import GroqClient
+from exceptions.llm_exceptions import LLMClientError
+from utils.llm_client import LLMClient
 from utils.logging_config import LogManager
 
 logger = LogManager.get_logger()
@@ -7,11 +8,16 @@ logger = LogManager.get_logger()
 router = APIRouter()
 
 
-@router.get("/health/groq")
-def groq_health_check():
-    client = GroqClient()
-    ok, detail = client.ping()
-    if not ok:
-        logger.warning(f"Groq health check failed: {detail}")
-        raise HTTPException(status_code=503, detail=detail)
-    return {"status": "ok"}
+@router.get("/health/goal_category_llm")
+def goal_category_llm_health_check():
+    client = LLMClient()
+    try:
+        client.ping()
+    except LLMClientError as exc:
+        logger.warning(f"Goal category LLM health check failed: {exc.error_code}")
+        raise HTTPException(status_code=exc.status_code, detail=exc.to_http_detail()) from exc
+    return {
+        "status": "ok",
+        "provider": client.provider,
+        "model": client.model,
+    }
