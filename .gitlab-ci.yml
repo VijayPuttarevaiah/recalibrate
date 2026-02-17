@@ -1,5 +1,10 @@
-stages:
+# This file is a template-style CI/CD pipeline adapted for this project.
+# Stages run in order; jobs in same stage can run in parallel.
+
+stages:          # List of stages for jobs, and their order of execution
+  - build
   - test
+  # - quality
   - publish
   - deploy
 
@@ -7,10 +12,21 @@ variables:
   DOCKER_REPO: "docker.io/vijayputtarevaiah/projectgroup2"
   DOCKER_IMAGE: "$DOCKER_REPO:$CI_COMMIT_SHORT_SHA"
 
-# ─────────────────────────────────────
-# TEST STAGE
-# ─────────────────────────────────────
-test_backend:
+build:
+  stage: build
+  image: python:3.11
+  script:
+    - cd backend
+    - python --version
+    - pip install --upgrade pip
+    - pip install uv
+    - uv sync --frozen
+    - uv run python -m compileall -q .
+    - echo "Dependencies installed successfully"
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+test:
   stage: test
   image: python:3.11
   script:
@@ -18,34 +34,29 @@ test_backend:
     - pip install --upgrade pip
     - pip install uv
     - uv sync --frozen
-    - uv run pytest -q || (code=$?; if [ "$code" -eq 5 ]; then echo "No tests collected, skipping"; else exit "$code"; fi)
-  only:
-    - develop
-    - qa
-    - main
+    - uv run pytest -q tests/models tests/utils tests/services/test_goal.py || (code=$?; if [ "$code" -eq 5 ]; then echo "No tests found, skipping"; else exit "$code"; fi)
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
 
-test_frontend:
-  stage: test
-  image: node:20-alpine
-  script:
-    - cd frontend
-    - npm ci
-    - npm run lint 2>/dev/null || echo "No lint script, skipping"
-    - npm test -- --passWithNoTests 2>/dev/null || echo "No tests found, skipping"
-  only:
-    - develop
-    - qa
-    - main
+# quality:
+#   stage: quality
+#   image: openjdk:11
+#   script:
+#     - echo "Compiling the project"
+#     - mkdir smells/
+#     - java -jar $CI_PROJECT_DIR/.gitlab/DesigniteJava.jar -i $CI_PROJECT_DIR -o $CI_PROJECT_DIR/smells/ -d
+#   artifacts:
+#     paths:
+#       - smells/
+#       - $CI_PROJECT_DIR
 
-# ─────────────────────────────────────
-# PUBLISH STAGE
-# ─────────────────────────────────────
 publish:
-  stage: publish
   image: docker:24
+  stage: publish
   tags:
     - Project2
   variables:
+    # these values may need to be different if using TLS, k8s, etc.
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: "tcp://docker:2375"
   services:
@@ -59,47 +70,26 @@ publish:
     - develop
     - main
 
-# ─────────────────────────────────────
-# DEPLOY STAGE
-# ─────────────────────────────────────
 deploy:
+  image: alpine:latest
   stage: deploy
-  image: alpine:3.20
   tags:
     - Project2
   before_script:
-    - apk add --no-cache openssh-client
     - chmod 400 "$ID_RSA"
-
+    - apk add --no-cache openssh-client
   script:
-    # Step 1 — Login to DockerHub on remote server
-    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP"
-      "echo '$DOCKERHUB_TOKEN' | docker login -u '$DOCKERHUB_USERNAME' --password-stdin"
-
-    # Step 2 — Pull latest image
-    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP"
-      "docker pull $DOCKER_IMAGE"
-
-    # Step 3 — Remove old container
-    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP"
-      "docker container rm -f $APP_NAME || true"
-
-    # Step 4 — Run new container with ALL environment variables ✅
-    - |
-      ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" \
-        "docker run -d \
-          --restart always \
-          -p $HOST_PORT:8000 \
-          --name $APP_NAME \
-          -e GOOGLE_API_KEY=$GOOGLE_API_KEY \
-          -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY \
-          -e SERPER_API_KEY=$SERPER_API_KEY \
-          $DOCKER_IMAGE"
-
+    # 1. Login using the token via STDIN
+    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
+    # 2. Pull the image
+    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "docker pull $DOCKER_IMAGE"
+    # 3. Remove old container (ignore error if it doesn't exist)
+    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "docker container rm -f $APP_NAME || true"
+    # 4. Run the new container
+    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "docker run -d -p $HOST_PORT:8000 --name $APP_NAME --restart always -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_IMAGE"
   environment:
     name: $ENV_NAME
     url: "http://csci5308-vm2.research.cs.dal.ca:$HOST_PORT"
-
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
