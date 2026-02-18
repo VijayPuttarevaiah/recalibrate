@@ -9,7 +9,7 @@
 import React, { useState } from "react";
 import { useToast } from "../components/Toast";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 /* ─── Follow-Up Questions Panel ─── */
 function FollowUpPanel({ questions, answers, onAnswer, onSubmit, loading }) {
