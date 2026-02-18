@@ -4,17 +4,20 @@
 stages:          # List of stages for jobs, and their order of execution
   - build
   - test
-  # - quality
   - publish
   - deploy
 
 variables:
   DOCKER_REPO: "docker.io/vijayputtarevaiah/projectgroup2"
-  DOCKER_IMAGE: "$DOCKER_REPO:$CI_COMMIT_SHORT_SHA"
+  # Backend and frontend images share a single DockerHub repo but use distinct tags per commit
+  DOCKER_BACKEND_IMAGE: "$DOCKER_REPO:backend-$CI_COMMIT_SHORT_SHA"
+  DOCKER_FRONTEND_IMAGE: "$DOCKER_REPO:frontend-$CI_COMMIT_SHORT_SHA"
 
 build:
   stage: build
   image: python:3.11
+  before_script:
+    - pip install uv
   script:
     - cd backend
     - python --version
@@ -26,9 +29,21 @@ build:
   rules:
     - if: '$CI_COMMIT_BRANCH'
 
+frontend_build:
+  stage: build
+  image: node:20-alpine
+  script:
+    - cd frontend
+    - npm install
+    - npm run build
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
 test:
   stage: test
   image: python:3.11
+  before_script:
+    - pip install uv
   script:
     - cd backend
     - pip install --upgrade pip
@@ -38,23 +53,12 @@ test:
   rules:
     - if: '$CI_COMMIT_BRANCH'
 
-# quality:
-#   stage: quality
-#   image: openjdk:11
-#   script:
-#     - echo "Compiling the project"
-#     - mkdir smells/
-#     - java -jar $CI_PROJECT_DIR/.gitlab/DesigniteJava.jar -i $CI_PROJECT_DIR -o $CI_PROJECT_DIR/smells/ -d
-#   artifacts:
-#     paths:
-#       - smells/
-#       - $CI_PROJECT_DIR
 
 publish:
-  image: docker:24
   stage: publish
   tags:
     - Project2
+  image: docker:24
   variables:
     # these values may need to be different if using TLS, k8s, etc.
     DOCKER_TLS_CERTDIR: ""
@@ -64,11 +68,21 @@ publish:
   script:
     - docker --version
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-    - docker build -f backend/Dockerfile -t "$DOCKER_IMAGE" backend
-    - docker push "$DOCKER_IMAGE"
-  only:
-    - develop
-    - main
+    # Build and push backend image
+    - docker build -f backend/Dockerfile -t "$DOCKER_BACKEND_IMAGE" backend
+    - docker push "$DOCKER_BACKEND_IMAGE"
+    # Build and push frontend image; pass API base URL so the SPA talks to the right backend
+    - docker build -f frontend/Dockerfile -t "$DOCKER_FRONTEND_IMAGE" --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL" frontend
+    - docker push "$DOCKER_FRONTEND_IMAGE"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      variables:
+        # Public URL the frontend will hit for the production backend
+        VITE_API_BASE_URL: "http://3.22.221.134:8073"
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      variables:
+        # Public URL the frontend will hit for the development backend
+        VITE_API_BASE_URL: "http://3.22.221.134:8074"
 
 deploy:
   image: alpine:latest
@@ -81,27 +95,39 @@ deploy:
   script:
     # 1. Login using the token via STDIN
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
-    # 2. Pull the image
-    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker pull $DOCKER_IMAGE"
-    # 3. Ensure network exists
-    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker network create project2-net || true"
-    # 4. (Re)start MySQL container
-    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker rm -f mysql_db || true && docker run -d --name mysql_db --network project2-net -e MYSQL_DATABASE=backend_db -e MYSQL_ROOT_PASSWORD=root_password -e MYSQL_USER=user -e MYSQL_PASSWORD=password mysql:8.0"
-    # 5. Remove old app container (ignore error if it doesn't exist)
+    # 2. Ensure Docker network and MySQL container exist on EC2
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker network create app_net || true"
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker volume create mysql_data || true"
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "if [ -z \"$(docker ps -aq -f name=mysql_db)\" ]; then docker run -d --name mysql_db --network app_net --restart always -e MYSQL_DATABASE=backend_db -e MYSQL_ROOT_PASSWORD=root_password -e MYSQL_USER=user -e MYSQL_PASSWORD=password -v mysql_data:/var/lib/mysql mysql:8.0; else docker start mysql_db || true; fi"
+    # 3. Pull the latest backend and frontend images for this commit
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker pull $DOCKER_BACKEND_IMAGE && docker pull $DOCKER_FRONTEND_IMAGE"
+    # 4. Remove old containers (ignore error if they don't exist)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME || true"
-    # 6. Run the new app container on same network, pointing to mysql_db
-    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d -p $HOST_PORT:8000 --name $APP_NAME --restart always --network project2-net -e DATABASE_URL=mysql+pymysql://user:password@mysql_db:3306/backend_db -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_IMAGE"
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME_FRONTEND || true"
+    # 5. Run the new backend container (connected to DB via mysql_db service name)
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $HOST_PORT:8000 --name $APP_NAME --restart always -e DATABASE_URL=$DATABASE_URL -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_BACKEND_IMAGE"
+    # 6. Run the new frontend container
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $FRONTEND_HOST_PORT:80 --name $APP_NAME_FRONTEND --restart always $DOCKER_FRONTEND_IMAGE"
   environment:
     name: $ENV_NAME
-    url: "http://3.22.221.134:$HOST_PORT"
+    # Point to the frontend as the main entrypoint
+    url: "http://3.22.221.134:$FRONTEND_HOST_PORT"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
         ENV_NAME: production
         APP_NAME: my-app
         HOST_PORT: "8073"
+        APP_NAME_FRONTEND: my-app-frontend
+        FRONTEND_HOST_PORT: "80"
+        # Default DB URL for MySQL container running on EC2 (mysql_db on app_net)
+        DATABASE_URL: "mysql+pymysql://user:password@mysql_db:3306/backend_db"
     - if: '$CI_COMMIT_BRANCH == "develop"'
       variables:
         ENV_NAME: development
         APP_NAME: my-app-dev
         HOST_PORT: "8074"
+        APP_NAME_FRONTEND: my-app-dev-frontend
+        FRONTEND_HOST_PORT: "8081"
+        # Default DB URL for MySQL container running on EC2 (mysql_db on app_net)
+        DATABASE_URL: "mysql+pymysql://user:password@mysql_db:3306/backend_db"
