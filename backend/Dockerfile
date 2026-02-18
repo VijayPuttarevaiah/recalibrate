@@ -26,11 +26,6 @@ RUN uv sync --frozen --no-dev --no-install-project
 # Copy the rest of the application code
 COPY . .
  
-# Create config.ini from example if it doesn't exist (gitignored, so not in repo)
-RUN if [ ! -f config/config.ini ] && [ -f config/config.ini.example ]; then \
-      cp config/config.ini.example config/config.ini; \
-    fi
- 
 # Install the project itself
 RUN uv sync --frozen --no-dev
  
