@@ -76,20 +76,20 @@ deploy:
   tags:
     - Project2
   before_script:
-    - chmod 400 "$ID_RSA"
+    - chmod 400 "$EC2_SSH_KEY"
     - apk add --no-cache openssh-client
   script:
     # 1. Login using the token via STDIN
-    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
     # 2. Pull the image
-    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "docker pull $DOCKER_IMAGE"
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker pull $DOCKER_IMAGE"
     # 3. Remove old container (ignore error if it doesn't exist)
-    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "docker container rm -f $APP_NAME || true"
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME || true"
     # 4. Run the new container
-    - ssh -i "$ID_RSA" -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" "docker run -d -p $HOST_PORT:8000 --name $APP_NAME --restart always -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_IMAGE"
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d -p $HOST_PORT:8000 --name $APP_NAME --restart always -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_IMAGE"
   environment:
     name: $ENV_NAME
-    url: "http://csci5308-vm2.research.cs.dal.ca:$HOST_PORT"
+    url: "http://3.22.221.134:$HOST_PORT"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
