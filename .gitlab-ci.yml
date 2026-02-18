@@ -83,10 +83,14 @@ deploy:
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
     # 2. Pull the image
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker pull $DOCKER_IMAGE"
-    # 3. Remove old container (ignore error if it doesn't exist)
+    # 3. Ensure network exists
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker network create project2-net || true"
+    # 4. (Re)start MySQL container
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker rm -f mysql_db || true && docker run -d --name mysql_db --network project2-net -e MYSQL_DATABASE=backend_db -e MYSQL_ROOT_PASSWORD=root_password -e MYSQL_USER=user -e MYSQL_PASSWORD=password mysql:8.0"
+    # 5. Remove old app container (ignore error if it doesn't exist)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME || true"
-    # 4. Run the new container
-    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d -p $HOST_PORT:8000 --name $APP_NAME --restart always -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_IMAGE"
+    # 6. Run the new app container on same network, pointing to mysql_db
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d -p $HOST_PORT:8000 --name $APP_NAME --restart always --network project2-net -e DATABASE_URL=mysql+pymysql://user:password@mysql_db:3306/backend_db -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_IMAGE"
   environment:
     name: $ENV_NAME
     url: "http://3.22.221.134:$HOST_PORT"
