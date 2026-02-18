@@ -1,7 +1,7 @@
 # This file is a template-style CI/CD pipeline adapted for this project.
 # Stages run in order; jobs in same stage can run in parallel.
 
-stages:          # List of stages for jobs, and their order of execution
+stages:
   - build
   - test
   - publish
@@ -53,14 +53,12 @@ test:
   rules:
     - if: '$CI_COMMIT_BRANCH'
 
-
 publish:
   stage: publish
   tags:
     - Project2
   image: docker:24
   variables:
-    # these values may need to be different if using TLS, k8s, etc.
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: "tcp://docker:2375"
   services:
@@ -93,41 +91,36 @@ deploy:
     - chmod 400 "$EC2_SSH_KEY"
     - apk add --no-cache openssh-client
   script:
-    # 1. Login using the token via STDIN
+    # 1. Login to Docker Hub on EC2
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
-    # 2. Ensure Docker network and MySQL container exist on EC2
+    # 2. Ensure Docker network exists (your mysql_db must already be attached to this)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker network create app_net || true"
-    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker volume create mysql_data || true"
-    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "if [ -z \"$(docker ps -aq -f name=mysql_db)\" ]; then docker run -d --name mysql_db --network app_net --restart always -e MYSQL_DATABASE=backend_db -e MYSQL_ROOT_PASSWORD=root_password -e MYSQL_USER=user -e MYSQL_PASSWORD=password -v mysql_data:/var/lib/mysql mysql:8.0; else docker start mysql_db || true; fi"
-    # 3. Pull the latest backend and frontend images for this commit
+    # 3. Pull latest backend and frontend images for this commit
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker pull $DOCKER_BACKEND_IMAGE && docker pull $DOCKER_FRONTEND_IMAGE"
     # 4. Remove old containers (ignore error if they don't exist)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME || true"
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME_FRONTEND || true"
-    # 5. Run the new backend container (connected to DB via mysql_db service name)
+    # 5. Run new backend container (connects to existing mysql_db)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $HOST_PORT:8000 --name $APP_NAME --restart always -e DATABASE_URL=$DATABASE_URL -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_BACKEND_IMAGE"
-    # 6. Run the new frontend container
+    # 6. Run new frontend container
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $FRONTEND_HOST_PORT:80 --name $APP_NAME_FRONTEND --restart always $DOCKER_FRONTEND_IMAGE"
   environment:
     name: $ENV_NAME
-    # Point to the frontend as the main entrypoint
     url: "http://3.22.221.134:$FRONTEND_HOST_PORT"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
         ENV_NAME: production
-        APP_NAME: my-app-backend
+        APP_NAME: my-app
         HOST_PORT: "8073"
         APP_NAME_FRONTEND: my-app-frontend
-        FRONTEND_HOST_PORT: "8080"
-        # Default DB URL for MySQL container running on EC2 (mysql_db on app_net)
+        FRONTEND_HOST_PORT: "80"
         DATABASE_URL: "mysql+pymysql://user:password@mysql_db:3306/backend_db"
     - if: '$CI_COMMIT_BRANCH == "develop"'
       variables:
         ENV_NAME: development
-        APP_NAME: my-app-dev-backend
+        APP_NAME: my-app-dev
         HOST_PORT: "8074"
         APP_NAME_FRONTEND: my-app-dev-frontend
         FRONTEND_HOST_PORT: "8081"
-        # Default DB URL for MySQL container running on EC2 (mysql_db on app_net)
         DATABASE_URL: "mysql+pymysql://user:password@mysql_db:3306/backend_db"
