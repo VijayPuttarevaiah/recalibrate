@@ -5,7 +5,4 @@ __pycache__
 .pytest_cache/
 .DS_Store
 test.db
-backend/config/config.ini
 backend/logs/
-.env
-backend/.env
