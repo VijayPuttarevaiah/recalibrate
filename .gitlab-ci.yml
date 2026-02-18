@@ -116,16 +116,16 @@ deploy:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
         ENV_NAME: production
-        APP_NAME: my-app
+        APP_NAME: my-app-backend
         HOST_PORT: "8073"
         APP_NAME_FRONTEND: my-app-frontend
-        FRONTEND_HOST_PORT: "80"
+        FRONTEND_HOST_PORT: "8080"
         # Default DB URL for MySQL container running on EC2 (mysql_db on app_net)
         DATABASE_URL: "mysql+pymysql://user:password@mysql_db:3306/backend_db"
     - if: '$CI_COMMIT_BRANCH == "develop"'
       variables:
         ENV_NAME: development
-        APP_NAME: my-app-dev
+        APP_NAME: my-app-dev-backend
         HOST_PORT: "8074"
         APP_NAME_FRONTEND: my-app-dev-frontend
         FRONTEND_HOST_PORT: "8081"
