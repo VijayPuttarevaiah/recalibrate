@@ -50,7 +50,18 @@ def get_goal_tasks(db, user_id: int, goal_id: int):
         "end_date": goal.end_date,
         "status": goal.status,
         "task_count": len(tasks),
-        "tasks": tasks,
+        "tasks": [
+            {
+                "id": t.id,
+                "goal_id": t.goal_id,
+                "title": t.title,
+                "description": t.description,
+                "due_date": t.due_date,
+                "status": t.status,
+                "notes": t.notes,
+            }
+            for t in tasks
+        ],
     }
 
 def create_goal_with_tasks(db, goal_data):
