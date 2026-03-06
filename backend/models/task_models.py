@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -13,5 +13,8 @@ class Task(Base):
     due_date = Column(Date, nullable=False)
 
     status = Column(String(50), default="pending")
+
+    # User-written notes: what they did, progress, blockers, etc.
+    notes = Column(Text, nullable=True)
 
     goal = relationship("Goal", back_populates="tasks")

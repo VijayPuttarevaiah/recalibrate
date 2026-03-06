@@ -20,6 +20,7 @@ class TaskResponse(BaseModel):
     description: str | None = None
     due_date: date
     status: str
+    notes: str | None = None
 
     class Config:
         from_attributes = True
