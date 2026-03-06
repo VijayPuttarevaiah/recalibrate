@@ -1,6 +1,7 @@
 /**
  * @file Dashboard.jsx
  * Goals displayed as a responsive grid of cards.
+ * Now shows "behind schedule" indicator on cards needing replan.
  * Click a card → navigate to GoalTasksPage
  */
 import React, { useState, useEffect, useCallback } from "react";
@@ -74,13 +75,31 @@ function StatCard({ label, value, color, icon }) {
   );
 }
 
-function GoalCard({ goal, onClick }) {
+function BehindBadge({ missedCount }) {
+  if (!missedCount || missedCount === 0) return null;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      fontSize: 10, fontWeight: 700,
+      padding: "3px 9px", borderRadius: 99,
+      color: "#DC2626",
+      background: "rgba(220,38,38,0.08)",
+      border: "1px solid rgba(220,38,38,0.2)",
+    }}>
+      ⚠ {missedCount} behind
+    </span>
+  );
+}
+
+function GoalCard({ goal, replanInfo, onClick }) {
   const [hovered, setHovered] = useState(false);
   const accent = statusColor(goal.status);
   const icon   = categoryIcon(goal.category);
   const progress =
     goal.status === "completed"   ? 100 :
     goal.status === "in_progress" ?  55 : 0;
+
+  const needsReplan = replanInfo?.needs_replan;
 
   return (
     <div
@@ -89,7 +108,7 @@ function GoalCard({ goal, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         background: "#FFFFFF",
-        border: "1px solid var(--Border)",
+        border: needsReplan ? "1px solid #FBBF2480" : "1px solid var(--Border)",
         borderRadius: 20,
         padding: "20px 20px 16px",
         cursor: "pointer",
@@ -97,6 +116,8 @@ function GoalCard({ goal, onClick }) {
         transition: "all 0.22s ease",
         boxShadow: hovered
           ? "0 16px 40px -8px rgba(99,102,241,0.18), 0 4px 12px -2px rgba(0,0,0,0.06)"
+          : needsReplan
+          ? "0 2px 12px -2px rgba(245,158,11,0.15)"
           : "0 2px 8px -2px rgba(0,0,0,0.05)",
         transform: hovered ? "translateY(-4px)" : "translateY(0)",
         position: "relative", overflow: "hidden",
@@ -105,17 +126,21 @@ function GoalCard({ goal, onClick }) {
       {/* Top color stripe */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, height: 4,
-        background: accent, borderRadius: "20px 20px 0 0",
+        background: needsReplan ? "#F59E0B" : accent,
+        borderRadius: "20px 20px 0 0",
       }} />
 
-      {/* Icon + Badge */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 6 }}>
+      {/* Icon + Badge row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 6, gap: 6 }}>
         <div style={{
           width: 44, height: 44, borderRadius: 12,
           background: `${accent}12`, border: `1px solid ${accent}22`,
           display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
         }}>{icon}</div>
-        <StatusBadge status={goal.status} />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {needsReplan && <BehindBadge missedCount={replanInfo?.missed_count} />}
+          <StatusBadge status={goal.status} />
+        </div>
       </div>
 
       {/* Title + Category */}
@@ -199,6 +224,7 @@ export default function Dashboard() {
   const [goals, setGoals]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
+  const [replanStatuses, setReplanStatuses] = useState({});  // goalId → replanCheck
   const navigate = useNavigate();
   const token = localStorage.getItem("agp_auth_token");
 
@@ -207,6 +233,26 @@ export default function Dashboard() {
     try {
       const data = await apiFetch("/goals/", token);
       setGoals(data);
+
+      // Check replan status for each active (non-completed) goal
+      const statuses = {};
+      const activeGoals = data.filter(
+        (g) => g.status !== "completed"
+      );
+      await Promise.allSettled(
+        activeGoals.map(async (g) => {
+          try {
+            const check = await apiFetch(
+              `/goals/${g.id}/replan/check?threshold=3`,
+              token
+            );
+            statuses[g.id] = check;
+          } catch {
+            // silently skip — replan check is non-critical
+          }
+        })
+      );
+      setReplanStatuses(statuses);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }, [token]);
@@ -219,6 +265,9 @@ export default function Dashboard() {
   const totalGoals     = goals.length;
   const completedGoals = goals.filter((g) => g.status === "completed").length;
   const totalTasks     = goals.reduce((sum, g) => sum + (g.task_count || 0), 0);
+  const goalsBehind    = Object.values(replanStatuses).filter(
+    (r) => r?.needs_replan
+  ).length;
 
   return (
     <section style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px", minHeight: "calc(100vh - 64px)" }}>
@@ -231,17 +280,20 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Stat cards - responsive: 3 cols → 1 col on mobile */}
+      {/* Stat cards */}
       {!loading && goals.length > 0 && (
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
           gap: 14,
           marginBottom: 32,
         }}>
           <StatCard label="Total Goals" value={totalGoals}     color="var(--Primary)" icon="" />
           <StatCard label="Completed"   value={completedGoals} color="#059669"        icon="" />
           <StatCard label="Total Tasks" value={totalTasks}     color="var(--Accent)"  icon="" />
+          {goalsBehind > 0 && (
+            <StatCard label="Need Attention" value={goalsBehind}  color="#DC2626"       icon="" />
+          )}
         </div>
       )}
 
@@ -249,7 +301,7 @@ export default function Dashboard() {
       {error    && <ErrorState message={error} onRetry={fetchGoals} />}
       {!loading && !error && goals.length === 0 && <EmptyState onRefresh={fetchGoals} />}
 
-      {/* Goal cards grid - responsive */}
+      {/* Goal cards grid */}
       {!loading && !error && goals.length > 0 && (
         <div style={{
           display: "grid",
@@ -257,7 +309,12 @@ export default function Dashboard() {
           gap: 18,
         }}>
           {goals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} onClick={handleGoalClick} />
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              replanInfo={replanStatuses[goal.id]}
+              onClick={handleGoalClick}
+            />
           ))}
         </div>
       )}
