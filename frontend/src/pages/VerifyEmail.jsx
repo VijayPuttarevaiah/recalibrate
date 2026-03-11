@@ -2,15 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { create_auth_api } from "../utils/auth_api.js";
 import { use_resend_timer } from "../hooks/use_resend_timer.js";
+import { format_time } from "../utils/format_time.js";
 
 const AuthApi = create_auth_api();
 
-function format_time(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
+const COUNTDOWN_SECONDS = 120;
 const DEFAULT_MAX_RESENDS = 3;
 
 export default function VerifyEmail({ maxResends = DEFAULT_MAX_RESENDS }) {
@@ -27,7 +23,7 @@ export default function VerifyEmail({ maxResends = DEFAULT_MAX_RESENDS }) {
   const [resend_loading, setResendLoading] = useState(false);
   const [resend_count, setResendCount] = useState(0);
 
-  const { time_left, is_blocked, start_timer } = use_resend_timer(120);
+  const { time_left, is_blocked, start_timer } = use_resend_timer(COUNTDOWN_SECONDS);
 
   const resends_exhausted = resend_count >= maxResends;
   const resends_remaining = maxResends - resend_count;
