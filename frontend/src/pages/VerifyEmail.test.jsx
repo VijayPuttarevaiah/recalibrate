@@ -1,4 +1,4 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -42,5 +42,36 @@ describe("VerifyEmail – 2-minute countdown timer", () => {
 
     act(() => vi.advanceTimersByTime(59_000));
     expect(screen.getByText(/1:00/)).toBeInTheDocument();
+  });
+
+  it("should disable resend button while countdown is active", () => {
+    renderVerifyEmail();
+    const resendBtn = screen.getByRole("button", { name: /resend code/i });
+    expect(resendBtn).toBeDisabled();
+  });
+
+  it("should enable resend button after countdown reaches zero", () => {
+    renderVerifyEmail();
+
+    act(() => vi.advanceTimersByTime(120_000));
+
+    const resendBtn = screen.getByRole("button", { name: /resend code/i });
+    expect(resendBtn).toBeEnabled();
+    expect(screen.getByText(/you can request a new code/i)).toBeInTheDocument();
+  });
+
+  it("should restart countdown after clicking resend", async () => {
+    renderVerifyEmail();
+
+    act(() => vi.advanceTimersByTime(120_000));
+
+    const resendBtn = screen.getByRole("button", { name: /resend code/i });
+
+    await act(async () => {
+      fireEvent.click(resendBtn);
+    });
+
+    expect(screen.getByText(/2:00/)).toBeInTheDocument();
+    expect(resendBtn).toBeDisabled();
   });
 });
