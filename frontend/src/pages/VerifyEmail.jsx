@@ -1,9 +1,15 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { create_auth_api } from "../utils/auth_api.js";
 import { use_resend_timer } from "../hooks/use_resend_timer.js";
 
 const AuthApi = create_auth_api();
+
+function format_time(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 export default function VerifyEmail() {
   const [params] = useSearchParams();
@@ -18,7 +24,11 @@ export default function VerifyEmail() {
   const [loading, setLoading] = useState(false);
   const [resend_loading, setResendLoading] = useState(false);
 
-  const { time_left, is_blocked, start_timer } = use_resend_timer(60);
+  const { time_left, is_blocked, start_timer } = use_resend_timer(120);
+
+  useEffect(() => {
+    start_timer();
+  }, [start_timer]);
 
   const can_submit = email.trim().length > 0 && code.trim().length > 0 && !loading;
 
@@ -110,7 +120,7 @@ export default function VerifyEmail() {
         </button>
 
         {is_blocked ? (
-          <span className="Muted">Resend available in {time_left}s</span>
+          <span className="Muted">Resend available in {format_time(time_left)}</span>
         ) : (
           <span className="Muted">You can request a new code.</span>
         )}
