@@ -9,21 +9,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { create_auth_api } from "../utils/auth_api.js";
 import { is_valid_email } from "../utils/validators.js";
 import { use_auth } from "../hooks/use_auth.js";
+import { passwordToggleStyle } from "../utils/styles.js";
 
 // Decoupled API Service: Allows switching between Mock and Real endpoints.
 const AuthApi = create_auth_api();
-
-const passwordToggleStyle = {
-  position: "absolute",
-  right: "0.5rem",
-  top: "50%",
-  transform: "translateY(-50%)",
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "0.85rem",
-  color: "#555",
-};
 
 export default function Login() {
   /**

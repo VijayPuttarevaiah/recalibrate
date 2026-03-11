@@ -8,22 +8,11 @@ import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { create_auth_api } from "../utils/auth_api.js";
 import { is_valid_email, password_error } from "../utils/validators.js";
+import { passwordToggleStyle } from "../utils/styles.js";
 
 // Initialize the API adapter. This boundary allows the component to remain 
 // agnostic of the actual backend implementation (Mock vs. FastAPI).
 const AuthApi = create_auth_api();
-
-const passwordToggleStyle = {
-  position: "absolute",
-  right: "0.5rem",
-  top: "50%",
-  transform: "translateY(-50%)",
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "0.85rem",
-  color: "#555",
-};
 
 export default function Register() {
   const navigate = useNavigate();
