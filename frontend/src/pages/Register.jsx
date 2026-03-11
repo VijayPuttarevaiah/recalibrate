@@ -23,6 +23,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   /**
    * useMemo: Performance optimization for real-time validation feedback.
@@ -126,15 +127,35 @@ export default function Register() {
         {/* Password Input Field with Real-time Feedback */}
         <label className="Field">
           <span className="FieldLabel">Password</span>
-          <input
-            className="Input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min 8 chars, upper, lower, digit, symbol"
-            autoComplete="new-password"
-          />
-          {/* Conditional rendering for validation hints */}
+          <div style={{ position: "relative" }}>
+            <input
+              className="Input"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min 8 chars, upper, lower, digit, symbol"
+              autoComplete="new-password"
+              style={{ paddingRight: "3.5rem" }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              style={{
+                position: "absolute",
+                right: "0.5rem",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+                color: "#555",
+              }}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
           {password && pw_error ? <p className="Hint HintError">{pw_error}</p> : null}
         </label>
 
