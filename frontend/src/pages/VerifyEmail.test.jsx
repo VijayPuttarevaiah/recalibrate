@@ -75,3 +75,42 @@ describe("VerifyEmail – 2-minute countdown timer", () => {
     expect(resendBtn).toBeDisabled();
   });
 });
+
+describe("VerifyEmail – resend limit", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("should disable resend permanently after 3 attempts and show limit message", async () => {
+    renderVerifyEmail();
+
+    for (let i = 0; i < 3; i++) {
+      act(() => vi.advanceTimersByTime(120_000));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /resend code/i }));
+      });
+    }
+
+    act(() => vi.advanceTimersByTime(120_000));
+
+    const resendBtn = screen.getByRole("button", { name: /resend code/i });
+    expect(resendBtn).toBeDisabled();
+    expect(screen.getByText(/resend limit reached/i)).toBeInTheDocument();
+  });
+
+  it("should show remaining resend attempts count", async () => {
+    renderVerifyEmail();
+
+    act(() => vi.advanceTimersByTime(120_000));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /resend code/i }));
+    });
+
+    act(() => vi.advanceTimersByTime(120_000));
+    expect(screen.getByText(/2 resends remaining/i)).toBeInTheDocument();
+  });
+});
