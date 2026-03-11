@@ -113,4 +113,41 @@ describe("VerifyEmail – resend limit", () => {
     act(() => vi.advanceTimersByTime(120_000));
     expect(screen.getByText(/2 resends remaining/i)).toBeInTheDocument();
   });
+
+  it("should respect a custom maxResends prop of 1", async () => {
+    render(
+      <MemoryRouter initialEntries={["/verify-email?email=test@example.com"]}>
+        <VerifyEmail maxResends={1} />
+      </MemoryRouter>
+    );
+
+    act(() => vi.advanceTimersByTime(120_000));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /resend code/i }));
+    });
+
+    act(() => vi.advanceTimersByTime(120_000));
+
+    expect(screen.getByRole("button", { name: /resend code/i })).toBeDisabled();
+    expect(screen.getByText(/resend limit reached/i)).toBeInTheDocument();
+  });
+
+  it("should allow 5 resends when maxResends is set to 5", async () => {
+    render(
+      <MemoryRouter initialEntries={["/verify-email?email=test@example.com"]}>
+        <VerifyEmail maxResends={5} />
+      </MemoryRouter>
+    );
+
+    for (let i = 0; i < 3; i++) {
+      act(() => vi.advanceTimersByTime(120_000));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /resend code/i }));
+      });
+    }
+
+    act(() => vi.advanceTimersByTime(120_000));
+    expect(screen.getByRole("button", { name: /resend code/i })).toBeEnabled();
+    expect(screen.getByText(/2 resends remaining/i)).toBeInTheDocument();
+  });
 });
