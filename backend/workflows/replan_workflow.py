@@ -45,14 +45,29 @@ def _gather_research_node(state: ReplanState) -> ReplanState:
 
 
 def _generate_tasks_node(state: ReplanState) -> ReplanState:
-    """Minimal implementation for generate_tasks node."""
+    """Generate replan tasks for the current chunk via LLM."""
     idx = state.get("current_chunk_index", 0)
     chunks = state.get("chunks") or []
     if idx >= len(chunks):
         return {}
 
-    # Increment the chunk index to avoid infinite loops
-    return {"generated_tasks": [], "current_chunk_index": idx + 1}
+    chunk = chunks[idx]
+    tasks = generate_replan_tasks(
+        state["goal_title"],
+        state["category"],
+        chunk["start"],
+        chunk["end"],
+        state["end_date"],
+        state.get("notes"),
+        state.get("progress_context", ""),
+        state.get("research_context", ""),
+    )
+
+    existing_tasks = state.get("generated_tasks") or []
+    return {
+        "generated_tasks": existing_tasks + tasks,
+        "current_chunk_index": idx + 1,
+    }
 
 
 def _validate_tasks_node(state: ReplanState) -> ReplanState:
