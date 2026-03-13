@@ -9,6 +9,9 @@ MODEL = "openai/gpt-4o-mini"
 
 
 def _call_llm_for_tasks(prompt: str) -> list[dict]:
+    if not OPENROUTER_API_KEY:
+        raise ValueError("OPENROUTER_API_KEY is not set")
+
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
