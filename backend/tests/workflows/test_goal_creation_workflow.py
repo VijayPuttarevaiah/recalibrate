@@ -1,8 +1,12 @@
 import pytest
 from datetime import date
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from models.goal_models import Goal
-from workflows.goal_creation_workflow import build_goal_creation_graph, _create_goal_node
+from workflows.goal_creation_workflow import (
+    build_goal_creation_graph,
+    _create_goal_node,
+    _generate_tasks_node,
+)
 
 def test_minimal_create_goal_node():
     """Test that the create_goal node initializes correctly."""
@@ -87,3 +91,39 @@ def test_create_goal_node_persists_goal():
     assert created_goal.start_date == date(2026, 3, 1)
     assert created_goal.end_date == date(2026, 3, 31)
     assert result["goal_id"] == 42
+
+
+def test_generate_tasks_node_calls_llm_and_advances():
+    """RED: generate_tasks should call LLM and increment chunk index."""
+    state = {
+        "goal_title": "Test Goal",
+        "category": "Health",
+        "start_date": date(2026, 3, 1),
+        "end_date": date(2026, 3, 31),
+        "notes": "Test Notes",
+        "research_context": "Research Context",
+        "date_chunks": [
+            {"start": date(2026, 3, 1), "end": date(2026, 3, 10)}
+        ],
+        "current_chunk_index": 0,
+        "tasks": [],
+    }
+
+    returned_tasks = [{"title": "Task 1", "date": "2026-03-01"}]
+
+    with patch(
+        "workflows.goal_creation_workflow.generate_tasks_llm",
+        return_value=returned_tasks,
+    ) as mock_generate:
+        result = _generate_tasks_node(state)
+
+    mock_generate.assert_called_once_with(
+        "Test Goal",
+        "Health",
+        date(2026, 3, 1),
+        date(2026, 3, 10),
+        "Test Notes",
+        "Research Context",
+    )
+    assert result["tasks"] == returned_tasks
+    assert result["current_chunk_index"] == 1
