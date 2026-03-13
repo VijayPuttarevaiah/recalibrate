@@ -91,6 +91,27 @@ def test_call_llm_for_tasks_multiple_arrays_uses_first():
             assert len(tasks) == 1
             assert tasks[0]["title"] == "Task A"
 
+
+def test_call_llm_for_tasks_invalid_date_format():
+    """RED: Date must be YYYY-MM-DD; invalid formats should raise."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "choices": [
+            {
+                "message": {
+                    "content": "[{\"title\": \"Task X\", \"date\": \"03/07/2026\"}]"
+                }
+            }
+        ]
+    }
+
+    import services.replan_llm as replan_llm
+
+    with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
+        with patch("requests.post", return_value=mock_response):
+            with pytest.raises(ValueError, match="date format"):
+                _call_llm_for_tasks("test prompt")
+
 def test_generate_replan_tasks():
     """Test generate_replan_tasks with mocked _call_llm_for_tasks."""
     with patch("services.replan_llm._call_llm_for_tasks", return_value=[
