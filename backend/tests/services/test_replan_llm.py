@@ -64,6 +64,33 @@ def test_call_llm_for_tasks_missing_api_key():
                 replan_llm._call_llm_for_tasks("test prompt")
             mock_post.assert_not_called()
 
+
+def test_call_llm_for_tasks_multiple_arrays_uses_first():
+    """RED: If response contains multiple JSON arrays, use the first one."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "choices": [
+            {
+                "message": {
+                    "content": (
+                        "Here is the plan A: "
+                        "[{\"title\": \"Task A\", \"date\": \"2026-03-07\"}] "
+                        "And plan B: "
+                        "[{\"title\": \"Task B\", \"date\": \"2026-03-08\"}]"
+                    )
+                }
+            }
+        ]
+    }
+
+    import services.replan_llm as replan_llm
+
+    with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
+        with patch("requests.post", return_value=mock_response):
+            tasks = _call_llm_for_tasks("test prompt")
+            assert len(tasks) == 1
+            assert tasks[0]["title"] == "Task A"
+
 def test_generate_replan_tasks():
     """Test generate_replan_tasks with mocked _call_llm_for_tasks."""
     with patch("services.replan_llm._call_llm_for_tasks", return_value=[
