@@ -37,8 +37,21 @@ def _create_goal_node(db):
     """Minimal implementation for create_goal node."""
 
     def node(state: GoalCreationState) -> GoalCreationState:
-        # Minimalistic code to pass the test
-        return {"goal_id": 1}  # Placeholder goal_id
+        goal = Goal(
+            user_id=state["user_id"],
+            title=state["goal_title"],
+            category=state.get("category"),
+            notes=state.get("notes"),
+            start_date=state["start_date"],
+            end_date=state["end_date"],
+        )
+
+        db.add(goal)
+        db.commit()
+        if hasattr(db, "refresh"):
+            db.refresh(goal)
+
+        return {"goal_id": goal.id}
 
     return node
 
