@@ -35,8 +35,13 @@ class ReplanState(TypedDict, total=False):
 
 
 def _gather_research_node(state: ReplanState) -> ReplanState:
-    """Minimal implementation for gather_research node."""
-    return {"research_context": "Placeholder research context"}
+    """Gather web research context for replanning."""
+    research_context = gather_research(
+        state["goal_title"],
+        state["category"],
+        state.get("notes"),
+    )
+    return {"research_context": research_context}
 
 
 def _generate_tasks_node(state: ReplanState) -> ReplanState:
