@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from datetime import datetime
 import requests
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -53,6 +54,14 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
     for t in tasks:
         if "title" not in t or "date" not in t:
             raise ValueError("Invalid task structure")
+
+        date_value = t["date"]
+        if not isinstance(date_value, str):
+            raise ValueError("Invalid date format: expected YYYY-MM-DD")
+        try:
+            datetime.strptime(date_value, "%Y-%m-%d")
+        except ValueError as exc:
+            raise ValueError("Invalid date format: expected YYYY-MM-DD") from exc
 
     return tasks
 
