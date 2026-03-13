@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import MagicMock
-from workflows.replan_workflow import build_replan_graph
+from unittest.mock import MagicMock, patch
+from workflows.replan_workflow import build_replan_graph, _gather_research_node
 
 def test_minimal_gather_research_node():
     """Test that the gather_research node initializes correctly."""
@@ -49,3 +49,21 @@ def test_minimal_workflow_execution():
     graph = build_replan_graph(db)
     result = graph.invoke(state)
     assert "result" in result, "Result should be in the final state."
+
+
+def test_gather_research_node_calls_service():
+    """RED: gather_research node should call web search service."""
+    state = {
+        "goal_title": "Test Goal",
+        "category": "Health",
+        "notes": "Test Notes",
+    }
+
+    with patch(
+        "workflows.replan_workflow.gather_research",
+        return_value="Research Context",
+    ) as mock_research:
+        result = _gather_research_node(state)
+
+    mock_research.assert_called_once_with("Test Goal", "Health", "Test Notes")
+    assert result["research_context"] == "Research Context"
