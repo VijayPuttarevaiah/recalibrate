@@ -1,6 +1,11 @@
 import pytest
+from datetime import date
 from unittest.mock import MagicMock, patch
-from workflows.replan_workflow import build_replan_graph, _gather_research_node
+from workflows.replan_workflow import (
+    build_replan_graph,
+    _gather_research_node,
+    _generate_tasks_node,
+)
 
 def test_minimal_gather_research_node():
     """Test that the gather_research node initializes correctly."""
@@ -67,3 +72,41 @@ def test_gather_research_node_calls_service():
 
     mock_research.assert_called_once_with("Test Goal", "Health", "Test Notes")
     assert result["research_context"] == "Research Context"
+
+
+def test_generate_tasks_node_calls_llm_and_advances():
+    """RED: generate_tasks should call LLM and increment chunk index."""
+    state = {
+        "goal_title": "Test Goal",
+        "category": "Health",
+        "notes": "Test Notes",
+        "end_date": date(2026, 3, 31),
+        "chunks": [
+            {"start": date(2026, 3, 1), "end": date(2026, 3, 10)}
+        ],
+        "current_chunk_index": 0,
+        "progress_context": "Progress Context",
+        "research_context": "Research Context",
+        "generated_tasks": [],
+    }
+
+    returned_tasks = [{"title": "Task A", "date": "2026-03-01"}]
+
+    with patch(
+        "workflows.replan_workflow.generate_replan_tasks",
+        return_value=returned_tasks,
+    ) as mock_generate:
+        result = _generate_tasks_node(state)
+
+    mock_generate.assert_called_once_with(
+        "Test Goal",
+        "Health",
+        date(2026, 3, 1),
+        date(2026, 3, 10),
+        date(2026, 3, 31),
+        "Test Notes",
+        "Progress Context",
+        "Research Context",
+    )
+    assert result["generated_tasks"] == returned_tasks
+    assert result["current_chunk_index"] == 1
