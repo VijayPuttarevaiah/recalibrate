@@ -53,6 +53,17 @@ def test_call_llm_for_tasks_invalid_response():
             with pytest.raises(ValueError, match="No JSON array found in LLM response"):
                 _call_llm_for_tasks("test prompt")
 
+
+def test_call_llm_for_tasks_missing_api_key():
+    """RED: Fail fast when OPENROUTER_API_KEY is missing."""
+    import services.replan_llm as replan_llm
+
+    with patch.object(replan_llm, "OPENROUTER_API_KEY", ""):
+        with patch("requests.post") as mock_post:
+            with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
+                replan_llm._call_llm_for_tasks("test prompt")
+            mock_post.assert_not_called()
+
 def test_generate_replan_tasks():
     """Test generate_replan_tasks with mocked _call_llm_for_tasks."""
     with patch("services.replan_llm._call_llm_for_tasks", return_value=[
