@@ -42,7 +42,7 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
     if content.startswith("```"):
         content = content.replace("```json", "").replace("```", "").strip()
 
-    match = re.search(r"\[.*\]", content, re.DOTALL)
+    match = re.search(r"\[.*?\]", content, re.DOTALL)
     if not match:
         raise ValueError("No JSON array found in LLM response")
 
