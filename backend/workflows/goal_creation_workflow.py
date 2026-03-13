@@ -70,10 +70,28 @@ def _gather_research_node(state: GoalCreationState) -> GoalCreationState:
 
 
 def _generate_tasks_node(state: GoalCreationState) -> GoalCreationState:
-    """Minimal implementation for generate_tasks node."""
+    """Generate tasks for the current date chunk via LLM."""
 
-    # Minimalistic code to pass the test
-    return {"tasks": []}  # Placeholder empty tasks
+    idx = state.get("current_chunk_index", 0)
+    chunks = state.get("date_chunks") or []
+    if idx >= len(chunks):
+        return {}
+
+    chunk = chunks[idx]
+    tasks = generate_tasks_llm(
+        state["goal_title"],
+        state["category"],
+        chunk["start"],
+        chunk["end"],
+        state.get("notes"),
+        state.get("research_context"),
+    )
+
+    existing_tasks = state.get("tasks") or []
+    return {
+        "tasks": existing_tasks + tasks,
+        "current_chunk_index": idx + 1,
+    }
 
 
 def _persist_tasks_node(db):
