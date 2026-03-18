@@ -11,13 +11,14 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-async function apiFetch(url, token) {
+async function apiFetch(url, token, options = {}) {
   const res = await fetch(`${API_BASE}${url}`, {
+    ...options,
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      ...(options.headers || {}),
     },
-    ...options,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -66,6 +67,7 @@ function TaskCard({ task }) {
   const [hovered, setHovered] = useState(false);
   const [toggling, setToggling] = useState(false);
   const accent = statusColor(task.status);
+  const isMissed = task.status === "missed";
 
   return (
     <div
@@ -185,13 +187,6 @@ export default function GoalTasksPage() {
   // Notes modal state
   const [notesTask, setNotesTask] = useState(null);
 
-  // Replan state
-  const [replanStatus, setReplanStatus] = useState(null);
-  const [replanning, setReplanning] = useState(false);
-  const [replanResult, setReplanResult] = useState(null);
-  const [adjustmentHistory, setAdjustmentHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
-
   /* ── Fetch tasks ── */
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -218,6 +213,8 @@ export default function GoalTasksPage() {
     all:         tasks.length,
     pending:     tasks.filter((t) => t.status === "pending").length,
     in_progress: tasks.filter((t) => t.status === "in_progress").length,
+    completed:   tasks.filter((t) => t.status === "completed").length,
+    missed:      tasks.filter((t) => t.status === "missed").length,
   };
 
   const completedCount = counts.completed;
