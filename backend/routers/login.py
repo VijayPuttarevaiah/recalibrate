@@ -14,11 +14,19 @@ router = APIRouter()
 # Endpoint to authenticate a user and provide an access token
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """Authenticate user and return access token.
+    
+    Refactored: Router is now a thin wrapper that delegates to auth_service.login().
+    This fixes the Feature Envy issue where the router was orchestrating multiple
+    service calls and building the response manually.
+    
+    Args:
+        form_data: OAuth2 form with username and password
+        db: Database session
+        
+    Returns:
+        Token response with access_token, token_type, and user_id
+    """
     logger.info(f"POST /login request for user: {form_data.username}")
     auth_service = AuthService(db)
-    user = auth_service.authenticate_user(form_data.username, form_data.password)
-    
-    # Generate and return the access token
-    access_token = auth_service.create_access_token(data={"sub": user.email, "id": user.id})
-    logger.info(f"Login successful for user: {user.email}")
-    return {"access_token": access_token, "token_type": "bearer", "user_id": user.id}
+    return auth_service.login(form_data.username, form_data.password)
