@@ -4,6 +4,8 @@
 stages:
   - build
   - test
+  - run-dpy
+  - submit-dcode
   - publish
   - deploy
 
@@ -50,6 +52,41 @@ test:
     - pip install uv
     - uv sync --frozen
     - uv run pytest -q tests/models tests/utils tests/services/test_goal.py || (code=$?; if [ "$code" -eq 5 ]; then echo "No tests found, skipping"; else exit "$code"; fi)
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+run-dpy-job:
+  stage: run-dpy
+  image: python:3.12
+  tags:
+    - dalfcs_docker_kvm
+  script:
+    - echo "Downloading DPy"
+    - curl -L https://www.designite-tools.com/assets/DPy-linux.zip -o DPy-linux.zip
+    - mkdir DPy && unzip DPy-linux.zip -d DPy/
+    - chmod +x DPy/DPy
+    - echo "Running DPy"
+    - mkdir smells/
+    - DPy/DPy analyze -i $CI_PROJECT_DIR -o $CI_PROJECT_DIR/smells/
+  artifacts:
+    name: "designite-smells-$CI_COMMIT_SHORT_SHA"
+    expose_as: "DPy Smell Reports"
+    paths:
+      - smells/
+    expire_in: 4 weeks
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+submit-dcode-job:
+  stage: submit-dcode
+  image: python:3.10-alpine
+  tags:
+    - dalfcs_docker_kvm
+  dependencies:
+    - run-dpy-job
+  script:
+    - pip3 install -r $CI_PROJECT_DIR/.quality/requirements.txt
+    - python3 $CI_PROJECT_DIR/.quality/push_to_dcode.py $DCODE_PROJECT_ID $DCODE_API_KEY $CI_PROJECT_DIR/smells/ $CI_COMMIT_SHA
   rules:
     - if: '$CI_COMMIT_BRANCH'
 
