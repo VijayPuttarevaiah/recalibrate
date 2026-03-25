@@ -1,14 +1,18 @@
 /**
  * @file GoalTasksPage.jsx
- * @description Full tasks view with REPLAN + TASK NOTES (modal).
+ * @description Full tasks view with REPLAN + TASK NOTES (modal) + AI CHAT.
  * - Detects missed tasks and shows replan banner
  * - Allows marking tasks as completed/pending
  * - Modal dialog for task notes (shakes on outside click)
  * - Shows trade-off explanation after replan
  * - Adjustment history panel
+ * - AI Chat drawer for goal-level and task-level guidance
+ * - Per-task "Ask AI" and "Explain this" buttons
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
+import ChatDrawer from "../components/ChatDrawer";
+import { explainTask } from "../services/Chatapi";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -256,12 +260,10 @@ function NotesModal({ task, onSave, onClose }) {
   const modalRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Auto-focus textarea on open
   useEffect(() => {
     setTimeout(() => textareaRef.current?.focus(), 100);
   }, []);
 
-  // Close on Escape key
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === "Escape") onClose();
@@ -270,7 +272,6 @@ function NotesModal({ task, onSave, onClose }) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  // Click outside → shake
   const handleBackdropClick = (e) => {
     if (modalRef.current && !modalRef.current.contains(e.target)) {
       setShaking(true);
@@ -332,7 +333,6 @@ function NotesModal({ task, onSave, onClose }) {
           borderBottom: "1px solid var(--Border)",
           display: "flex", alignItems: "flex-start", gap: 14,
         }}>
-          {/* Task icon */}
           <div style={{
             width: 40, height: 40, borderRadius: 10, flexShrink: 0,
             background: statusBg(task.status),
@@ -362,7 +362,6 @@ function NotesModal({ task, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Close button */}
           <button onClick={onClose} style={{
             width: 32, height: 32, borderRadius: 8,
             border: "1px solid var(--Border)", background: "#fff",
@@ -522,12 +521,58 @@ function NotesModal({ task, onSave, onClose }) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   TASK CARD
+   INLINE TASK EXPLANATION — expandable panel
    ═══════════════════════════════════════════════════════ */
 
-function TaskCard({ task, onToggleStatus, onOpenNotes }) {
+function TaskExplanation({ text, onDismiss }) {
+  if (!text) return null;
+
+  return (
+    <div style={{
+      marginTop: 10,
+      padding: "12px 16px",
+      background: "rgba(99, 102, 241, 0.04)",
+      borderRadius: 12,
+      border: "1px solid rgba(99, 102, 241, 0.12)",
+      fontSize: 13,
+      lineHeight: 1.7,
+      color: "var(--Text)",
+      animation: "modalFadeIn 0.3s ease-out",
+    }}>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        marginBottom: 8,
+      }}>
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: "#6366F1",
+          textTransform: "uppercase", letterSpacing: "0.4px",
+          display: "flex", alignItems: "center", gap: 5,
+        }}>
+          🤖 AI Explanation
+        </span>
+        <button
+          onClick={onDismiss}
+          style={{
+            background: "none", border: "none", fontSize: 14,
+            cursor: "pointer", color: "var(--Muted)", lineHeight: 1,
+            padding: "2px 4px",
+          }}
+        >✕</button>
+      </div>
+      <div style={{ whiteSpace: "pre-wrap" }}>{text}</div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   TASK CARD — with AI buttons
+   ═══════════════════════════════════════════════════════ */
+
+function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
   const [hovered, setHovered] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [explanation, setExplanation] = useState(null);
+  const [explaining, setExplaining] = useState(false);
   const accent = statusColor(task.status);
   const isCompleted = task.status === "completed";
   const isMissed = task.status === "missed";
@@ -541,6 +586,18 @@ function TaskCard({ task, onToggleStatus, onOpenNotes }) {
     setToggling(false);
   };
 
+  const handleExplain = async () => {
+    if (explaining) return;
+    setExplaining(true);
+    try {
+      const data = await explainTask(task.id);
+      setExplanation(data.explanation);
+    } catch {
+      setExplanation("Could not generate explanation right now. Please try again.");
+    }
+    setExplaining(false);
+  };
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -549,118 +606,193 @@ function TaskCard({ task, onToggleStatus, onOpenNotes }) {
         background: isMissed ? "#FEF2F2" : "#fff",
         border: "1px solid var(--Border)", borderRadius: 14,
         padding: "14px 18px",
-        display: "flex", alignItems: "flex-start", gap: 12,
         boxShadow: hovered
           ? "0 4px 12px -2px rgba(0,0,0,0.08)"
           : "0 1px 4px -1px rgba(0,0,0,0.06)",
         borderLeft: `3px solid ${accent}`,
         transition: "box-shadow 0.2s ease",
-        flexWrap: "wrap",
         opacity: isMissed ? 0.7 : 1,
       }}
     >
-      {/* Checkbox */}
-      <button
-        onClick={handleToggle}
-        disabled={isMissed || toggling}
-        title={
-          isMissed ? "This task was missed"
-          : isCompleted ? "Mark as pending"
-          : "Mark as completed"
-        }
-        style={{
-          width: 22, height: 22, borderRadius: 6,
-          border: `2px solid ${isCompleted ? "#059669" : isMissed ? "#DC2626" : "var(--Border)"}`,
-          background: isCompleted ? "#059669" : isMissed ? "#DC262620" : "transparent",
-          cursor: isMissed ? "not-allowed" : "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 12, color: "#fff", flexShrink: 0, marginTop: 2,
-          transition: "all 0.15s ease",
-        }}
-      >
-        {isCompleted && "✓"}
-        {isMissed && <span style={{ color: "#DC2626", fontSize: 11 }}>✕</span>}
-      </button>
-
-      {/* Title + description + notes preview */}
-      <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-        <p style={{
-          margin: 0, fontWeight: 600, fontSize: 14,
-          color: isCompleted ? "var(--Muted)" : "var(--Text)",
-          wordBreak: "break-word",
-          textDecoration: isCompleted ? "line-through" : "none",
-        }}>{task.title}</p>
-        {task.description && (
-          <p style={{
-            margin: "4px 0 0", fontSize: 12, color: "var(--Muted)",
-            lineHeight: 1.5, display: "-webkit-box",
-            WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-          }}>{task.description}</p>
-        )}
-        {/* Notes preview */}
-        {hasNotes && (
-          <p
-            onClick={() => onOpenNotes(task)}
-            style={{
-              margin: "6px 0 0", fontSize: 11, color: "#6366F1",
-              lineHeight: 1.4, fontStyle: "italic", cursor: "pointer",
-              display: "-webkit-box", WebkitLineClamp: 1,
-              WebkitBoxOrient: "vertical", overflow: "hidden",
-            }}
-            title="Click to view/edit notes"
-          >
-            📝 {task.notes}
-          </p>
-        )}
-      </div>
-
-      {/* Right side: notes button + date + badge */}
+      {/* Top row */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: "auto",
+        display: "flex", alignItems: "flex-start", gap: 12,
+        flexWrap: "wrap",
       }}>
-        {/* Notes button */}
+        {/* Checkbox */}
         <button
-          onClick={() => onOpenNotes(task)}
-          title={hasNotes ? "View / Edit notes" : "Add notes"}
+          onClick={handleToggle}
+          disabled={isMissed || toggling}
+          title={
+            isMissed ? "This task was missed"
+            : isCompleted ? "Mark as pending"
+            : "Mark as completed"
+          }
           style={{
-            width: 30, height: 30, borderRadius: 8,
-            border: hasNotes ? "1.5px solid #6366F140" : "1px solid var(--Border)",
-            background: hasNotes ? "rgba(99,102,241,0.04)" : "transparent",
-            cursor: "pointer",
+            width: 22, height: 22, borderRadius: 6,
+            border: `2px solid ${isCompleted ? "#059669" : isMissed ? "#DC2626" : "var(--Border)"}`,
+            background: isCompleted ? "#059669" : isMissed ? "#DC262620" : "transparent",
+            cursor: isMissed ? "not-allowed" : "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 14,
-            color: hasNotes ? "#6366F1" : "var(--Muted)",
+            fontSize: 12, color: "#fff", flexShrink: 0, marginTop: 2,
             transition: "all 0.15s ease",
-            position: "relative",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "#6366F1";
-            e.currentTarget.style.background = "rgba(99,102,241,0.06)";
-            e.currentTarget.style.color = "#6366F1";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = hasNotes ? "#6366F140" : "var(--Border)";
-            e.currentTarget.style.background = hasNotes ? "rgba(99,102,241,0.04)" : "transparent";
-            e.currentTarget.style.color = hasNotes ? "#6366F1" : "var(--Muted)";
           }}
         >
-          📝
-          {hasNotes && (
-            <span style={{
-              position: "absolute", top: -3, right: -3,
-              width: 8, height: 8, borderRadius: "50%",
-              background: "#6366F1", border: "2px solid #fff",
-            }} />
-          )}
+          {isCompleted && "✓"}
+          {isMissed && <span style={{ color: "#DC2626", fontSize: 11 }}>✕</span>}
         </button>
 
-        {task.due_date && (
-          <span style={{ fontSize: 12, color: "var(--Muted)", whiteSpace: "nowrap" }}>
-            📅 {formatDate(task.due_date)}
-          </span>
-        )}
-        <StatusBadge status={task.status} />
+        {/* Title + description + notes preview */}
+        <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+          <p style={{
+            margin: 0, fontWeight: 600, fontSize: 14,
+            color: isCompleted ? "var(--Muted)" : "var(--Text)",
+            wordBreak: "break-word",
+            textDecoration: isCompleted ? "line-through" : "none",
+          }}>{task.title}</p>
+          {task.description && (
+            <p style={{
+              margin: "4px 0 0", fontSize: 12, color: "var(--Muted)",
+              lineHeight: 1.5, display: "-webkit-box",
+              WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+            }}>{task.description}</p>
+          )}
+          {hasNotes && (
+            <p
+              onClick={() => onOpenNotes(task)}
+              style={{
+                margin: "6px 0 0", fontSize: 11, color: "#6366F1",
+                lineHeight: 1.4, fontStyle: "italic", cursor: "pointer",
+                display: "-webkit-box", WebkitLineClamp: 1,
+                WebkitBoxOrient: "vertical", overflow: "hidden",
+              }}
+              title="Click to view/edit notes"
+            >
+              📝 {task.notes}
+            </p>
+          )}
+        </div>
+
+        {/* Right side: action buttons + date + badge */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: "auto",
+          flexWrap: "wrap",
+        }}>
+          {/* Explain this button */}
+          <button
+            onClick={handleExplain}
+            disabled={explaining}
+            title="Quick AI explanation"
+            style={{
+              width: 30, height: 30, borderRadius: 8,
+              border: "1px solid var(--Border)",
+              background: explaining ? "rgba(99,102,241,0.06)" : "transparent",
+              cursor: explaining ? "wait" : "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 13,
+              color: "var(--Muted)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              if (!explaining) {
+                e.currentTarget.style.borderColor = "#6366F1";
+                e.currentTarget.style.background = "rgba(99,102,241,0.06)";
+                e.currentTarget.style.color = "#6366F1";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--Border)";
+              e.currentTarget.style.background = explaining ? "rgba(99,102,241,0.06)" : "transparent";
+              e.currentTarget.style.color = "var(--Muted)";
+            }}
+          >
+            {explaining ? (
+              <span style={{
+                display: "inline-block", width: 12, height: 12,
+                border: "2px solid rgba(99,102,241,0.3)", borderTopColor: "#6366F1",
+                borderRadius: "50%", animation: "spin 0.8s linear infinite",
+              }} />
+            ) : "❓"}
+          </button>
+
+          {/* Chat about this task */}
+          <button
+            onClick={() => onAskAI(task)}
+            title="Chat with AI about this task"
+            style={{
+              width: 30, height: 30, borderRadius: 8,
+              border: "1px solid var(--Border)",
+              background: "transparent",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 13,
+              color: "var(--Muted)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#6366F1";
+              e.currentTarget.style.background = "rgba(99,102,241,0.06)";
+              e.currentTarget.style.color = "#6366F1";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--Border)";
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "var(--Muted)";
+            }}
+          >
+            🤖
+          </button>
+
+          {/* Notes button */}
+          <button
+            onClick={() => onOpenNotes(task)}
+            title={hasNotes ? "View / Edit notes" : "Add notes"}
+            style={{
+              width: 30, height: 30, borderRadius: 8,
+              border: hasNotes ? "1.5px solid #6366F140" : "1px solid var(--Border)",
+              background: hasNotes ? "rgba(99,102,241,0.04)" : "transparent",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 14,
+              color: hasNotes ? "#6366F1" : "var(--Muted)",
+              transition: "all 0.15s ease",
+              position: "relative",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#6366F1";
+              e.currentTarget.style.background = "rgba(99,102,241,0.06)";
+              e.currentTarget.style.color = "#6366F1";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = hasNotes ? "#6366F140" : "var(--Border)";
+              e.currentTarget.style.background = hasNotes ? "rgba(99,102,241,0.04)" : "transparent";
+              e.currentTarget.style.color = hasNotes ? "#6366F1" : "var(--Muted)";
+            }}
+          >
+            📝
+            {hasNotes && (
+              <span style={{
+                position: "absolute", top: -3, right: -3,
+                width: 8, height: 8, borderRadius: "50%",
+                background: "#6366F1", border: "2px solid #fff",
+              }} />
+            )}
+          </button>
+
+          {task.due_date && (
+            <span style={{ fontSize: 12, color: "var(--Muted)", whiteSpace: "nowrap" }}>
+              📅 {formatDate(task.due_date)}
+            </span>
+          )}
+          <StatusBadge status={task.status} />
+        </div>
       </div>
+
+      {/* Inline AI explanation (appears below the task row) */}
+      <TaskExplanation
+        text={explanation}
+        onDismiss={() => setExplanation(null)}
+      />
     </div>
   );
 }
@@ -691,6 +823,23 @@ export default function GoalTasksPage() {
 
   // Notes modal state
   const [notesTask, setNotesTask] = useState(null);
+
+  // ── Chat drawer state ──
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatTaskId, setChatTaskId] = useState(null);
+  const [chatTaskTitle, setChatTaskTitle] = useState("");
+
+  const openGoalChat = () => {
+    setChatTaskId(null);
+    setChatTaskTitle("");
+    setChatOpen(true);
+  };
+
+  const openTaskChat = (task) => {
+    setChatTaskId(task.id);
+    setChatTaskTitle(task.title);
+    setChatOpen(true);
+  };
 
   const fetchTasks = useCallback(async () => {
     setLoading(true); setError(null);
@@ -755,7 +904,6 @@ export default function GoalTasksPage() {
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, notes: data.notes } : t))
     );
-    // Update the modal task reference too
     setNotesTask((prev) => prev ? { ...prev, notes: data.notes } : null);
   };
 
@@ -814,14 +962,76 @@ export default function GoalTasksPage() {
         />
       )}
 
-      {/* Back */}
-      <button onClick={() => navigate(-1)} className="ButtonGhost" style={{
-        border: "1px solid var(--Border)", borderRadius: 10,
-        padding: "8px 16px", fontSize: 13, cursor: "pointer",
-        display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 24,
+      {/* ── Chat Drawer ── */}
+      <ChatDrawer
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        goalId={parseInt(goalId, 10)}
+        taskId={chatTaskId}
+        goalTitle={goal?.title || ""}
+        taskTitle={chatTaskTitle}
+      />
+
+      {/* Top action bar */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        flexWrap: "wrap", marginBottom: 24,
       }}>
-        ← Back to Goals
-      </button>
+        <button onClick={() => navigate(-1)} className="ButtonGhost" style={{
+          border: "1px solid var(--Border)", borderRadius: 10,
+          padding: "8px 16px", fontSize: 13, cursor: "pointer",
+          display: "inline-flex", alignItems: "center", gap: 6,
+        }}>
+          ← Back to Goals
+        </button>
+
+        {/* Ask AI button — goal level */}
+        <button onClick={openGoalChat} style={{
+          padding: "8px 16px", borderRadius: 10, fontSize: 13,
+          fontWeight: 600, cursor: "pointer",
+          border: "1px solid rgba(99,102,241,0.25)",
+          background: "rgba(99,102,241,0.06)",
+          color: "#6366F1",
+          display: "inline-flex", alignItems: "center", gap: 6,
+          transition: "all 0.2s ease",
+        }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(99,102,241,0.12)";
+            e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(99,102,241,0.06)";
+            e.currentTarget.style.borderColor = "rgba(99,102,241,0.25)";
+          }}
+        >
+          🤖 Ask AI
+        </button>
+
+        {/* Full page chat link */}
+        <Link
+          to={`/goals/${goalId}/chat`}
+          style={{
+            padding: "8px 16px", borderRadius: 10, fontSize: 13,
+            fontWeight: 500, cursor: "pointer",
+            border: "1px solid var(--Border)",
+            background: "transparent",
+            color: "var(--Muted)",
+            display: "inline-flex", alignItems: "center", gap: 6,
+            textDecoration: "none",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--Primary)";
+            e.currentTarget.style.color = "var(--Primary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--Border)";
+            e.currentTarget.style.color = "var(--Muted)";
+          }}
+        >
+          💬 Full Chat
+        </Link>
+      </div>
 
       {/* Goal Header */}
       {goal && (
@@ -935,10 +1145,22 @@ export default function GoalTasksPage() {
               task={task}
               onToggleStatus={handleToggleStatus}
               onOpenNotes={handleOpenNotes}
+              onAskAI={openTaskChat}
             />
           ))}
         </div>
       )}
+
+      {/* ── Floating AI Button ── */}
+      <button
+        onClick={openGoalChat}
+        title="Ask AI about this goal"
+        className="ChatFAB"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      </button>
     </section>
   );
 }
