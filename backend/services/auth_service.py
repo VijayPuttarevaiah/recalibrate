@@ -14,7 +14,7 @@ logger = LogManager.get_logger()
 config = Config()
 SECRET_KEY = config.config['oauth2']['secret_key']
 ALGORITHM = config.config['oauth2'].get('algorithm', "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(config.config['oauth2'].get('access_token_expire_minutes', "30"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(config.config['oauth2'].get('access_token_expire_minutes', "60"))
 
 class AuthService:
     def __init__(self, db: Session):
