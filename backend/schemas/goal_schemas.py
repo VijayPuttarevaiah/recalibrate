@@ -1,6 +1,6 @@
 from datetime import date
 from typing import Literal
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, ConfigDict
 from domain.goal_category import GoalCategory
 
 
@@ -22,8 +22,7 @@ class TaskResponse(BaseModel):
     status: str
     notes: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GoalResponse(BaseModel):
@@ -36,8 +35,7 @@ class GoalResponse(BaseModel):
     status: str
     task_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GoalWithTasksResponse(GoalResponse):
