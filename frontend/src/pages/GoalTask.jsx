@@ -1,13 +1,14 @@
 /**
  * @file GoalTasksPage.jsx
- * @description Full tasks view with REPLAN functionality.
  * @description Full tasks view with REPLAN + TASK NOTES (modal) + AI CHAT.
  * - Detects missed tasks and shows replan banner
  * - Allows marking tasks as completed/pending
+ * - Modal dialog for task notes (shakes on outside click)
  * - Shows trade-off explanation after replan
  * - Adjustment history panel
  * - AI Chat drawer for goal-level and task-level guidance
  * - Per-task "Ask AI" and "Explain this" buttons
+ * - Markdown rendering in AI explanations
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
@@ -18,12 +19,11 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 async function apiFetch(url, token, options = {}) {
   const res = await fetch(`${API_BASE}${url}`, {
-    ...options,
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
-      ...(options.headers || {}),
     },
+    ...options,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -31,6 +31,91 @@ async function apiFetch(url, token, options = {}) {
   }
   return res.json();
 }
+
+/* ───── Markdown-like formatting (shared with ChatMessage) ───── */
+
+function inlineFormat(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function formatContent(text) {
+  if (!text) return null;
+
+  const blocks = text.split(/\n{2,}/);
+
+  return blocks.map((block, i) => {
+    const trimmed = block.trim();
+
+    // Headings: ###, ##, #
+    if (/^#{1,3}\s/.test(trimmed)) {
+      const level = trimmed.match(/^(#{1,3})\s/)[1].length;
+      const text = trimmed.replace(/^#{1,3}\s+/, "");
+      const sizes = { 1: 18, 2: 16, 3: 14 };
+      return (
+        <p key={i} style={{
+          margin: "12px 0 4px", fontWeight: 700,
+          fontSize: sizes[level] || 14, color: "var(--Text)", lineHeight: 1.4,
+        }}>
+          {inlineFormat(text)}
+        </p>
+      );
+    }
+
+    // Numbered list
+    if (/^\d+\.\s/.test(trimmed)) {
+      const items = block
+        .split(/\n/)
+        .filter((l) => l.trim())
+        .map((line) => line.replace(/^\d+\.\s*/, ""));
+      return (
+        <ol key={i} style={{ margin: "8px 0", paddingLeft: 20 }}>
+          {items.map((item, j) => (
+            <li key={j} style={{ margin: "4px 0", lineHeight: 1.6 }}>
+              {inlineFormat(item)}
+            </li>
+          ))}
+        </ol>
+      );
+    }
+
+    // Bullet list
+    if (/^[-•*]\s/.test(trimmed)) {
+      const items = block
+        .split(/\n/)
+        .filter((l) => l.trim())
+        .map((line) => line.replace(/^[-•*]\s*/, ""));
+      return (
+        <ul key={i} style={{ margin: "8px 0", paddingLeft: 20 }}>
+          {items.map((item, j) => (
+            <li key={j} style={{ margin: "4px 0", lineHeight: 1.6 }}>
+              {inlineFormat(item)}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    // Regular paragraph
+    const lines = block.split(/\n/).filter((l) => l.trim());
+    return (
+      <p key={i} style={{ margin: "8px 0" }}>
+        {lines.map((line, j) => (
+          <React.Fragment key={j}>
+            {j > 0 && <br />}
+            {inlineFormat(line)}
+          </React.Fragment>
+        ))}
+      </p>
+    );
+  });
+}
+/* ───── Design tokens ───── */
 
 const statusColor = (s) => {
   switch (s?.toLowerCase()) {
@@ -51,24 +136,28 @@ const statusBg = (s) => {
   }
 };
 const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+  d
+    ? new Date(d).toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+      })
+    : "—";
+
+/* ───── Reusable components ───── */
 
 function StatusBadge({ status }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center",
-      fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px",
-      padding: "4px 12px", borderRadius: 99,
+      fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+      letterSpacing: "0.5px", padding: "4px 12px", borderRadius: 99,
       color: statusColor(status), background: statusBg(status),
-      border: `1px solid ${statusColor(status)}30`,
-      whiteSpace: "nowrap",
+      border: `1px solid ${statusColor(status)}30`, whiteSpace: "nowrap",
     }}>
       {status?.replace(/_/g, " ") || "pending"}
     </span>
   );
 }
 
-function TaskCard({ task }) {
 function FilterPill({ label, active, onClick, count }) {
   return (
     <button onClick={onClick} style={{
@@ -516,7 +605,7 @@ function NotesModal({ task, onSave, onClose }) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   INLINE TASK EXPLANATION — expandable panel
+   INLINE TASK EXPLANATION — with markdown rendering
    ═══════════════════════════════════════════════════════ */
 
 function TaskExplanation({ text, onDismiss }) {
@@ -554,7 +643,7 @@ function TaskExplanation({ text, onDismiss }) {
           }}
         >✕</button>
       </div>
-      <div style={{ whiteSpace: "pre-wrap" }}>{text}</div>
+      <div>{formatContent(text)}</div>
     </div>
   );
 }
@@ -569,6 +658,7 @@ function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
   const [explanation, setExplanation] = useState(null);
   const [explaining, setExplaining] = useState(false);
   const accent = statusColor(task.status);
+  const isCompleted = task.status === "completed";
   const isMissed = task.status === "missed";
   const hasNotes = task.notes && task.notes.trim().length > 0;
 
@@ -597,9 +687,8 @@ function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: "#fff",
-        border: "1px solid var(--Border)",
-        borderRadius: 14,
+        background: isMissed ? "#FEF2F2" : "#fff",
+        border: "1px solid var(--Border)", borderRadius: 14,
         padding: "14px 18px",
         boxShadow: hovered
           ? "0 4px 12px -2px rgba(0,0,0,0.08)"
@@ -609,31 +698,6 @@ function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
         opacity: isMissed ? 0.7 : 1,
       }}
     >
-      {/* Left: dot + title */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flex: "1 1 200px", minWidth: 0 }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: "50%",
-          background: accent, flexShrink: 0,
-          marginTop: 5,
-        }} />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <p style={{
-            margin: 0, fontWeight: 600, fontSize: 14,
-            color: "var(--Text)",
-            wordBreak: "break-word",
-          }}>{task.title}</p>
-          {task.description && (
-            <p style={{
-              margin: "4px 0 0", fontSize: 12, color: "var(--Muted)",
-              lineHeight: 1.5,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}>{task.description}</p>
-          )}
-        </div>
-      </div>
       {/* Top row */}
       <div style={{
         display: "flex", alignItems: "flex-start", gap: 12,
@@ -693,25 +757,6 @@ function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
           )}
         </div>
 
-      {/* Right: date + badge */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
-        /* On wrap, push to the right */
-        marginLeft: "auto",
-      }}>
-        {task.due_date && (
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--Muted)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            📅 {formatDate(task.due_date)}
-          </span>
-        )}
-        <StatusBadge status={task.status} />
-      </div>
         {/* Right side: action buttons + date + badge */}
         <div style={{
           display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: "auto",
@@ -836,32 +881,9 @@ function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
   );
 }
 
-function FilterPill({ label, active, onClick, count }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: "6px 14px", borderRadius: 99,
-        border: active ? "1.5px solid var(--Primary)" : "1px solid var(--Border)",
-        background: active ? "var(--Primary)" : "#fff",
-        color: active ? "#fff" : "var(--Muted)",
-        fontSize: 13, fontWeight: 600, cursor: "pointer",
-        transition: "all 0.18s ease",
-        display: "inline-flex", alignItems: "center", gap: 6,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {label}
-      {count !== undefined && (
-        <span style={{
-          background: active ? "rgba(255,255,255,0.25)" : "var(--Border)",
-          color: active ? "#fff" : "var(--Muted)",
-          padding: "1px 7px", borderRadius: 99, fontSize: 11, fontWeight: 700,
-        }}>{count}</span>
-      )}
-    </button>
-  );
-}
+/* ═══════════════════════════════════════════════════════
+   MAIN PAGE
+   ═══════════════════════════════════════════════════════ */
 
 export default function GoalTasksPage() {
   const { goalId } = useParams();
@@ -903,20 +925,30 @@ export default function GoalTasksPage() {
     setChatOpen(true);
   };
 
-  /* ── Fetch tasks ── */
   const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const data = await apiFetch(`/goals/${goalId}/tasks`, token);
-      setTasks(data.tasks || []);
+      setGoal(data); setTasks(data.tasks || []);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }, [goalId, token]);
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  const checkReplan = useCallback(async () => {
+    try {
+      setReplanStatus(await apiFetch(`/goals/${goalId}/replan/check?threshold=3`, token));
+    } catch (e) { console.warn("Replan check failed:", e.message); }
+  }, [goalId, token]);
 
-  // Filter + search
+  const fetchHistory = useCallback(async () => {
+    try {
+      setAdjustmentHistory(await apiFetch(`/goals/${goalId}/replan/history`, token));
+    } catch (e) { console.warn("History fetch failed:", e.message); }
+  }, [goalId, token]);
+
+  useEffect(() => { fetchTasks(); checkReplan(); fetchHistory(); },
+    [fetchTasks, checkReplan, fetchHistory]);
+
   // Lock body scroll when modal is open
   useEffect(() => {
     if (notesTask) {
@@ -966,39 +998,23 @@ export default function GoalTasksPage() {
   /* ── Filters ── */
   const visible = tasks.filter((t) => {
     const matchFilter = filter === "all" || t.status === filter;
-    const matchSearch = t.title
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
+    const matchSearch = t.title?.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
   const counts = {
     all:         tasks.length,
     pending:     tasks.filter((t) => t.status === "pending").length,
-    in_progress: tasks.filter((t) => t.status === "in_progress").length,
     completed:   tasks.filter((t) => t.status === "completed").length,
     missed:      tasks.filter((t) => t.status === "missed").length,
+    in_progress: tasks.filter((t) => t.status === "in_progress").length,
   };
 
   const completedCount = counts.completed;
   const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
-  const accent   = statusColor(goal?.status);
+  const accent = statusColor(goal?.status);
 
   return (
-    <section style={{ maxWidth: 760, margin: "0 auto", padding: "32px 24px", minHeight: "calc(100vh - 64px)" }}>
-      {/* Back button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="ButtonGhost"
-        style={{
-          border: "1px solid var(--Border)",
-          borderRadius: 10, padding: "8px 16px",
-          fontSize: 13, cursor: "pointer",
-          display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 24,
-        }}
-      >
-        ← Back to Goals
-      </button>
     <section style={{
       maxWidth: 760, margin: "0 auto", padding: "32px 24px",
       minHeight: "calc(100vh - 64px)",
@@ -1103,20 +1119,19 @@ export default function GoalTasksPage() {
 
       {/* Goal Header */}
       {goal && (
-        <div className="Panel" style={{ marginBottom: 24, borderLeft: `4px solid ${accent}`, position: "relative", overflow: "hidden" }}>
-          {/* Title row - wraps on mobile */}
+        <div className="Panel" style={{
+          marginBottom: 24, borderLeft: `4px solid ${accent}`,
+          position: "relative", overflow: "hidden",
+        }}>
           <div style={{
-            display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-            flexWrap: "wrap", gap: 12,
+            display: "flex", justifyContent: "space-between",
+            alignItems: "flex-start", flexWrap: "wrap", gap: 12,
           }}>
             <div style={{ flex: "1 1 250px", minWidth: 0 }}>
               <h1 style={{
                 margin: "0 0 6px", fontSize: 22, fontWeight: 800,
-                color: "var(--Text)", letterSpacing: "-0.4px",
-                wordBreak: "break-word",
-              }}>
-                {goal.title}
-              </h1>
+                color: "var(--Text)", letterSpacing: "-0.4px", wordBreak: "break-word",
+              }}>{goal.title}</h1>
               <div style={{
                 display: "flex", flexWrap: "wrap", gap: "8px 14px",
                 fontSize: 13, color: "var(--Muted)", alignItems: "center",
@@ -1125,84 +1140,54 @@ export default function GoalTasksPage() {
                   <span style={{
                     fontWeight: 700, textTransform: "uppercase", fontSize: 11,
                     color: accent, letterSpacing: "0.4px",
-                  }}>
-                    {goal.category.replace(/_/g, " ")}
-                  </span>
+                  }}>{goal.category.replace(/_/g, " ")}</span>
                 )}
-                <span>
-                  📅 {formatDate(goal.start_date)} →{" "}
-                  {formatDate(goal.end_date)}
-                </span>
+                <span>📅 {formatDate(goal.start_date)} → {formatDate(goal.end_date)}</span>
               </div>
             </div>
             <StatusBadge status={goal.status} />
           </div>
 
           {goal.notes && (
-            <p
-              style={{
-                margin: "12px 0 0",
-                fontSize: 13,
-                color: "var(--Muted)",
-                lineHeight: 1.6,
-              }}
-            >
+            <p style={{ margin: "12px 0 0", fontSize: 13, color: "var(--Muted)", lineHeight: 1.6 }}>
               {goal.notes}
             </p>
           )}
 
           <div style={{ marginTop: 18 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                fontSize: 12,
-                color: "var(--Muted)",
-                marginBottom: 6,
-                gap: 4,
-              }}
-            >
+            <div style={{
+              display: "flex", justifyContent: "space-between", flexWrap: "wrap",
+              fontSize: 12, color: "var(--Muted)", marginBottom: 6, gap: 4,
+            }}>
               <span style={{ fontWeight: 600 }}>Overall Progress</span>
-              <span style={{ fontWeight: 700, color: accent }}>{progress}% · {completedCount}/{tasks.length} tasks done</span>
+              <span style={{ fontWeight: 700, color: accent }}>
+                {progress}% · {completedCount}/{tasks.length} tasks done
+                {counts.missed > 0 && (
+                  <span style={{ color: "#DC2626", marginLeft: 8 }}>· {counts.missed} missed</span>
+                )}
+              </span>
             </div>
-            <div
-              style={{
-                height: 6,
-                borderRadius: 99,
-                background: "var(--Border)",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  width: `${progress}%`,
-                  borderRadius: 99,
-                  background: accent,
-                  transition: "width 0.6s ease",
-                }}
-              />
+            <div style={{ height: 6, borderRadius: 99, background: "var(--Border)", overflow: "hidden" }}>
+              <div style={{
+                height: "100%", width: `${progress}%`, borderRadius: 99,
+                background: accent, transition: "width 0.6s ease",
+              }} />
             </div>
           </div>
         </div>
       )}
 
-      {/* Search + Filters - stacks vertically on mobile */}
-      <div style={{
-        display: "flex", flexDirection: "column", gap: 12,
-        marginBottom: 20,
-      }}>
-        <input
-          className="Input"
-          placeholder="Search tasks…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <ReplanBanner replanStatus={replanStatus} onReplan={handleReplan} replanning={replanning} />
+      <ReplanExplanation result={replanResult} onDismiss={() => setReplanResult(null)} />
+      <AdjustmentHistory history={adjustmentHistory} show={showHistory} onToggle={() => setShowHistory(!showHistory)} />
+
+      {/* Search + Filters */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+        <input className="Input" placeholder="Search tasks…"
+          value={search} onChange={(e) => setSearch(e.target.value)}
           style={{ width: "100%", padding: "10px 14px", fontSize: 13 }}
         />
-        <div style={{
-          display: "flex", gap: 8, flexWrap: "wrap",
-        }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {[
             { key: "all", label: "All" },
             { key: "pending", label: "Pending" },
@@ -1219,46 +1204,16 @@ export default function GoalTasksPage() {
 
       {/* Task List */}
       {loading && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: 48,
-            color: "var(--Muted)",
-          }}
-        >
-          Loading tasks…
-        </div>
+        <div style={{ textAlign: "center", padding: 48, color: "var(--Muted)" }}>Loading tasks…</div>
       )}
       {error && (
-        <div
-          className="Alert"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
+        <div className="Alert" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <span style={{ flex: 1 }}>{error}</span>
-          <button className="Button" onClick={fetchTasks} style={{ fontSize: 12, padding: "4px 14px" }}>Retry</button>
+          <button className="Button" onClick={() => { setError(null); fetchTasks(); }}
+            style={{ fontSize: 12, padding: "4px 14px" }}>Retry</button>
         </div>
       )}
 
-      {!loading && !error && (
-        <>
-          {visible.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--Muted)" }}>
-              <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>📭</div>
-              <p style={{ margin: 0, fontWeight: 600 }}>No tasks match your filter.</p>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              {visible.map((task) => (
-                <TaskCard key={task.id} task={task} />
-              ))}
-            </div>
-          )}
-        </>
       {!loading && !error && visible.length === 0 && (
         <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--Muted)" }}>
           <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>📭</div>
