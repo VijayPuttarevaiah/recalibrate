@@ -14,10 +14,6 @@ class UserRepository:
         logger.debug(f"Fetching user by email: {email}")
         return self.db.query(User).filter(User.email == email).first()
 
-    def get_user_by_id(self, user_id: int) -> User | None:
-        logger.debug(f"Fetching user by id: {user_id}")
-        return self.db.query(User).filter(User.id == user_id).first()
-
     def create_user(self, user_data: UserCreate, hashed_password: str) -> User:
         logger.debug(f"Creating user record in DB for: {user_data.email}")
         db_user = User(
