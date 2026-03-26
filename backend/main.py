@@ -13,6 +13,7 @@ from routers.goals import router as goals_router
 from routers.goal_router import router as goal_category_router
 from routers.health_router import router as health_router
 from routers.replan_routes import router as replan_router
+from routers.chat_router import router as chat_router
 from routers.task_routes import router as task_router
 
 # Import database session management and the base model for SQLAlchemy
@@ -75,3 +76,4 @@ app.include_router(goal_category_router, tags=["goals"])
 app.include_router(health_router, tags=["health"])
 app.include_router(replan_router,tags=["replan"])
 app.include_router(task_router,tags=["replan"])  
+app.include_router(chat_router)

@@ -5,7 +5,7 @@ url = mysql+pymysql://user:password@127.0.0.1:3306/backend_db
 [oauth2]
 secret_key = your_secret_key_here
 algorithm = HS256
-access_token_expire_minutes = 30
+access_token_expire_minutes = 60
 
 [email]
 smtp_server = smtp.gmail.com
