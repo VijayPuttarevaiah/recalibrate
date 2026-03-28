@@ -31,6 +31,9 @@ class LLMClient:
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
+                    # ADD THESE TWO LINES BELOW
+                    "HTTP-Referer": "http://localhost:8000", 
+                    "X-Title": "Adaptive Goal Planner",
                 },
                 json=payload,
                 timeout=self.timeout_seconds,
@@ -101,6 +104,8 @@ class LLMClient:
             ],
             "temperature": 0,
         }
+
+        logger.info(f"DEBUG: Requesting model -> '{self.model}'")
 
         # Only one model needed
         try:
