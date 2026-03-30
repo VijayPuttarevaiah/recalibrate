@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from models.task_models import Task
 from models.user_models import User
 from services.notification_service import create_notification
-from utils.db_session import SessionLocal
+from utils.db_session import DBSession
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +22,17 @@ def _build_reminder_message(task_title: str) -> str:
     return f"Don't forget: Your task '{task_title}' is due within 24 hours!"
 
 
+def _create_db_session() -> Session:
+    """Thin wrapper so tests can patch DB creation without touching DBSession."""
+    return DBSession().SessionLocal()
+
+
 def check_upcoming_deadlines() -> None:
     """
     Query tasks due within the next 24 hours and create a notification
     (+ email) for each owning user. Runs as a background cron job.
     """
-    db: Session = SessionLocal()
+    db: Session = _create_db_session()
     try:
         logger.info("Cron: checking upcoming deadlines...")
 

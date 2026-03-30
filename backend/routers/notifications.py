@@ -3,13 +3,12 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from models.notification import Notification
-from schemas.common_response import StandardResponse
 from utils.db_session import get_db
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
-@router.get("/{user_id}", response_model=StandardResponse)
+@router.get("/{user_id}")
 def get_user_notifications(user_id: int, db: Session = Depends(get_db)):
     """Return all notifications for a user, newest first."""
     notifications = (
@@ -18,14 +17,14 @@ def get_user_notifications(user_id: int, db: Session = Depends(get_db)):
         .order_by(Notification.created_at.desc())
         .all()
     )
-    return StandardResponse(
-        success=True,
-        message="Notifications retrieved",
-        data=jsonable_encoder(notifications),
-    )
+    return {
+        "success": True,
+        "message": "Notifications retrieved",
+        "data": jsonable_encoder(notifications),
+    }
 
 
-@router.patch("/{notification_id}/read", response_model=StandardResponse)
+@router.patch("/{notification_id}/read")
 def mark_as_read(notification_id: int, db: Session = Depends(get_db)):
     """Mark a single notification as read."""
     notification = (
@@ -39,4 +38,4 @@ def mark_as_read(notification_id: int, db: Session = Depends(get_db)):
     notification.is_read = True
     db.commit()
 
-    return StandardResponse(success=True, message="Marked as read", data=None)
+    return {"success": True, "message": "Marked as read", "data": None}
