@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 # -- Constants -----------------------------------------------------------------
 DEADLINE_WINDOW_HOURS = 24
-COMPLETED_WINDOW_HOURS = 1      # notify about tasks completed in the last hour
 COMPLETED_STATUS = "completed"
 CRON_INTERVAL_HOURS = 1
 
@@ -108,7 +107,7 @@ def check_upcoming_deadlines() -> None:
             db.query(Task)
             .filter(
                 Task.status == COMPLETED_STATUS,
-                Task.updated_at >= now - timedelta(hours=COMPLETED_WINDOW_HOURS),
+
             )
             .all()
         )
