@@ -7,11 +7,11 @@ Covers:
 """
 import pytest
 from datetime import datetime
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 from main import app
-from models.notification import Notification
 from utils.db_session import get_db
 
 
@@ -30,15 +30,19 @@ def client(mock_db):
 
 
 def _make_notification(notif_id: int, user_id: int, is_read: bool = False):
-    """Return a MagicMock that mimics a Notification ORM object."""
-    n = MagicMock(spec=Notification)
-    n.id = notif_id
-    n.user_id = user_id
-    n.title = "Test Notification"
-    n.message = "Task due soon"
-    n.is_read = is_read
-    n.created_at = datetime(2026, 1, 15, 10, 0, 0)
-    return n
+    """
+    Return a SimpleNamespace that jsonable_encoder can serialize cleanly.
+    MagicMock(spec=Notification) causes recursion inside jsonable_encoder
+    due to SQLAlchemy internals, so we use SimpleNamespace instead.
+    """
+    return SimpleNamespace(
+        id=notif_id,
+        user_id=user_id,
+        title="Test Notification",
+        message="Task due soon",
+        is_read=is_read,
+        created_at=datetime(2026, 1, 15, 10, 0, 0),
+    )
 
 
 # ── GET /notifications/{user_id} ───────────────────────────────────────────────
