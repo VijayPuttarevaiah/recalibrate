@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timedelta
 
-from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.orm import Session
 
 from models.task_models import Task
@@ -45,18 +44,15 @@ def _create_db_session() -> Session:
 # -- Notification helpers ------------------------------------------------------
 
 def _notify_task_group(db, tasks, title_fn, message_fn, title):
-    """
-    For each task in *tasks*, look up the owner and dispatch a notification.
-    title_fn is unused (title constant passed directly); kept for symmetry.
-    """
     for task in tasks:
-        user = db.query(User).filter(User.id == task.user_id).first()
+        user = db.query(User).filter(User.id == task.goal.user_id).first()
         if not user:
             logger.warning(f"Cron: no user found for task {task.id}, skipping.")
             continue
         create_notification(
             db=db,
             user_id=user.id,
+            goal_id=task.goal_id,      # ← ADD
             title=title,
             message=message_fn(task.title),
             send_mail=True,
@@ -126,10 +122,6 @@ def check_upcoming_deadlines() -> None:
         db.close()
 
 
-def start_cron_jobs() -> BackgroundScheduler:
-    """Register and start all background scheduled jobs."""
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(check_upcoming_deadlines, "interval", hours=CRON_INTERVAL_HOURS)
-    scheduler.start()
-    logger.info("APScheduler: background jobs started successfully.")
-    return scheduler
+def start_cron_jobs() -> None:
+    """No-op: scheduling is handled by the system cron job."""
+    logger.info("Cron: scheduling delegated to system cron — no APScheduler needed.")

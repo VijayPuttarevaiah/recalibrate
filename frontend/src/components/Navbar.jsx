@@ -6,6 +6,7 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { use_auth } from "../hooks/use_auth.js";
+import NotificationBell from "./NotificationBell.jsx";  
 
 export default function Navbar() {
   const { clear_session } = use_auth();
@@ -39,6 +40,8 @@ export default function Navbar() {
           <NavLink to="/create-goal" className={getLinkClass}>
             Create Goal
           </NavLink>
+
+          <NotificationBell />
 
           {/* Logout */}
           <button

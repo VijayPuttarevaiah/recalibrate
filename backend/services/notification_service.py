@@ -49,25 +49,23 @@ def create_notification(
     user_id: int,
     title: str,
     message: str,
+    goal_id: int | None = None,      # ← ADD
     send_mail: bool = False,
     email: str | None = None,
 ) -> Notification | None:
-    """
-    Persist a notification to the database and optionally dispatch an email.
-
-    Returns the saved Notification on success, or None on failure.
-    """
     try:
-        notification = Notification(user_id=user_id, title=title, message=message)
+        notification = Notification(
+            user_id=user_id,
+            goal_id=goal_id,          # ← ADD
+            title=title,
+            message=message,
+        )
         db.add(notification)
         db.commit()
         db.refresh(notification)
-
         if send_mail and email:
             send_notification_email(email=email, title=title, message=message)
-
         return notification
-
     except Exception as exc:
         logger.error(f"Failed to create notification for user {user_id}: {exc}")
         db.rollback()
