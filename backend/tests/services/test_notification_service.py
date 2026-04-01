@@ -91,56 +91,72 @@ class TestSendNotificationEmail:
 class TestCreateNotification:
 
     def test_adds_notification_to_db(self, mock_db):
-        create_notification(db=mock_db, user_id=1, title="T", message="M")
+        params = NotificationParams(user_id=1, title="T", message="M")
+        create_notification(db=mock_db, params=params)
         mock_db.add.assert_called_once()
 
     def test_commits_to_db(self, mock_db):
-        create_notification(db=mock_db, user_id=1, title="T", message="M")
+        params = NotificationParams(user_id=1, title="T", message="M")
+        create_notification(db=mock_db, params=params)
         mock_db.commit.assert_called_once()
 
     def test_refreshes_after_commit(self, mock_db):
-        create_notification(db=mock_db, user_id=1, title="T", message="M")
+        params = NotificationParams(user_id=1, title="T", message="M")
+        create_notification(db=mock_db, params=params)
         mock_db.refresh.assert_called_once()
 
     def test_returns_notification_instance(self, mock_db):
-        result = create_notification(db=mock_db, user_id=1, title="T", message="M")
+        params = NotificationParams(user_id=1, title="T", message="M")
+        result = create_notification(db=mock_db, params=params)
         assert result is not None
 
     def test_no_email_when_send_mail_false(self, mock_db):
         with patch("services.notification_service.send_notification_email") as mock_mail:
-            create_notification(db=mock_db, user_id=1, title="T", message="M",
-                                send_mail=False)
+            params = NotificationParams(user_id=1, title="T", message="M", send_mail=False)
+            create_notification(db=mock_db, params=params)
             mock_mail.assert_not_called()
 
     def test_no_email_when_email_is_none(self, mock_db):
         with patch("services.notification_service.send_notification_email") as mock_mail:
-            create_notification(db=mock_db, user_id=1, title="T", message="M",
-                                send_mail=True, email=None)
+            params = NotificationParams(user_id=1, title="T", message="M", send_mail=True, email=None)
+            create_notification(db=mock_db, params=params)
             mock_mail.assert_not_called()
 
     def test_email_sent_when_send_mail_true_and_email_given(self, mock_db):
         with patch("services.notification_service.send_notification_email") as mock_mail:
-            create_notification(
-                db=mock_db, user_id=1, title="Reminder", message="Do it",
-                send_mail=True, email="u@e.com",
+            params = NotificationParams(
+                user_id=1,
+                title="Reminder",
+                message="Do it",
+                send_mail=True,
+                email="u@e.com",
             )
+            create_notification(db=mock_db, params=params)
             mock_mail.assert_called_once_with(
                 email="u@e.com", title="Reminder", message="Do it"
             )
 
     def test_returns_none_on_db_add_exception(self, mock_db):
         mock_db.add.side_effect = Exception("DB down")
-        result = create_notification(db=mock_db, user_id=1, title="T", message="M")
+        params = NotificationParams(user_id=1, title="T", message="M")
+        result = create_notification(db=mock_db, params=params)
         assert result is None
 
     def test_rollback_called_on_exception(self, mock_db):
         mock_db.commit.side_effect = Exception("commit failed")
-        create_notification(db=mock_db, user_id=1, title="T", message="M")
+        params = NotificationParams(user_id=1, title="T", message="M")
+        create_notification(db=mock_db, params=params)
         mock_db.rollback.assert_called_once()
 
     def test_no_email_sent_when_db_fails(self, mock_db):
         mock_db.add.side_effect = Exception("DB down")
         with patch("services.notification_service.send_notification_email") as mock_mail:
-            create_notification(db=mock_db, user_id=1, title="T", message="M",
-                                send_mail=True, email="u@e.com")
+            params = NotificationParams(
+                user_id=1,
+                title="T",
+                message="M",
+                send_mail=True,
+                email="u@e.com",
+            )
+            create_notification(db=mock_db, params=params)
             mock_mail.assert_not_called()

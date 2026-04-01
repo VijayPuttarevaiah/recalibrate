@@ -8,7 +8,7 @@ HTTP_UNPROCESSABLE = 422
 
 def test_login_success(client, register_user, verify_user):
     email = "loginuser@example.com"
-    password = "Password123"
+    password = "Password123!"
     register_user(email=email, password=password)
     verify_user(email)
 
@@ -19,7 +19,7 @@ def test_login_success(client, register_user, verify_user):
 
 def test_login_wrong_password(client, register_user, verify_user):
     email = "wrongpass@example.com"
-    password = "Password123"
+    password = "Password123!"
     register_user(email=email, password=password)
     verify_user(email)
 
@@ -30,7 +30,7 @@ def test_login_wrong_password(client, register_user, verify_user):
 
 def test_login_unverified_email(client, register_user):
     email = "unverified@example.com"
-    password = "Password123"
+    password = "Password123!"
     register_user(email=email, password=password)
 
     response = client.post("/login", data={"username": email, "password": password})
@@ -58,9 +58,9 @@ def test_login_empty_credentials(client):
 
 # Test login behavior with an invalid email format
 def test_login_invalid_email(client):
-	response = client.post("/login", data={
-		"username": "notanemail",
-		"password": "Password123"
-	})
+    response = client.post("/login", data={
+        "username": "notanemail",
+        "password": "Password123!"
+    })
     # Should return 400 or 422 depending on how pydantic/fastapi handles the error
     assert response.status_code in (HTTP_BAD_REQUEST, HTTP_UNPROCESSABLE)

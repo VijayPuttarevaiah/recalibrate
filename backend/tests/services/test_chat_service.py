@@ -322,11 +322,14 @@ class TestCreateChatSession:
         db = MagicMock()
         goal = make_goal()
         db.query.return_value.filter.return_value.first.return_value = goal
+        db.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
 
         # Mock flush to assign IDs
         def side_effect_add(obj):
             if hasattr(obj, "id") and obj.id is None:
                 obj.id = 1
+            if hasattr(obj, "created_at") and obj.created_at is None:
+                obj.created_at = date.today()
         db.add.side_effect = side_effect_add
         db.flush.return_value = None
         db.commit.return_value = None
@@ -374,6 +377,12 @@ class TestCreateChatSession:
         goal = make_goal()
         db.query.return_value.filter.return_value.first.return_value = goal
         db.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
+        def side_effect_add(obj):
+            if hasattr(obj, "id") and obj.id is None:
+                obj.id = 1
+            if hasattr(obj, "created_at") and obj.created_at is None:
+                obj.created_at = date.today()
+        db.add.side_effect = side_effect_add
         db.flush.return_value = None
         db.commit.return_value = None
         db.refresh.return_value = None
@@ -399,6 +408,12 @@ class TestSendMessage:
         goal = make_goal()
         db.query.return_value.filter.return_value.first.side_effect = [session, goal, None]
         db.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
+        def side_effect_add(obj):
+            if hasattr(obj, "id") and obj.id is None:
+                obj.id = 1
+            if hasattr(obj, "created_at") and obj.created_at is None:
+                obj.created_at = date.today()
+        db.add.side_effect = side_effect_add
         db.flush.return_value = None
         db.commit.return_value = None
         db.refresh.return_value = None

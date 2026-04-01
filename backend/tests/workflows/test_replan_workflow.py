@@ -22,7 +22,14 @@ def test_minimal_gather_research_node():
     }
 
     graph = build_replan_graph(db)
-    result = graph.invoke(state)
+    with patch(
+        "workflows.replan_workflow.gather_research",
+        return_value="Research Context",
+    ), patch(
+        "workflows.replan_workflow.generate_replan_tasks",
+        return_value=[],
+    ):
+        result = graph.invoke(state)
     assert "research_context" in result, "Research context should be in the result."
 
 def test_minimal_generate_tasks_node():
@@ -32,12 +39,20 @@ def test_minimal_generate_tasks_node():
         "goal_title": "Test Goal",
         "category": "Health",
         "chunks": [{"start": "2026-03-01", "end": "2026-03-31"}],
+        "end_date": date(2026, 3, 31),
         "current_chunk_index": CHUNK_INDEX_START,
         "progress_context": "Progress Context",
     }
 
     graph = build_replan_graph(db)
-    result = graph.invoke(state)
+    with patch(
+        "workflows.replan_workflow.gather_research",
+        return_value="Research Context",
+    ), patch(
+        "workflows.replan_workflow.generate_replan_tasks",
+        return_value=[{"title": "Task 1", "date": "2026-03-01"}],
+    ):
+        result = graph.invoke(state)
     assert "generated_tasks" in result, "Generated tasks should be in the result."
 
 def test_minimal_workflow_execution():
@@ -48,8 +63,8 @@ def test_minimal_workflow_execution():
         "goal_title": "Test Goal",
         "category": "Health",
         "notes": "Test Notes",
-        "end_date": "2026-03-31",
-        "today": "2026-03-01",
+        "end_date": date(2026, 3, 31),
+        "today": date(2026, 3, 1),
         "summary": {"stats": {"missed": 0, "completed": 0, "total_tasks": 0}},
         "chunks": [{"start": "2026-03-01", "end": "2026-03-31"}],
         "current_chunk_index": CHUNK_INDEX_START,
@@ -57,7 +72,14 @@ def test_minimal_workflow_execution():
     }
 
     graph = build_replan_graph(db)
-    result = graph.invoke(state)
+    with patch(
+        "workflows.replan_workflow.gather_research",
+        return_value="Research Context",
+    ), patch(
+        "workflows.replan_workflow.generate_replan_tasks",
+        return_value=[{"title": "Task 1", "date": "2026-03-01"}],
+    ):
+        result = graph.invoke(state)
     assert "result" in result, "Result should be in the final state."
 
 

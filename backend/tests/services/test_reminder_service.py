@@ -26,14 +26,16 @@ from services.reminder_service import (
 
 # -- Helpers -------------------------------------------------------------------
 
-def make_task(task_id, user_id, title, due_date=None, status="in_progress"):
+def make_task(task_id, user_id, title, due_date=None, status="in_progress", goal_id=1):
     task = MagicMock()
     task.id = task_id
-    task.user_id = user_id
+    task.goal_id = goal_id
     task.title = title
     task.due_date = due_date or datetime.now() + timedelta(hours=6)
     task.status = status
     task.updated_at = datetime.now() - timedelta(minutes=30)
+    task.goal = MagicMock()
+    task.goal.user_id = user_id
     return task
 
 
@@ -104,7 +106,8 @@ class TestUpcomingDeadlineNotifications:
         mock_db.query.return_value.filter.return_value.first.return_value = make_user(1, "u@e.com")
         check_upcoming_deadlines()
         _, kwargs = mock_create.call_args
-        assert kwargs["title"] == REMINDER_TITLE
+        params = kwargs["params"]
+        assert params.title == REMINDER_TITLE
 
     @patch("services.reminder_service.create_notification")
     @patch("services.reminder_service._create_db_session")
@@ -115,7 +118,8 @@ class TestUpcomingDeadlineNotifications:
         mock_db.query.return_value.filter.return_value.first.return_value = make_user(1, "u@e.com")
         check_upcoming_deadlines()
         _, kwargs = mock_create.call_args
-        assert kwargs["send_mail"] is True
+        params = kwargs["params"]
+        assert params.send_mail is True
 
     @patch("services.reminder_service.create_notification")
     @patch("services.reminder_service._create_db_session")
@@ -163,7 +167,8 @@ class TestOverdueNotifications:
         mock_db.query.return_value.filter.return_value.first.return_value = make_user(1, "u@e.com")
         check_upcoming_deadlines()
         _, kwargs = mock_create.call_args
-        assert kwargs["title"] == OVERDUE_TITLE
+        params = kwargs["params"]
+        assert params.title == OVERDUE_TITLE
 
     @patch("services.reminder_service.create_notification")
     @patch("services.reminder_service._create_db_session")
@@ -176,7 +181,8 @@ class TestOverdueNotifications:
         mock_db.query.return_value.filter.return_value.first.return_value = make_user(1, "u@e.com")
         check_upcoming_deadlines()
         _, kwargs = mock_create.call_args
-        assert "Submit invoice" in kwargs["message"]
+        params = kwargs["params"]
+        assert "Submit invoice" in params.message
 
     @patch("services.reminder_service.create_notification")
     @patch("services.reminder_service._create_db_session")
@@ -217,7 +223,8 @@ class TestCompletedTaskNotifications:
         mock_db.query.return_value.filter.return_value.first.return_value = make_user(1, "u@e.com")
         check_upcoming_deadlines()
         _, kwargs = mock_create.call_args
-        assert kwargs["title"] == COMPLETED_TITLE
+        params = kwargs["params"]
+        assert params.title == COMPLETED_TITLE
 
     @patch("services.reminder_service.create_notification")
     @patch("services.reminder_service._create_db_session")
@@ -230,7 +237,8 @@ class TestCompletedTaskNotifications:
         mock_db.query.return_value.filter.return_value.first.return_value = make_user(1, "u@e.com")
         check_upcoming_deadlines()
         _, kwargs = mock_create.call_args
-        assert "Write thesis" in kwargs["message"]
+        params = kwargs["params"]
+        assert "Write thesis" in params.message
 
     @patch("services.reminder_service.create_notification")
     @patch("services.reminder_service._create_db_session")

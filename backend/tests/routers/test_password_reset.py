@@ -6,8 +6,8 @@ def test_forgot_password_and_reset(
 ):
     HTTP_OK = 200
     email = "reset_test@example.com"
-    old_password = "oldpassword123"
-    new_password = "newpassword456"
+    old_password = "OldPassword123!"
+    new_password = "NewPassword456!"
 
     register_user(email=email, password=old_password, first_name="Reset", last_name="User")
     verify_user(email)
@@ -41,7 +41,7 @@ def test_forgot_password_non_existent_user(client):
 def test_reset_password_invalid_code(client, register_user):
     HTTP_BAD_REQUEST = 400
     email = "invalid_code@example.com"
-    register_user(email=email, password="password123", first_name="Invalid", last_name="Code")
+    register_user(email=email, password="Password123!", first_name="Invalid", last_name="Code")
     client.post("/forgot-password", json={"email": email})
 
     response = client.post(
@@ -49,7 +49,7 @@ def test_reset_password_invalid_code(client, register_user):
         json={
             "email": email,
             "code": "WRONGCODE",
-            "new_password": "newpassword123",
+            "new_password": "NewPassword123!",
         },
     )
     assert response.status_code == HTTP_BAD_REQUEST

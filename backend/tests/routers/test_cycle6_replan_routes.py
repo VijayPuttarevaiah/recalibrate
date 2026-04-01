@@ -93,7 +93,11 @@ def test_GREEN_check_default_threshold_is_three():
     """GREEN: Inspect check route — default threshold must be 3."""
     from routers.replan_routes import check_replan_status
     sig = inspect.signature(check_replan_status)
-    assert sig.parameters["threshold"].default == DEFAULT_THRESHOLD
+    default_value = sig.parameters["threshold"].default
+    if hasattr(default_value, "default"):
+        assert default_value.default == DEFAULT_THRESHOLD
+    else:
+        assert default_value == DEFAULT_THRESHOLD
 
 
 @patch("routers.replan_routes.replan_goal")

@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from models.base import Base
 from utils.db_session import get_db
+from utils.auth import get_current_user
 
 # Use an in-memory SQLite database to ensure tests are fast and isolated
 DATABASE_URL = "sqlite:///:memory:"
@@ -63,6 +64,26 @@ def client_fixture(db_session):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(name="auth_client")
+def auth_client_fixture(db_session):
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    def override_get_current_user():
+        return {"user_id": 1, "email": "test@example.com"}
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
+
+
 @pytest.fixture(autouse=True)
 def clear_code_stores():
     from services.verification_service import verification_codes
@@ -92,7 +113,7 @@ def mock_email_sender(monkeypatch):
 def register_user(client):
     def _register(
         email: str,
-        password: str = "Password123",
+        password: str = "Password123!",
         first_name: str = "Test",
         last_name: str = "User",
     ):
