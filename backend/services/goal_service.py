@@ -2,7 +2,7 @@
 from datetime import timedelta
 from models.goal_models import Goal
 from models.task_models import Task
-from services.llm_service import generate_tasks_llm
+from services.llm_service import generate_tasks_llm, TaskGenerationContext
 from services.web_search_service import gather_research
 from fastapi import HTTPException, status
 
@@ -12,7 +12,11 @@ def get_user_goals(db, user_id: int):
 
     result = []
     for goal in goals:
-        task_count = db.query(Task).filter(Task.goal_id == goal.id).count()
+        task_count = (
+            db.query(Task)
+            .filter(Task.goal_id == goal.id)
+            .count()
+        )
         result.append({
             "id": goal.id,
             "title": goal.title,
@@ -39,7 +43,12 @@ def get_goal_tasks(db, user_id: int, goal_id: int):
             detail="Goal not found or does not belong to this user",
         )
 
-    tasks = db.query(Task).filter(Task.goal_id == goal_id).order_by(Task.due_date).all()
+    tasks = (
+        db.query(Task)
+        .filter(Task.goal_id == goal_id)
+        .order_by(Task.due_date)
+        .all()
+    )
 
     return {
         "id": goal.id,
@@ -65,7 +74,11 @@ def get_goal_tasks(db, user_id: int, goal_id: int):
     }
 
 def create_goal_with_tasks(db, goal_data):
-    category_value = goal_data.category.value if hasattr(goal_data.category, "value") else goal_data.category
+    category_value = (
+        goal_data.category.value
+        if hasattr(goal_data.category, "value")
+        else goal_data.category
+    )
 
     goal = Goal(
         user_id=goal_data.user_id,
@@ -82,7 +95,9 @@ def create_goal_with_tasks(db, goal_data):
     # --- Do web research ONCE for the entire goal ---
     print(f"\n Researching: {goal_data.goal} [{goal_data.category}]")
     research_context = gather_research(
-        goal_data.goal, goal_data.category, goal_data.notes
+        goal_data.goal,
+        goal_data.category,
+        goal_data.notes,
     )
     print(f"\n Research gathered ({len(research_context)} chars)")
 
@@ -95,14 +110,15 @@ def create_goal_with_tasks(db, goal_data):
             goal_data.end_date,
         )
 
-        tasks = generate_tasks_llm(
-            goal_data.goal,
-            category_value,
-            current_start,
-            current_end,
-            goal_data.notes,
+        task_context = TaskGenerationContext(
+            goal=goal_data.goal,
+            category=category_value,
+            start_date=current_start,
+            end_date=current_end,
+            notes=goal_data.notes,
             research_context=research_context,  # pass research to every chunk
         )
+        tasks = generate_tasks_llm(task_context)
 
         print(f"\n Generated {len(tasks)} tasks for {current_start} → {current_end}")
 

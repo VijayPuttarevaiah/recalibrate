@@ -8,16 +8,18 @@ SERPER_API_KEY = os.getenv("SERPER_API_KEY")
 SERPER_URL = "https://google.serper.dev/search"
 
 CURRENT_YEAR = datetime.now().year
+DEFAULT_NUM_RESULTS = 5
 
 
 def build_search_queries(goal: str, category: str, notes: str = None) -> list[str]:
     """Generate category-aware search queries."""
     
     queries = []
+    year_range = f"{CURRENT_YEAR - 1} {CURRENT_YEAR}"
     
     if category.lower() == "immigration":
         queries = [
-            f"{goal} latest requirements {CURRENT_YEAR - 1} {CURRENT_YEAR}",
+            f"{goal} latest requirements {year_range}",
             f"{goal} step by step process timeline",
             f"{goal} documents checklist fees",
         ]
@@ -36,7 +38,7 @@ def build_search_queries(goal: str, category: str, notes: str = None) -> list[st
     else:
         queries = [
             f"{goal} complete guide step by step",
-            f"{goal} latest information {CURRENT_YEAR - 1} {CURRENT_YEAR}",
+            f"{goal} latest information {year_range}",
         ]
 
     if notes:
@@ -45,7 +47,7 @@ def build_search_queries(goal: str, category: str, notes: str = None) -> list[st
     return queries
 
 
-def search_web(query: str, num_results: int = 5) -> list[dict]:
+def search_web(query: str, num_results: int = DEFAULT_NUM_RESULTS) -> list[dict]:
     """Search using Serper (Google Search API). Swap with any provider."""
     headers = {
         "X-API-KEY": SERPER_API_KEY,

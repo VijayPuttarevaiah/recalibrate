@@ -11,12 +11,13 @@ logger = LogManager.get_logger()
 
 verification_codes = {}
 CODE_EXPIRY_SECONDS = 70
+DEFAULT_CODE_LENGTH = 6
 
 class VerificationService:
     def __init__(self, db: Session):
         self.user_repo = UserRepository(db)
 
-    def generate_code(self, length=6):
+    def generate_code(self, length=DEFAULT_CODE_LENGTH):
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
     def send_verification_code(self, email: str):

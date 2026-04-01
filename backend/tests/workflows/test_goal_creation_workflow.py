@@ -8,11 +8,16 @@ from workflows.goal_creation_workflow import (
     _generate_tasks_node,
 )
 
+DEFAULT_USER_ID = 1
+CREATED_GOAL_ID = 42
+CHUNK_INDEX_START = 0
+CHUNK_INDEX_NEXT = 1
+
 def test_minimal_create_goal_node():
     """Test that the create_goal node initializes correctly."""
     db = MagicMock()
     state = {
-        "user_id": 1,
+        "user_id": DEFAULT_USER_ID,
         "goal_title": "Test Goal",
         "category": "Health",
         "start_date": "2026-03-01",
@@ -28,7 +33,7 @@ def test_minimal_generate_tasks_node():
     """Test that the generate_tasks node initializes correctly."""
     db = MagicMock()
     state = {
-        "user_id": 1,
+        "user_id": DEFAULT_USER_ID,
         "goal_title": "Test Goal",
         "category": "Health",
         "start_date": "2026-03-01",
@@ -44,7 +49,7 @@ def test_minimal_workflow_execution():
     """Test that the workflow executes minimally."""
     db = MagicMock()
     state = {
-        "user_id": 1,
+        "user_id": DEFAULT_USER_ID,
         "goal_title": "Test Goal",
         "category": "Health",
         "start_date": "2026-03-01",
@@ -63,12 +68,12 @@ def test_create_goal_node_persists_goal():
     db = MagicMock()
 
     def add_side_effect(goal):
-        goal.id = 42
+        goal.id = CREATED_GOAL_ID
 
     db.add.side_effect = add_side_effect
 
     state = {
-        "user_id": 1,
+        "user_id": DEFAULT_USER_ID,
         "goal_title": "Test Goal",
         "category": "Health",
         "start_date": date(2026, 3, 1),
@@ -84,13 +89,13 @@ def test_create_goal_node_persists_goal():
 
     created_goal = db.add.call_args.args[0]
     assert isinstance(created_goal, Goal)
-    assert created_goal.user_id == 1
+    assert created_goal.user_id == DEFAULT_USER_ID
     assert created_goal.title == "Test Goal"
     assert created_goal.category == "Health"
     assert created_goal.notes == "Test Notes"
     assert created_goal.start_date == date(2026, 3, 1)
     assert created_goal.end_date == date(2026, 3, 31)
-    assert result["goal_id"] == 42
+    assert result["goal_id"] == CREATED_GOAL_ID
 
 
 def test_generate_tasks_node_calls_llm_and_advances():
@@ -105,7 +110,7 @@ def test_generate_tasks_node_calls_llm_and_advances():
         "date_chunks": [
             {"start": date(2026, 3, 1), "end": date(2026, 3, 10)}
         ],
-        "current_chunk_index": 0,
+        "current_chunk_index": CHUNK_INDEX_START,
         "tasks": [],
     }
 
@@ -126,4 +131,4 @@ def test_generate_tasks_node_calls_llm_and_advances():
         "Research Context",
     )
     assert result["tasks"] == returned_tasks
-    assert result["current_chunk_index"] == 1
+    assert result["current_chunk_index"] == CHUNK_INDEX_NEXT

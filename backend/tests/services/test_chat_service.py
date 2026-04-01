@@ -24,13 +24,40 @@ from services.chat_service import (
     get_suggested_questions,
 )
 
+HTTP_BAD_REQUEST = 400
+HTTP_FORBIDDEN = 403
+HTTP_NOT_FOUND = 404
+HTTP_RATE_LIMIT = 429
+
+DEFAULT_USER_ID = 1
+OTHER_USER_ID = 999
+DEFAULT_GOAL_ID = 1
+ALT_GOAL_ID = 5
+DEFAULT_TASK_ID = 10
+DEFAULT_SESSION_ID = 1
+DEFAULT_MESSAGE_ID = 1
+ALT_MESSAGE_ID = 2
+ALT_MESSAGE_ID_5 = 5
+
+RATE_LIMIT_BELOW = 10
+RATE_LIMIT_AT = 50
+RATE_LIMIT_OVER = 75
+
+EXPECTED_MESSAGE_COUNT = 2
+EXPECTED_SESSION_LIST_COUNT = 1
+SESSION_MESSAGE_COUNT = 4
+SUGGESTION_COUNT = 3
+HISTORY_USER_COUNT = 2
+HISTORY_ASSISTANT_COUNT = 1
+MESSAGES_WITHOUT_CONTEXT_COUNT = 2
+
 
 # ── Mock factories ──
 
 def make_goal(**overrides):
     goal = MagicMock()
-    goal.id = overrides.get("id", 1)
-    goal.user_id = overrides.get("user_id", 1)
+    goal.id = overrides.get("id", DEFAULT_GOAL_ID)
+    goal.user_id = overrides.get("user_id", DEFAULT_USER_ID)
     goal.title = overrides.get("title", "Get into Dalhousie MACS")
     goal.category = overrides.get("category", "career_and_learning")
     goal.notes = overrides.get("notes", "Starting from scratch")
@@ -42,8 +69,8 @@ def make_goal(**overrides):
 
 def make_task(**overrides):
     task = MagicMock()
-    task.id = overrides.get("id", 10)
-    task.goal_id = overrides.get("goal_id", 1)
+    task.id = overrides.get("id", DEFAULT_TASK_ID)
+    task.goal_id = overrides.get("goal_id", DEFAULT_GOAL_ID)
     task.title = overrides.get("title", "Write statement of purpose")
     task.due_date = overrides.get("due_date", date.today())
     task.status = overrides.get("status", "pending")
@@ -54,9 +81,9 @@ def make_task(**overrides):
 
 def make_session(**overrides):
     session = MagicMock()
-    session.id = overrides.get("id", 1)
-    session.user_id = overrides.get("user_id", 1)
-    session.goal_id = overrides.get("goal_id", 1)
+    session.id = overrides.get("id", DEFAULT_SESSION_ID)
+    session.user_id = overrides.get("user_id", DEFAULT_USER_ID)
+    session.goal_id = overrides.get("goal_id", DEFAULT_GOAL_ID)
     session.task_id = overrides.get("task_id", None)
     session.title = overrides.get("title", "Test chat")
     session.is_active = overrides.get("is_active", True)
@@ -67,8 +94,8 @@ def make_session(**overrides):
 
 def make_message(**overrides):
     msg = MagicMock()
-    msg.id = overrides.get("id", 1)
-    msg.session_id = overrides.get("session_id", 1)
+    msg.id = overrides.get("id", DEFAULT_MESSAGE_ID)
+    msg.session_id = overrides.get("session_id", DEFAULT_SESSION_ID)
     msg.role = overrides.get("role", "user")
     msg.content = overrides.get("content", "Hello")
     msg.created_at = MagicMock(isoformat=lambda: "2026-03-18T10:00:00")
@@ -191,18 +218,18 @@ class TestRateLimit:
 
     def test_allows_when_under_limit(self):
         db = MagicMock()
-        db.query.return_value.join.return_value.filter.return_value.scalar.return_value = 10
-        assert _check_rate_limit(db, user_id=1) is True
+        db.query.return_value.join.return_value.filter.return_value.scalar.return_value = RATE_LIMIT_BELOW
+        assert _check_rate_limit(db, user_id=DEFAULT_USER_ID) is True
 
     def test_blocks_when_at_limit(self):
         db = MagicMock()
-        db.query.return_value.join.return_value.filter.return_value.scalar.return_value = 50
-        assert _check_rate_limit(db, user_id=1) is False
+        db.query.return_value.join.return_value.filter.return_value.scalar.return_value = RATE_LIMIT_AT
+        assert _check_rate_limit(db, user_id=DEFAULT_USER_ID) is False
 
     def test_blocks_when_over_limit(self):
         db = MagicMock()
-        db.query.return_value.join.return_value.filter.return_value.scalar.return_value = 75
-        assert _check_rate_limit(db, user_id=1) is False
+        db.query.return_value.join.return_value.filter.return_value.scalar.return_value = RATE_LIMIT_OVER
+        assert _check_rate_limit(db, user_id=DEFAULT_USER_ID) is False
 
 
 # ═══════════════════════════════════════════════════════
@@ -265,8 +292,8 @@ class TestCallChatLLM:
         payload = mock_post.call_args.kwargs.get("json") or mock_post.call_args[1]["json"]
         messages = payload["messages"]
         roles = [m["role"] for m in messages]
-        assert roles.count("user") == 2  # history Q1 + new Q2
-        assert roles.count("assistant") == 1  # history A1
+        assert roles.count("user") == HISTORY_USER_COUNT  # history Q1 + new Q2
+        assert roles.count("assistant") == HISTORY_ASSISTANT_COUNT  # history A1
 
     @patch("services.chat_service.requests.post")
     def test_skips_context_when_empty(self, mock_post):
@@ -280,7 +307,7 @@ class TestCallChatLLM:
 
         payload = mock_post.call_args.kwargs.get("json") or mock_post.call_args[1]["json"]
         messages = payload["messages"]
-        assert len(messages) == 2  # system + user, no context
+        assert len(messages) == MESSAGES_WITHOUT_CONTEXT_COUNT  # system + user, no context
 
 
 # ═══════════════════════════════════════════════════════
@@ -305,7 +332,7 @@ class TestCreateChatSession:
         db.commit.return_value = None
         db.refresh.return_value = None
 
-        result = create_chat_session(db, user_id=1, goal_id=1, task_id=None, first_message="Hello")
+        result = create_chat_session(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, task_id=None, first_message="Hello")
 
         assert "session_id" in result
         assert result["user_message"]["role"] == "user"
@@ -318,8 +345,8 @@ class TestCreateChatSession:
         db.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(Exception) as exc_info:
-            create_chat_session(db, user_id=1, goal_id=999, task_id=None, first_message="Hi")
-        assert exc_info.value.status_code == 404
+            create_chat_session(db, user_id=DEFAULT_USER_ID, goal_id=999, task_id=None, first_message="Hi")
+        assert exc_info.value.status_code == HTTP_NOT_FOUND
 
     @patch("services.chat_service._check_rate_limit", return_value=True)
     def test_rejects_invalid_task_for_goal(self, mock_rate):
@@ -329,16 +356,16 @@ class TestCreateChatSession:
         db.query.return_value.filter.return_value.first.side_effect = [goal, None]
 
         with pytest.raises(Exception) as exc_info:
-            create_chat_session(db, user_id=1, goal_id=1, task_id=999, first_message="Hi")
-        assert exc_info.value.status_code == 404
+            create_chat_session(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, task_id=999, first_message="Hi")
+        assert exc_info.value.status_code == HTTP_NOT_FOUND
 
     @patch("services.chat_service._check_rate_limit", return_value=False)
     def test_rejects_when_rate_limited(self, mock_rate):
         db = MagicMock()
 
         with pytest.raises(Exception) as exc_info:
-            create_chat_session(db, user_id=1, goal_id=1, task_id=None, first_message="Hi")
-        assert exc_info.value.status_code == 429
+            create_chat_session(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, task_id=None, first_message="Hi")
+        assert exc_info.value.status_code == HTTP_RATE_LIMIT
 
     @patch("services.chat_service._call_chat_llm", return_value="Response")
     @patch("services.chat_service._check_rate_limit", return_value=True)
@@ -351,7 +378,7 @@ class TestCreateChatSession:
         db.commit.return_value = None
         db.refresh.return_value = None
 
-        create_chat_session(db, user_id=1, goal_id=1, task_id=None, first_message="Help")
+        create_chat_session(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, task_id=None, first_message="Help")
 
         mock_llm.assert_called_once()
         call_kwargs = mock_llm.call_args.kwargs
@@ -376,7 +403,7 @@ class TestSendMessage:
         db.commit.return_value = None
         db.refresh.return_value = None
 
-        result = send_message(db, user_id=1, session_id=1, message="Tell me more")
+        result = send_message(db, user_id=DEFAULT_USER_ID, session_id=DEFAULT_SESSION_ID, message="Tell me more")
 
         assert result["session_id"] == 1
         assert result["user_message"]["content"] == "Tell me more"
@@ -388,8 +415,8 @@ class TestSendMessage:
         db.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(Exception) as exc_info:
-            send_message(db, user_id=1, session_id=999, message="Hi")
-        assert exc_info.value.status_code == 404
+            send_message(db, user_id=DEFAULT_USER_ID, session_id=999, message="Hi")
+        assert exc_info.value.status_code == HTTP_NOT_FOUND
 
     @patch("services.chat_service._check_rate_limit", return_value=True)
     def test_rejects_inactive_session(self, mock_rate):
@@ -398,16 +425,16 @@ class TestSendMessage:
         db.query.return_value.filter.return_value.first.return_value = session
 
         with pytest.raises(Exception) as exc_info:
-            send_message(db, user_id=1, session_id=1, message="Hi")
-        assert exc_info.value.status_code == 400
+            send_message(db, user_id=DEFAULT_USER_ID, session_id=DEFAULT_SESSION_ID, message="Hi")
+        assert exc_info.value.status_code == HTTP_BAD_REQUEST
 
     @patch("services.chat_service._check_rate_limit", return_value=False)
     def test_rejects_when_rate_limited(self, mock_rate):
         db = MagicMock()
 
         with pytest.raises(Exception) as exc_info:
-            send_message(db, user_id=1, session_id=1, message="Hi")
-        assert exc_info.value.status_code == 429
+            send_message(db, user_id=DEFAULT_USER_ID, session_id=DEFAULT_SESSION_ID, message="Hi")
+        assert exc_info.value.status_code == HTTP_RATE_LIMIT
 
 
 # ═══════════════════════════════════════════════════════
@@ -418,19 +445,19 @@ class TestGetChatHistory:
 
     def test_returns_session_and_messages(self):
         db = MagicMock()
-        session = make_session(goal_id=5, task_id=None, title="My chat")
-        msg1 = make_message(id=1, role="user", content="Hi")
-        msg2 = make_message(id=2, role="assistant", content="Hello!")
+        session = make_session(goal_id=ALT_GOAL_ID, task_id=None, title="My chat")
+        msg1 = make_message(id=DEFAULT_MESSAGE_ID, role="user", content="Hi")
+        msg2 = make_message(id=ALT_MESSAGE_ID, role="assistant", content="Hello!")
 
         db.query.return_value.filter.return_value.first.return_value = session
         db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [msg1, msg2]
 
-        result = get_chat_history(db, user_id=1, session_id=1)
+        result = get_chat_history(db, user_id=DEFAULT_USER_ID, session_id=DEFAULT_SESSION_ID)
 
-        assert result["session_id"] == 1
-        assert result["goal_id"] == 5
+        assert result["session_id"] == DEFAULT_SESSION_ID
+        assert result["goal_id"] == ALT_GOAL_ID
         assert result["title"] == "My chat"
-        assert len(result["messages"]) == 2
+        assert len(result["messages"]) == EXPECTED_MESSAGE_COUNT
         assert result["messages"][0]["role"] == "user"
         assert result["messages"][1]["role"] == "assistant"
 
@@ -439,8 +466,8 @@ class TestGetChatHistory:
         db.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(Exception) as exc_info:
-            get_chat_history(db, user_id=1, session_id=999)
-        assert exc_info.value.status_code == 404
+            get_chat_history(db, user_id=DEFAULT_USER_ID, session_id=999)
+        assert exc_info.value.status_code == HTTP_NOT_FOUND
 
 
 # ═══════════════════════════════════════════════════════
@@ -451,24 +478,24 @@ class TestListSessions:
 
     def test_returns_list_with_metadata(self):
         db = MagicMock()
-        session = make_session(goal_id=5, title="Chat about SOP")
+        session = make_session(goal_id=ALT_GOAL_ID, title="Chat about SOP")
         last_msg = make_message(content="Here's what I suggest...")
 
         db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [session]
         db.query.return_value.filter.return_value.order_by.return_value.desc.return_value.first.return_value = last_msg
-        db.query.return_value.filter.return_value.count.return_value = 4
+        db.query.return_value.filter.return_value.count.return_value = SESSION_MESSAGE_COUNT
 
-        result = list_sessions_for_goal(db, user_id=1, goal_id=5)
+        result = list_sessions_for_goal(db, user_id=DEFAULT_USER_ID, goal_id=ALT_GOAL_ID)
 
         assert len(result) >= 1
-        assert result[0]["goal_id"] == 5
+        assert result[0]["goal_id"] == ALT_GOAL_ID
         assert result[0]["title"] == "Chat about SOP"
 
     def test_empty_when_no_sessions(self):
         db = MagicMock()
         db.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
 
-        result = list_sessions_for_goal(db, user_id=1, goal_id=5)
+        result = list_sessions_for_goal(db, user_id=DEFAULT_USER_ID, goal_id=ALT_GOAL_ID)
         assert result == []
 
 
@@ -487,7 +514,7 @@ class TestExplainTask:
         db.query.return_value.filter.return_value.first.side_effect = [task, goal]
         db.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
 
-        result = explain_task(db, user_id=1, task_id=10)
+        result = explain_task(db, user_id=DEFAULT_USER_ID, task_id=DEFAULT_TASK_ID)
 
         assert isinstance(result, str)
         assert "SOP" in result
@@ -497,8 +524,8 @@ class TestExplainTask:
         db.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(Exception) as exc_info:
-            explain_task(db, user_id=1, task_id=999)
-        assert exc_info.value.status_code == 404
+            explain_task(db, user_id=DEFAULT_USER_ID, task_id=999)
+        assert exc_info.value.status_code == HTTP_NOT_FOUND
 
     @patch("services.chat_service._call_chat_llm")
     def test_rejects_other_users_task(self, mock_llm):
@@ -508,8 +535,8 @@ class TestExplainTask:
         db.query.return_value.filter.return_value.first.side_effect = [task, None]
 
         with pytest.raises(Exception) as exc_info:
-            explain_task(db, user_id=999, task_id=10)
-        assert exc_info.value.status_code == 403
+            explain_task(db, user_id=OTHER_USER_ID, task_id=DEFAULT_TASK_ID)
+        assert exc_info.value.status_code == HTTP_FORBIDDEN
 
 
 # ═══════════════════════════════════════════════════════
@@ -529,7 +556,7 @@ class TestGenerateSuggestions:
         result = _generate_suggestions("Dalhousie MACS", "Write SOP")
 
         assert isinstance(result, list)
-        assert len(result) == 3
+        assert len(result) == SUGGESTION_COUNT
 
     @patch("services.chat_service.requests.post")
     def test_fallback_on_failure(self, mock_post):
@@ -538,7 +565,7 @@ class TestGenerateSuggestions:
         result = _generate_suggestions("Goal", "Task")
 
         assert isinstance(result, list)
-        assert len(result) == 3
+        assert len(result) == SUGGESTION_COUNT
 
     @patch("services.chat_service.requests.post")
     def test_goal_level_fallback_no_task(self, mock_post):
@@ -547,7 +574,7 @@ class TestGenerateSuggestions:
         result = _generate_suggestions("Goal", None)
 
         assert isinstance(result, list)
-        assert len(result) == 3
+        assert len(result) == SUGGESTION_COUNT
         assert any("focus" in s.lower() or "track" in s.lower() for s in result)
 
 
@@ -559,14 +586,14 @@ class TestGetSuggestedQuestions:
         goal = make_goal(user_id=1)
         db.query.return_value.filter.return_value.first.return_value = goal
 
-        result = get_suggested_questions(db, user_id=1, goal_id=1)
+        result = get_suggested_questions(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
         assert result == ["Q1", "Q2", "Q3"]
 
     def test_returns_empty_for_non_owner(self):
         db = MagicMock()
         db.query.return_value.filter.return_value.first.return_value = None
 
-        result = get_suggested_questions(db, user_id=999, goal_id=1)
+        result = get_suggested_questions(db, user_id=OTHER_USER_ID, goal_id=DEFAULT_GOAL_ID)
         assert result == []
 
 
@@ -577,11 +604,11 @@ class TestGetSuggestedQuestions:
 class TestMsgToDict:
 
     def test_converts_message_to_dict(self):
-        msg = make_message(id=5, role="assistant", content="Hello there")
+        msg = make_message(id=ALT_MESSAGE_ID_5, role="assistant", content="Hello there")
 
         result = _msg_to_dict(msg)
 
-        assert result["id"] == 5
+        assert result["id"] == ALT_MESSAGE_ID_5
         assert result["role"] == "assistant"
         assert result["content"] == "Hello there"
         assert "created_at" in result

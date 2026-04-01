@@ -7,9 +7,11 @@ from utils.logging_config import LogManager
 
 logger = LogManager.get_logger()
 
+DEFAULT_TIMEOUT_SECONDS = 12.0
+HTTP_STATUS_OK = 200
 
 class LLMClient:
-    def __init__(self, timeout_seconds: float = 12.0):
+    def __init__(self, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS):
         # Use OpenRouter instead of Google
         self.provider = "openrouter"
         self.api_key = os.getenv("OPENROUTER_API_KEY")
@@ -26,15 +28,16 @@ class LLMClient:
         url = f"{self.base_url}/chat/completions"
 
         try:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                # ADD THESE TWO LINES BELOW
+                "HTTP-Referer": "http://localhost:8000",
+                "X-Title": "Adaptive Goal Planner",
+            }
             response = httpx.post(
                 url,
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                    # ADD THESE TWO LINES BELOW
-                    "HTTP-Referer": "http://localhost:8000", 
-                    "X-Title": "Adaptive Goal Planner",
-                },
+                headers=headers,
                 json=payload,
                 timeout=self.timeout_seconds,
             )
@@ -47,7 +50,7 @@ class LLMClient:
                 retryable=True,
             ) from exc
 
-        if response.status_code != 200:
+        if response.status_code != HTTP_STATUS_OK:
             logger.warning(f"LLM API error: {response.status_code}")
             raise LLMClientError(
                 f"LLM upstream returned HTTP {response.status_code}.",
@@ -99,7 +102,10 @@ class LLMClient:
             "messages": [
                 {
                     "role": "user",
-                    "content": f"{prompt}\n\nInput JSON:\n{json.dumps(user_payload)}",
+                    "content": (
+                        f"{prompt}\n\nInput JSON:\n"
+                        f"{json.dumps(user_payload)}"
+                    ),
                 }
             ],
             "temperature": 0,
@@ -181,7 +187,7 @@ class LLMClient:
                 retryable=True,
             ) from exc
 
-        if response.status_code != 200:
+        if response.status_code != HTTP_STATUS_OK:
             raise LLMClientError(
                 f"LLM upstream returned HTTP {response.status_code}.",
                 status_code=502,

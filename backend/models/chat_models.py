@@ -7,7 +7,15 @@ Two tables:
 - ChatMessage: individual messages within a session (user + assistant turns)
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    DateTime,
+    ForeignKey,
+    Boolean,
+)
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .base import Base
@@ -30,7 +38,11 @@ class ChatSession(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    messages = relationship("ChatMessage", back_populates="session", order_by="ChatMessage.created_at")
+    messages = relationship(
+        "ChatMessage",
+        back_populates="session",
+        order_by="ChatMessage.created_at",
+    )
     goal = relationship("Goal")
     task = relationship("Task")
 

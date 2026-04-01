@@ -29,7 +29,11 @@ def check_replan_status(
     Returns missed task count and a boolean recommendation.
     No LLM calls — safe to poll frequently.
     """
-    return check_goal_needs_replan(db, goal_id, threshold=threshold)
+    return check_goal_needs_replan(
+        db,
+        goal_id,
+        threshold=threshold,
+    )
 
 
 # ── 2. Trigger a replan (heavy: web research + LLM calls) ──
@@ -47,12 +51,19 @@ def trigger_replan(
     - Regenerates from today → end_date using progress context
     - Returns a trade-off explanation
     """
-    return replan_goal(db, current_user["user_id"], goal_id)
+    return replan_goal(
+        db,
+        current_user["user_id"],
+        goal_id,
+    )
 
 
 # ── 3. View past adjustments ──
 
-@router.get("/{goal_id}/replan/history", response_model=list[AdjustmentHistoryItem])
+@router.get(
+    "/{goal_id}/replan/history",
+    response_model=list[AdjustmentHistoryItem],
+)
 def get_adjustment_history(
     goal_id: int,
     current_user: dict = Depends(get_current_user),

@@ -15,9 +15,10 @@ class UserRepository:
         return self.db.query(User).filter(User.email == email).first()
 
     def create_user(self, user_data: UserCreate, hashed_password: str) -> User:
-        logger.debug(f"Creating user record in DB for: {user_data.email}")
+        email = user_data.email
+        logger.debug("Creating user record in DB for: %s", email)
         db_user = User(
-            email=user_data.email,
+            email=email,
             first_name=user_data.first_name,
             last_name=user_data.last_name,
             password=hashed_password,

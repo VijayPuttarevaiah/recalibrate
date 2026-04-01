@@ -16,6 +16,8 @@ from utils.db_session import get_db
 
 # Use an in-memory SQLite database to ensure tests are fast and isolated
 DATABASE_URL = "sqlite:///:memory:"
+VERIFICATION_CODE_LENGTH = 6
+PASSWORD_RESET_CODE_LENGTH = 8
 
 # Fixture to provide a clean database session for each test
 @pytest.fixture(name="db_session")
@@ -94,15 +96,13 @@ def register_user(client):
         first_name: str = "Test",
         last_name: str = "User",
     ):
-        return client.post(
-            "/register",
-            json={
-                "email": email,
-                "first_name": first_name,
-                "last_name": last_name,
-                "password": password,
-            },
-        )
+        payload = {
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "password": password,
+        }
+        return client.post("/register", json=payload)
 
     return _register
 
@@ -123,7 +123,7 @@ def verify_user(db_session):
 def verification_code(monkeypatch):
     code = "VERIFY1"
 
-    def _generate(self, length: int = 6):
+    def _generate(self, length: int = VERIFICATION_CODE_LENGTH):
         return code
 
     monkeypatch.setattr(
@@ -137,7 +137,7 @@ def verification_code(monkeypatch):
 def password_reset_code(monkeypatch):
     code = "RESET123"
 
-    def _generate(self, length: int = 8):
+    def _generate(self, length: int = PASSWORD_RESET_CODE_LENGTH):
         return code
 
     monkeypatch.setattr(

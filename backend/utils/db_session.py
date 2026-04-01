@@ -25,7 +25,12 @@ class DBSession:
         # Retrieve the database URL from configuration or environment variable
         db_url = self.config['database']['url']
         self.DATABASE_URL = os.getenv("DATABASE_URL", db_url)
-        logger.debug(f"Connecting to database at: {self.DATABASE_URL.split('@')[-1] if '@' in self.DATABASE_URL else self.DATABASE_URL}")
+        display_url = (
+            self.DATABASE_URL.split("@")[-1]
+            if "@" in self.DATABASE_URL
+            else self.DATABASE_URL
+        )
+        logger.debug(f"Connecting to database at: {display_url}")
 
         # Configure connection arguments specific to the database type
         # For SQLite, we must disable thread checking to allow multiple requests to use the same connection

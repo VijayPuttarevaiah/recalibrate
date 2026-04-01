@@ -90,7 +90,7 @@ def get_task_detail(
 ):
     """Get full task detail including notes."""
     task = _get_user_task(db, task_id, current_user["user_id"])
-    return {
+    detail = {
         "id": task.id,
         "goal_id": task.goal_id,
         "title": task.title,
@@ -99,6 +99,7 @@ def get_task_detail(
         "status": task.status,
         "notes": task.notes,
     }
+    return detail
 
 
 @router.patch("/batch-status")

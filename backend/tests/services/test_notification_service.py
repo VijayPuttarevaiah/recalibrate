@@ -16,6 +16,7 @@ from services.notification_service import (
     create_notification,
     send_notification_email,
     ROADMAP_URL,
+    NotificationParams,
 )
 from models.notification import Notification
 

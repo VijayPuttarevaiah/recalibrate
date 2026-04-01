@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from .user_schemas import _validate_strong_password
+from .user_schemas import validate_strong_password
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -18,4 +18,4 @@ class ResetPasswordConfirm(BaseModel):
     @field_validator("new_password")
     @classmethod
     def strong_password(cls, v: str) -> str:
-        return _validate_strong_password(v)
+        return validate_strong_password(v)

@@ -1,6 +1,9 @@
 import pytest
 from models.token_models import BlacklistedToken
 
+HTTP_OK = 200
+HTTP_UNAUTHORIZED = 401
+
 def test_logout_success(client, db_session):
     """
     Test that a valid token is successfully added to the blacklist on logout.
@@ -13,7 +16,7 @@ def test_logout_success(client, db_session):
     response = client.post("/logout", headers=headers)
     
     # Assert: Verify the response status and message
-    assert response.status_code == 200
+    assert response.status_code == HTTP_OK
     assert response.json() == {"msg": "Successfully logged out"}
     
     # Verify: Check if the token was actually saved in the BlacklistedToken table
@@ -37,7 +40,7 @@ def test_logout_already_blacklisted(client, db_session):
     response = client.post("/logout", headers=headers)
     
     # Assert: Verify the informative message returned
-    assert response.status_code == 200
+    assert response.status_code == HTTP_OK
     assert response.json() == {"msg": "Token already blacklisted"}
 
 def test_logout_no_auth_header(client):
@@ -48,4 +51,4 @@ def test_logout_no_auth_header(client):
     response = client.post("/logout")
     
     # Assert: FastAPI's OAuth2PasswordBearer should automatically return 401 Unauthorized
-    assert response.status_code == 401
+    assert response.status_code == HTTP_UNAUTHORIZED

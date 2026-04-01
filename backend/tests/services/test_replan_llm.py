@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from services.replan_llm import (
     _call_llm_for_tasks,
+    ReplanTaskRequest,
     generate_replan_tasks,
     generate_replan_explanation,
 )
@@ -117,16 +118,17 @@ def test_generate_replan_tasks():
     with patch("services.replan_llm._call_llm_for_tasks", return_value=[
         {"title": "Task 1", "date": "2026-03-07"}
     ]):
-        tasks = generate_replan_tasks(
-            "Goal Title",
-            "Category",
-            "2026-03-01",
-            "2026-03-10",
-            "2026-03-15",
-            "Notes",
-            "Progress Context",
-            "Research Context",
+        request = ReplanTaskRequest(
+            goal_title="Goal Title",
+            category="Category",
+            start_date="2026-03-01",
+            end_date="2026-03-10",
+            goal_end_date="2026-03-15",
+            notes="Notes",
+            progress_context="Progress Context",
+            research_context="Research Context",
         )
+        tasks = generate_replan_tasks(request)
         assert len(tasks) == 1
         assert tasks[0]["title"] == "Task 1"
 

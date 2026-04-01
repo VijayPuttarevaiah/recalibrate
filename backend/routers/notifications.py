@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query   
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
@@ -59,7 +59,5 @@ def trigger_notification_check():
             "data": None,
         }
     except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Notification check failed: {str(exc)}"
-        )
+        detail = f"Notification check failed: {str(exc)}"
+        raise HTTPException(status_code=500, detail=detail)

@@ -28,20 +28,17 @@ logger = LogManager.get_logger()
 # Initialize the database engine used for creating and connecting to the database
 engine = DBSession().engine
 allowed_origins = [
-    
+    # Development
     "http://localhost:3000",
     "http://localhost:80",
     "http://localhost",
-    
-    # EC2 public IP (frontend + direct access)
+    # Production - EC2 public IP
     "http://3.22.221.134",
     "http://3.22.221.134:8080",
     "http://3.22.221.134:8081",
-
-    # (Recommended) allow backend origin too (Swagger / direct calls)
+    # Backend endpoints (Swagger UI)
     "http://3.22.221.134:8074",
-    "http://3.22.221.134:8073"
-    
+    "http://3.22.221.134:8073",
 ]
 # Define the lifespan of the application (startup and shutdown events)
 @asynccontextmanager

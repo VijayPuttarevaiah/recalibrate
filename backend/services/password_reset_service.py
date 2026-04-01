@@ -15,11 +15,13 @@ logger = LogManager.get_logger()
 reset_codes = {}
 RESET_CODE_EXPIRY_SECONDS = 60 # 1 minute
 
+DEFAULT_CODE_LENGTH = 8
+
 class PasswordResetService:
     def __init__(self, db: Session):
         self.user_repo = UserRepository(db)
 
-    def generate_code(self, length=8):
+    def generate_code(self, length=DEFAULT_CODE_LENGTH):
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
     def initiate_password_reset(self, email: str):

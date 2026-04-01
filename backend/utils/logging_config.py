@@ -29,19 +29,29 @@ class LogManager:
         logger.remove()
 
         # Add console logger
+        console_format = (
+            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+            "<level>{level: <8}</level> | "
+            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+            "<level>{message}</level>"
+        )
         logger.add(
             sys.stdout,
             level=log_cfg["level"],
-            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            format=console_format,
         )
 
         # Add file logger
+        file_format = (
+            "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | "
+            "{name}:{function}:{line} - {message}"
+        )
         logger.add(
             log_file_path,
             level=log_cfg["level"],
             rotation=log_cfg["rotation"],
             retention=log_cfg["retention"],
-            format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+            format=file_format,
             compression="zip",
         )
         self.logger = logger

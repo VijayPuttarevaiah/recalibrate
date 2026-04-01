@@ -121,7 +121,8 @@ def get_session_history(
     db: Session = Depends(get_db),
 ):
     """Get the complete message history for a chat session."""
-    return get_chat_history(db, current_user["user_id"], session_id)
+    user_id = current_user["user_id"]
+    return get_chat_history(db, user_id, session_id)
 
 
 # ── 5. List sessions for a goal ──
@@ -133,7 +134,8 @@ def list_chat_sessions(
     db: Session = Depends(get_db),
 ):
     """List all chat sessions for a specific goal (most recent first)."""
-    return list_sessions_for_goal(db, current_user["user_id"], goal_id)
+    user_id = current_user["user_id"]
+    return list_sessions_for_goal(db, user_id, goal_id)
 
 
 # ── 6. Quick one-shot task explanation ──
@@ -151,7 +153,8 @@ def explain_task_endpoint(
     If the user wants to ask follow-up questions,
     they should start a full session via POST /chat/sessions.
     """
-    explanation = explain_task(db, current_user["user_id"], task_id)
+    user_id = current_user["user_id"]
+    explanation = explain_task(db, user_id, task_id)
     return {"task_id": task_id, "explanation": explanation}
 
 

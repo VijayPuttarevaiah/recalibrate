@@ -6,6 +6,11 @@ from workflows.replan_workflow import (
     _gather_research_node,
     _generate_tasks_node,
 )
+from services.replan_llm import ReplanTaskRequest
+
+DEFAULT_GOAL_ID = 1
+CHUNK_INDEX_START = 0
+CHUNK_INDEX_NEXT = 1
 
 def test_minimal_gather_research_node():
     """Test that the gather_research node initializes correctly."""
@@ -27,7 +32,7 @@ def test_minimal_generate_tasks_node():
         "goal_title": "Test Goal",
         "category": "Health",
         "chunks": [{"start": "2026-03-01", "end": "2026-03-31"}],
-        "current_chunk_index": 0,
+        "current_chunk_index": CHUNK_INDEX_START,
         "progress_context": "Progress Context",
     }
 
@@ -39,7 +44,7 @@ def test_minimal_workflow_execution():
     """Test that the replan workflow executes minimally."""
     db = MagicMock()
     state = {
-        "goal_id": 1,
+        "goal_id": DEFAULT_GOAL_ID,
         "goal_title": "Test Goal",
         "category": "Health",
         "notes": "Test Notes",
@@ -47,7 +52,7 @@ def test_minimal_workflow_execution():
         "today": "2026-03-01",
         "summary": {"stats": {"missed": 0, "completed": 0, "total_tasks": 0}},
         "chunks": [{"start": "2026-03-01", "end": "2026-03-31"}],
-        "current_chunk_index": 0,
+        "current_chunk_index": CHUNK_INDEX_START,
         "progress_context": "Progress Context",
     }
 
@@ -84,7 +89,7 @@ def test_generate_tasks_node_calls_llm_and_advances():
         "chunks": [
             {"start": date(2026, 3, 1), "end": date(2026, 3, 10)}
         ],
-        "current_chunk_index": 0,
+        "current_chunk_index": CHUNK_INDEX_START,
         "progress_context": "Progress Context",
         "research_context": "Research Context",
         "generated_tasks": [],
@@ -98,15 +103,16 @@ def test_generate_tasks_node_calls_llm_and_advances():
     ) as mock_generate:
         result = _generate_tasks_node(state)
 
-    mock_generate.assert_called_once_with(
-        "Test Goal",
-        "Health",
-        date(2026, 3, 1),
-        date(2026, 3, 10),
-        date(2026, 3, 31),
-        "Test Notes",
-        "Progress Context",
-        "Research Context",
-    )
+    mock_generate.assert_called_once()
+    request = mock_generate.call_args.args[0]
+    assert isinstance(request, ReplanTaskRequest)
+    assert request.goal_title == "Test Goal"
+    assert request.category == "Health"
+    assert request.start_date == date(2026, 3, 1)
+    assert request.end_date == date(2026, 3, 10)
+    assert request.goal_end_date == date(2026, 3, 31)
+    assert request.notes == "Test Notes"
+    assert request.progress_context == "Progress Context"
+    assert request.research_context == "Research Context"
     assert result["generated_tasks"] == returned_tasks
-    assert result["current_chunk_index"] == 1
+    assert result["current_chunk_index"] == CHUNK_INDEX_NEXT

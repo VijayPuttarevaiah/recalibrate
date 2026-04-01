@@ -15,6 +15,15 @@ from schemas.chat_schemas import (
     ChatHistoryResponse,
 )
 
+MAX_MESSAGE_LENGTH = 2000
+GOAL_ID = 5
+TASK_ID = 42
+SESSION_ID = 1
+USER_MSG_ID = 1
+ASSISTANT_MSG_ID = 2
+MESSAGE_COUNT = 2
+MESSAGE_COUNT_LIST_ITEM = 4
+
 
 class TestChatMessageRequest:
 
@@ -32,23 +41,23 @@ class TestChatMessageRequest:
 
     def test_rejects_over_2000_chars(self):
         with pytest.raises(ValidationError):
-            ChatMessageRequest(message="x" * 2001)
+            ChatMessageRequest(message="x" * (MAX_MESSAGE_LENGTH + 1))
 
     def test_accepts_exactly_2000_chars(self):
-        req = ChatMessageRequest(message="x" * 2000)
-        assert len(req.message) == 2000
+        req = ChatMessageRequest(message="x" * MAX_MESSAGE_LENGTH)
+        assert len(req.message) == MAX_MESSAGE_LENGTH
 
 
 class TestChatSessionCreate:
 
     def test_valid_without_task(self):
-        req = ChatSessionCreate(goal_id=5, message="Hello")
-        assert req.goal_id == 5
+        req = ChatSessionCreate(goal_id=GOAL_ID, message="Hello")
+        assert req.goal_id == GOAL_ID
         assert req.task_id is None
 
     def test_valid_with_task(self):
-        req = ChatSessionCreate(goal_id=5, task_id=42, message="Explain")
-        assert req.task_id == 42
+        req = ChatSessionCreate(goal_id=GOAL_ID, task_id=TASK_ID, message="Explain")
+        assert req.task_id == TASK_ID
 
     def test_rejects_missing_goal_id(self):
         with pytest.raises(ValidationError):
@@ -56,21 +65,21 @@ class TestChatSessionCreate:
 
     def test_rejects_missing_message(self):
         with pytest.raises(ValidationError):
-            ChatSessionCreate(goal_id=5)
+            ChatSessionCreate(goal_id=GOAL_ID)
 
     def test_rejects_empty_message(self):
         with pytest.raises(ValidationError):
-            ChatSessionCreate(goal_id=5, message="")
+            ChatSessionCreate(goal_id=GOAL_ID, message="")
 
 
 class TestChatMessageResponse:
 
     def test_valid_user(self):
-        resp = ChatMessageResponse(id=1, role="user", content="Hello", created_at="2026-03-18T10:00:00")
+        resp = ChatMessageResponse(id=USER_MSG_ID, role="user", content="Hello", created_at="2026-03-18T10:00:00")
         assert resp.role == "user"
 
     def test_valid_assistant(self):
-        resp = ChatMessageResponse(id=2, role="assistant", content="Hi", created_at="2026-03-18T10:01:00")
+        resp = ChatMessageResponse(id=ASSISTANT_MSG_ID, role="assistant", content="Hi", created_at="2026-03-18T10:01:00")
         assert resp.role == "assistant"
 
 
@@ -78,11 +87,11 @@ class TestChatReplyResponse:
 
     def test_valid(self):
         resp = ChatReplyResponse(
-            session_id=1,
-            user_message=ChatMessageResponse(id=1, role="user", content="Hi", created_at="2026-03-18T10:00:00"),
-            assistant_message=ChatMessageResponse(id=2, role="assistant", content="Hello!", created_at="2026-03-18T10:00:01"),
+            session_id=SESSION_ID,
+            user_message=ChatMessageResponse(id=USER_MSG_ID, role="user", content="Hi", created_at="2026-03-18T10:00:00"),
+            assistant_message=ChatMessageResponse(id=ASSISTANT_MSG_ID, role="assistant", content="Hello!", created_at="2026-03-18T10:00:01"),
         )
-        assert resp.session_id == 1
+        assert resp.session_id == SESSION_ID
         assert resp.user_message.role == "user"
         assert resp.assistant_message.role == "assistant"
 
@@ -91,15 +100,15 @@ class TestChatSessionListItem:
 
     def test_valid(self):
         item = ChatSessionListItem(
-            id=1, goal_id=5, title="Chat", message_count=4,
+            id=SESSION_ID, goal_id=GOAL_ID, title="Chat", message_count=MESSAGE_COUNT_LIST_ITEM,
             last_message_preview="Here's what...",
             created_at="2026-03-18T10:00:00", updated_at="2026-03-18T10:05:00",
         )
-        assert item.message_count == 4
+        assert item.message_count == MESSAGE_COUNT_LIST_ITEM
 
     def test_optional_fields_default_none(self):
         item = ChatSessionListItem(
-            id=1, goal_id=5, message_count=0,
+            id=SESSION_ID, goal_id=GOAL_ID, message_count=0,
             created_at="2026-03-18T10:00:00", updated_at="2026-03-18T10:00:00",
         )
         assert item.task_id is None
@@ -111,14 +120,14 @@ class TestChatHistoryResponse:
 
     def test_valid_with_messages(self):
         resp = ChatHistoryResponse(
-            session_id=1, goal_id=5,
+            session_id=SESSION_ID, goal_id=GOAL_ID,
             messages=[
-                ChatMessageResponse(id=1, role="user", content="Hi", created_at="2026-03-18T10:00:00"),
-                ChatMessageResponse(id=2, role="assistant", content="Hey", created_at="2026-03-18T10:00:01"),
+                ChatMessageResponse(id=USER_MSG_ID, role="user", content="Hi", created_at="2026-03-18T10:00:00"),
+                ChatMessageResponse(id=ASSISTANT_MSG_ID, role="assistant", content="Hey", created_at="2026-03-18T10:00:01"),
             ],
         )
-        assert len(resp.messages) == 2
+        assert len(resp.messages) == MESSAGE_COUNT
 
     def test_valid_empty_messages(self):
-        resp = ChatHistoryResponse(session_id=1, goal_id=5, messages=[])
+        resp = ChatHistoryResponse(session_id=SESSION_ID, goal_id=GOAL_ID, messages=[])
         assert resp.messages == []

@@ -9,6 +9,20 @@ from unittest.mock import MagicMock, patch
 from datetime import date, timedelta
 from fastapi import HTTPException
 
+HTTP_BAD_REQUEST = 400
+HTTP_NOT_FOUND = 404
+HTTP_BAD_GATEWAY = 502
+
+DEFAULT_GOAL_ID = 1
+DEFAULT_USER_ID = 1
+OTHER_USER_ID = 99
+FUTURE_DAYS = 30
+PAST_DAYS = 1
+
+MISSED_COUNT = 3
+COMPLETED_COUNT = 2
+TOTAL_TASKS = 10
+
 
 def make_goal(id, user_id, title, end_date, category="fitness", notes=None):
     g = MagicMock()
@@ -25,8 +39,8 @@ def test_RED_raises_404_for_nonexistent_goal():
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = None
     with pytest.raises(HTTPException) as exc:
-        replan_goal(db, user_id=1, goal_id=999)
-    assert exc.value.status_code == 404
+        replan_goal(db, user_id=DEFAULT_USER_ID, goal_id=999)
+    assert exc.value.status_code == HTTP_NOT_FOUND
 
 
 def test_RED_raises_404_for_wrong_user():
@@ -35,19 +49,19 @@ def test_RED_raises_404_for_wrong_user():
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = None
     with pytest.raises(HTTPException) as exc:
-        replan_goal(db, user_id=99, goal_id=1)
-    assert exc.value.status_code == 404
+        replan_goal(db, user_id=OTHER_USER_ID, goal_id=DEFAULT_GOAL_ID)
+    assert exc.value.status_code == HTTP_NOT_FOUND
 
 
 def test_RED_raises_400_when_goal_already_ended():
     """RED: end_date in the past → HTTP 400."""
     from services.replan_service import replan_goal
-    past_goal = make_goal(1, 1, "Old goal", end_date=date.today() - timedelta(days=1))
+    past_goal = make_goal(DEFAULT_GOAL_ID, DEFAULT_USER_ID, "Old goal", end_date=date.today() - timedelta(days=PAST_DAYS))
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = past_goal
     with pytest.raises(HTTPException) as exc:
-        replan_goal(db, user_id=1, goal_id=1)
-    assert exc.value.status_code == 400
+        replan_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
+    assert exc.value.status_code == HTTP_BAD_REQUEST
     assert "ended" in exc.value.detail.lower()
 
 
@@ -58,12 +72,12 @@ def test_RED_raises_400_when_goal_already_ended():
 def test_GREEN_returns_not_adjusted_when_no_missed_tasks(mock_format, mock_summary):
     """GREEN: 0 missed tasks → adjusted=False, no DB writes."""
     from services.replan_service import replan_goal
-    future_goal = make_goal(1, 1, "Active", end_date=date.today() + timedelta(days=30))
-    mock_summary.return_value = {"stats": {"missed": 0, "completed": 5, "total_tasks": 10}}
+    future_goal = make_goal(DEFAULT_GOAL_ID, DEFAULT_USER_ID, "Active", end_date=date.today() + timedelta(days=FUTURE_DAYS))
+    mock_summary.return_value = {"stats": {"missed": 0, "completed": 5, "total_tasks": TOTAL_TASKS}}
     mock_format.return_value = "ctx"
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = future_goal
-    result = replan_goal(db, user_id=1, goal_id=1)
+    result = replan_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert result["adjusted"] is False
     assert "on track" in result["message"].lower()
     db.commit.assert_not_called()
@@ -78,14 +92,14 @@ def test_GREEN_returns_not_adjusted_when_no_missed_tasks(mock_format, mock_summa
 def test_REFACTOR_502_and_no_data_loss_when_llm_empty(mock_summary, *_):
     """REFACTOR: Empty LLM output → 502, existing tasks must NOT be deleted."""
     from services.replan_service import replan_goal
-    future_goal = make_goal(1, 1, "Goal", end_date=date.today() + timedelta(days=30))
+    future_goal = make_goal(DEFAULT_GOAL_ID, DEFAULT_USER_ID, "Goal", end_date=date.today() + timedelta(days=FUTURE_DAYS))
     mock_summary.return_value = {
-        "stats": {"missed": 3, "completed": 2, "total_tasks": 10},
+        "stats": {"missed": MISSED_COUNT, "completed": COMPLETED_COUNT, "total_tasks": TOTAL_TASKS},
         "missed_tasks": [], "recent_completed": [],
     }
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = future_goal
     with pytest.raises(HTTPException) as exc:
-        replan_goal(db, user_id=1, goal_id=1)
-    assert exc.value.status_code == 502
+        replan_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
+    assert exc.value.status_code == HTTP_BAD_GATEWAY
     db.delete.assert_not_called()

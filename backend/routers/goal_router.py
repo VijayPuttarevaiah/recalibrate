@@ -14,7 +14,10 @@ router = APIRouter()
 
 
 @router.post("/goals/category", response_model=GoalCategoryDetectResponse)
-def detect_goal_category(payload: GoalCategoryDetectRequest, db: Session = Depends(get_db)):
+def detect_goal_category(
+    payload: GoalCategoryDetectRequest,
+    db: Session = Depends(get_db),
+):
     logger.info("goal category request received")
     category_service = GoalCategoryService()
     try:
@@ -37,7 +40,7 @@ def detect_goal_category(payload: GoalCategoryDetectRequest, db: Session = Depen
                 status="needs_more_info",
                 category=analysis.category,
                 follow_up_questions=[
-                    "Please provide user_id to create the goal."
+                    "Please provide user_id to create the goal.",
                 ],
             )
 
