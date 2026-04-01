@@ -55,28 +55,25 @@ export default function Register() {
 
     setLoading(true);
     try {
-      /**
-       * Communication via API Adapter:
-       * The component expects the backend to trigger an email verification 
-       * process upon successful registration.
-       */
-      await AuthApi.register_user({ 
+      const response = await AuthApi.register_user({ 
         email: email.trim(), 
         password,
         first_name: firstName.trim(),
         last_name: lastName.trim()
       });
-      
-      // // Send the verification code immediately after registration
-      await AuthApi.send_verification_code({ email: email.trim() });
 
-      // Navigate to verification screen, passing email as a query param for better UX.
-      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+      // Save user_id for onboarding to use after verification
+      if (response?.id) {
+        localStorage.setItem("pending_user_id", response.id);
+      }
+
+      // Send verification code then go to verify screen
+      await AuthApi.send_verification_code({ email: email.trim() });
+      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}&next=onboarding`);
+
     } catch (err) {
-      // Gracefully map caught errors to the UI error state.
       setError(err.message || "Registration failed.");
     } finally {
-      // Reset loading state regardless of outcome.
       setLoading(false);
     }
   }
