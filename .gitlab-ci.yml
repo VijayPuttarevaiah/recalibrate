@@ -51,7 +51,7 @@ test:
     - pip install --upgrade pip
     - pip install uv
     - uv sync --frozen
-    - uv run pytest -q tests/models tests/utils tests/services/test_goal.py || (code=$?; if [ "$code" -eq 5 ]; then echo "No tests found, skipping"; else exit "$code"; fi)
+    - uv run pytest -q tests/models tests/utils goals/goal/tests/test_goal.py || (code=$?; if [ "$code" -eq 5 ]; then echo "No tests found, skipping"; else exit "$code"; fi)
   rules:
     - if: '$CI_COMMIT_BRANCH'
 
