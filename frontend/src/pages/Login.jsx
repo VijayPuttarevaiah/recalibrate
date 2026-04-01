@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { create_auth_api } from "../utils/auth_api.js";
 import { is_valid_email } from "../utils/validators.js";
 import { use_auth } from "../hooks/use_auth.js";
@@ -29,6 +29,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [params] = useSearchParams();
+  const registered = params.get("registered");
 
   /**
    * redirect_to: Handles post-login navigation.
@@ -85,6 +88,16 @@ export default function Login() {
   return (
     <div>
       <h2 className="PageTitle">Log in</h2>
+
+      {registered && (
+        <div style={{
+          background: "#D1FAE5", border: "1px solid #6EE7B7",
+          borderRadius: "8px", padding: "12px 16px",
+          color: "#065F46", fontSize: "14px", marginBottom: "16px",
+        }}>
+          ✅ Account created! Please log in to continue.
+        </div>
+      )}
 
       <form className="Form" onSubmit={handle_submit}>
         {/* Email Identification */}
