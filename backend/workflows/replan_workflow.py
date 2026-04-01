@@ -7,15 +7,15 @@ from fastapi import HTTPException, status
 from langgraph.graph import StateGraph, END
 from sqlalchemy.orm import Session
 
-from models.goal_adjustment_models import GoalAdjustment
-from models.task_models import Task
-from services.progress_summarizer import format_summary_for_llm
-from services.replan_llm import (
+from goals.models.goal_adjustment_models import GoalAdjustment
+from goals.models.task_models import Task
+from goals.progress.summarizer import format_summary_for_llm
+from replan.llm.service import (
     ReplanTaskRequest,
     generate_replan_explanation,
     generate_replan_tasks,
 )
-from services.web_search_service import gather_research
+from goals.integrations.web_search_service import gather_research
 
 
 class ReplanState(TypedDict, total=False):

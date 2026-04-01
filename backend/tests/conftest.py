@@ -2,7 +2,7 @@
 from fastapi.testclient import TestClient
 import pytest 
 import os
-from models.user_models import User
+from auth.models.user_models import User
 
 # Set environment variable before importing app to ensure DBSession uses it
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
@@ -11,9 +11,9 @@ from main import app
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from models.base import Base
-from utils.db_session import get_db
-from utils.auth import get_current_user
+from core.base import Base
+from core.db_session import get_db
+from auth.utils.auth import get_current_user
 
 # Use an in-memory SQLite database to ensure tests are fast and isolated
 DATABASE_URL = "sqlite:///:memory:"
@@ -86,8 +86,8 @@ def auth_client_fixture(db_session):
 
 @pytest.fixture(autouse=True)
 def clear_code_stores():
-    from services.verification_service import verification_codes
-    from services.password_reset_service import reset_codes
+    from auth.email_verification.service import verification_codes
+    from auth.password_reset.service import reset_codes
 
     verification_codes.clear()
     reset_codes.clear()
@@ -103,9 +103,9 @@ def mock_email_sender(monkeypatch):
     def fake_send_email(to_email: str, subject: str, body: str):
         sent_emails.append({"to": to_email, "subject": subject, "body": body})
 
-    monkeypatch.setattr("utils.email_sender.send_email", fake_send_email)
-    monkeypatch.setattr("services.verification_service.send_email", fake_send_email)
-    monkeypatch.setattr("services.password_reset_service.send_email", fake_send_email)
+    monkeypatch.setattr("auth.utils.email_sender.send_email", fake_send_email)
+    monkeypatch.setattr("auth.email_verification.service.send_email", fake_send_email)
+    monkeypatch.setattr("auth.password_reset.service.send_email", fake_send_email)
     return sent_emails
 
 
@@ -148,7 +148,7 @@ def verification_code(monkeypatch):
         return code
 
     monkeypatch.setattr(
-        "services.verification_service.VerificationService.generate_code",
+        "auth.email_verification.service.VerificationService.generate_code",
         _generate,
     )
     return code
@@ -162,7 +162,7 @@ def password_reset_code(monkeypatch):
         return code
 
     monkeypatch.setattr(
-        "services.password_reset_service.PasswordResetService.generate_code",
+        "auth.password_reset.service.PasswordResetService.generate_code",
         _generate,
     )
     return code

@@ -6,7 +6,7 @@ Pure validation — no database, no mocking.
 
 import pytest
 from pydantic import ValidationError
-from schemas.chat_schemas import (
+from chat.schemas.chat_schemas import (
     ChatMessageRequest,
     ChatSessionCreate,
     ChatMessageResponse,

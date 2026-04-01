@@ -5,7 +5,7 @@ Pure structure tests — no database needed.
 """
 
 import pytest
-from models.chat_models import ChatSession, ChatMessage
+from chat.models.chat_models import ChatSession, ChatMessage
 
 
 class TestChatSessionModel:

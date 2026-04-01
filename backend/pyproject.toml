@@ -27,4 +27,15 @@ dependencies = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests"]
+testpaths = [
+    "tests", "tests/models", "tests/schemas", "tests/utils", "tests/workflows",
+    "auth/login/tests", "auth/logout/tests", "auth/register/tests",
+    "auth/password_reset/tests", "auth/email_verification/tests",
+    "goals/goal/tests", "goals/progress/tests", "goals/roadmap/tests",
+    "chat/tests",
+    "replan/detect/tests", "replan/check/tests", "replan/goal/tests",
+    "replan/routes/tests", "replan/llm/tests",
+    "notifications/tests",
+    "onboarding/tests",
+]
+

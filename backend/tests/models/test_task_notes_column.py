@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
-from models.task_models import Task
+from goals.models.task_models import Task
 
 def test_task_notes_column_added(db_session: Session):
     """Test if the 'notes' column exists in the 'tasks' table."""

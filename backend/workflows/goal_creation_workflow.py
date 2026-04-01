@@ -5,10 +5,10 @@ from typing import List, Optional, TypedDict, Dict, Any
 
 from langgraph.graph import StateGraph, END
 
-from models.goal_models import Goal
-from models.task_models import Task
-from services.llm_service import generate_tasks_llm, TaskGenerationContext
-from services.web_search_service import gather_research
+from goals.models.goal_models import Goal
+from goals.models.task_models import Task
+from goals.ai.llm_service import generate_tasks_llm, TaskGenerationContext
+from goals.integrations.web_search_service import gather_research
 
 
 class GoalCreationState(TypedDict, total=False):

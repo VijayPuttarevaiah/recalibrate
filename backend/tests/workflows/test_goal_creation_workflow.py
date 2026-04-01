@@ -1,8 +1,8 @@
 import pytest
 from datetime import date
 from unittest.mock import MagicMock, patch
-from models.goal_models import Goal
-from services.llm_service import TaskGenerationContext
+from goals.models.goal_models import Goal
+from goals.ai.llm_service import TaskGenerationContext
 from workflows.goal_creation_workflow import (
     build_goal_creation_graph,
     _create_goal_node,

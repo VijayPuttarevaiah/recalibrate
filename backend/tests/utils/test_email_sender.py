@@ -1,6 +1,6 @@
 # Tests for utils/email_sender.py
 import pytest
-from utils.email_sender import config, send_email
+from auth.utils.email_sender import config, send_email
 import smtplib
 
 import os

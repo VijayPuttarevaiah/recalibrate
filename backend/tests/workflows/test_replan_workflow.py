@@ -6,7 +6,7 @@ from workflows.replan_workflow import (
     _gather_research_node,
     _generate_tasks_node,
 )
-from services.replan_llm import ReplanTaskRequest
+from replan.services.replan_llm import ReplanTaskRequest
 
 DEFAULT_GOAL_ID = 1
 CHUNK_INDEX_START = 0
