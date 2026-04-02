@@ -17,18 +17,19 @@ RESET_CODE_EXPIRY_SECONDS = 60  # 1 minute
 
 DEFAULT_CODE_LENGTH = 8
 
+
 class PasswordResetService:
     def __init__(self, db: Session):
         self.user_repo = UserRepository(db)
 
     def generate_code(self, length=DEFAULT_CODE_LENGTH):
-        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
     def initiate_password_reset(self, email: str):
         logger.info(f"Initiating password reset for: {email}")
         user = self.user_repo.get_user_by_email(email)
         if not user:
-            # We don't want to leak if an email exists, but for this project's scope 
+            # We don't want to leak if an email exists, but for this project's scope
             # and consistency with other routes, we'll keep it simple.
             logger.warning(f"Password reset requested for non-existent email: {email}")
             raise HTTPException(status_code=404, detail="User not found")
@@ -38,8 +39,10 @@ class PasswordResetService:
         reset_codes[email] = (code, expiry)
 
         subject = "Password Reset Request"
-        body = f"Your password reset code is: {code}\nThis code will expire in 10 minutes."
-        
+        body = (
+            f"Your password reset code is: {code}\nThis code will expire in 10 minutes."
+        )
+
         try:
             send_email(email, subject, body)
             logger.success(f"Reset code sent to: {email}")
@@ -52,10 +55,12 @@ class PasswordResetService:
     def verify_password_reset_code(self, email: str, code: str):
         logger.info(f"Verifying password reset code for: {email}")
         entry = reset_codes.get(email)
-        
+
         if not entry:
             logger.warning(f"Verification failed: No code found for {email}")
-            raise HTTPException(status_code=400, detail="No reset request found for this email")
+            raise HTTPException(
+                status_code=400, detail="No reset request found for this email"
+            )
 
         stored_code, expiry = entry
         if time.time() > expiry:
@@ -72,10 +77,12 @@ class PasswordResetService:
     def confirm_password_reset(self, email: str, code: str, new_password: str):
         logger.info(f"Confirming password reset for: {email}")
         entry = reset_codes.get(email)
-        
+
         if not entry:
             logger.warning(f"Reset failed: No code found for {email}")
-            raise HTTPException(status_code=400, detail="No reset request found for this email")
+            raise HTTPException(
+                status_code=400, detail="No reset request found for this email"
+            )
 
         stored_code, expiry = entry
         if time.time() > expiry:
@@ -89,7 +96,7 @@ class PasswordResetService:
 
         hashed_pw = hash_password(new_password)
         user = self.user_repo.update_password(email, hashed_pw)
-        
+
         if not user:
             logger.error(f"Reset failed: User {email} not found during update")
             raise HTTPException(status_code=404, detail="User not found")
@@ -97,5 +104,5 @@ class PasswordResetService:
         # Clear the reset code after successful reset
         del reset_codes[email]
         logger.success(f"Password reset successful for: {email}")
-        
+
         return {"msg": "Password has been reset successfully"}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from typing import List, Optional, TypedDict, Dict, Any
 
 from langgraph.graph import StateGraph, END
@@ -56,6 +56,10 @@ def _create_goal_node(db):
     return node
 
 
+def create_goal_node(db):
+    return _create_goal_node(db)
+
+
 def _gather_research_node(state: GoalCreationState) -> GoalCreationState:
     """Gather web research once for the entire goal."""
 
@@ -67,6 +71,10 @@ def _gather_research_node(state: GoalCreationState) -> GoalCreationState:
     )
     print(f"\n Research gathered ({len(research_context)} chars)")
     return {"research_context": research_context}
+
+
+def gather_research_node(state: GoalCreationState) -> GoalCreationState:
+    return _gather_research_node(state)
 
 
 def _generate_tasks_node(state: GoalCreationState) -> GoalCreationState:
@@ -95,6 +103,10 @@ def _generate_tasks_node(state: GoalCreationState) -> GoalCreationState:
     }
 
 
+def generate_tasks_node(state: GoalCreationState) -> GoalCreationState:
+    return _generate_tasks_node(state)
+
+
 def _persist_tasks_node(db):
     """Persist all generated tasks to the database."""
 
@@ -118,6 +130,10 @@ def _persist_tasks_node(db):
     return node
 
 
+def persist_tasks_node(db):
+    return _persist_tasks_node(db)
+
+
 def _should_continue_chunks(state: GoalCreationState) -> str:
     """Control whether we keep generating tasks for more chunks."""
 
@@ -126,6 +142,10 @@ def _should_continue_chunks(state: GoalCreationState) -> str:
     if idx < len(chunks):
         return "more"
     return "done"
+
+
+def should_continue_chunks(state: GoalCreationState) -> str:
+    return _should_continue_chunks(state)
 
 
 def build_goal_creation_graph(db):

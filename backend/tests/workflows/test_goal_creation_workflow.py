@@ -1,18 +1,18 @@
-import pytest
 from datetime import date
 from unittest.mock import MagicMock, patch
 from goals.models.goal_models import Goal
 from goals.ai.llm_service import TaskGenerationContext
 from workflows.goal_creation_workflow import (
     build_goal_creation_graph,
-    _create_goal_node,
-    _generate_tasks_node,
+    create_goal_node,
+    generate_tasks_node,
 )
 
 DEFAULT_USER_ID = 1
 CREATED_GOAL_ID = 42
 CHUNK_INDEX_START = 0
 CHUNK_INDEX_NEXT = 1
+
 
 def test_minimal_create_goal_node():
     """Test that the create_goal node initializes correctly."""
@@ -30,17 +30,21 @@ def test_minimal_create_goal_node():
     }
 
     graph = build_goal_creation_graph(db)
-    with patch(
-        "workflows.goal_creation_workflow.gather_research",
-        return_value="Research Context",
-    ), patch(
-        "workflows.goal_creation_workflow.generate_tasks_llm",
-        return_value=[],
+    with (
+        patch(
+            "workflows.goal_creation_workflow.gather_research",
+            return_value="Research Context",
+        ),
+        patch(
+            "workflows.goal_creation_workflow.generate_tasks_llm",
+            return_value=[],
+        ),
     ):
         result = graph.invoke(state)
     assert "goal_id" in result, "Goal ID should be in the result."
 
-def test_minimal_generate_tasks_node():
+
+def test_minimal_generate_tasks():
     """Test that the generate_tasks node initializes correctly."""
     db = MagicMock()
     state = {
@@ -56,17 +60,21 @@ def test_minimal_generate_tasks_node():
     }
 
     graph = build_goal_creation_graph(db)
-    with patch(
-        "workflows.goal_creation_workflow.gather_research",
-        return_value="Research Context",
-    ), patch(
-        "workflows.goal_creation_workflow.generate_tasks_llm",
-        return_value=[{"title": "Task 1", "date": "2026-03-01"}],
+    with (
+        patch(
+            "workflows.goal_creation_workflow.gather_research",
+            return_value="Research Context",
+        ),
+        patch(
+            "workflows.goal_creation_workflow.generate_tasks_llm",
+            return_value=[{"title": "Task 1", "date": "2026-03-01"}],
+        ),
     ):
         result = graph.invoke(state)
     assert "tasks" in result, "Tasks should be in the result."
 
-def test_minimal_workflow_execution():
+
+def test_minimal_workflow_exec():
     """Test that the workflow executes minimally."""
     db = MagicMock()
     state = {
@@ -82,19 +90,22 @@ def test_minimal_workflow_execution():
     }
 
     graph = build_goal_creation_graph(db)
-    with patch(
-        "workflows.goal_creation_workflow.gather_research",
-        return_value="Research Context",
-    ), patch(
-        "workflows.goal_creation_workflow.generate_tasks_llm",
-        return_value=[{"title": "Task 1", "date": "2026-03-01"}],
+    with (
+        patch(
+            "workflows.goal_creation_workflow.gather_research",
+            return_value="Research Context",
+        ),
+        patch(
+            "workflows.goal_creation_workflow.generate_tasks_llm",
+            return_value=[{"title": "Task 1", "date": "2026-03-01"}],
+        ),
     ):
         result = graph.invoke(state)
     assert "goal_id" in result, "Goal ID should be in the result."
     assert "tasks" in result, "Tasks should be in the result."
 
 
-def test_create_goal_node_persists_goal():
+def test_create_goal_persists():
     """RED: create_goal should persist a Goal and return its id."""
     db = MagicMock()
 
@@ -112,7 +123,7 @@ def test_create_goal_node_persists_goal():
         "notes": "Test Notes",
     }
 
-    node = _create_goal_node(db)
+    node = create_goal_node(db)
     result = node(state)
 
     db.add.assert_called_once()
@@ -129,7 +140,7 @@ def test_create_goal_node_persists_goal():
     assert result["goal_id"] == CREATED_GOAL_ID
 
 
-def test_generate_tasks_node_calls_llm_and_advances():
+def test_generate_tasks_calls_llm():
     """RED: generate_tasks should call LLM and increment chunk index."""
     state = {
         "goal_title": "Test Goal",
@@ -138,9 +149,7 @@ def test_generate_tasks_node_calls_llm_and_advances():
         "end_date": date(2026, 3, 31),
         "notes": "Test Notes",
         "research_context": "Research Context",
-        "date_chunks": [
-            {"start": date(2026, 3, 1), "end": date(2026, 3, 10)}
-        ],
+        "date_chunks": [{"start": date(2026, 3, 1), "end": date(2026, 3, 10)}],
         "current_chunk_index": CHUNK_INDEX_START,
         "tasks": [],
     }
@@ -151,7 +160,7 @@ def test_generate_tasks_node_calls_llm_and_advances():
         "workflows.goal_creation_workflow.generate_tasks_llm",
         return_value=returned_tasks,
     ) as mock_generate:
-        result = _generate_tasks_node(state)
+        result = generate_tasks_node(state)
 
     mock_generate.assert_called_once()
     context = mock_generate.call_args.args[0]

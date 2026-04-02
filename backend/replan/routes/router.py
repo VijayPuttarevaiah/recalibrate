@@ -22,6 +22,7 @@ def _user_id(current_user: dict) -> int:
 
 # ── 1. Check if a goal needs replanning (lightweight, no LLM call) ──
 
+
 @router.get("/{goal_id}/replan/check", response_model=ReplanCheckResponse)
 def check_replan_status(
     goal_id: int,
@@ -42,6 +43,7 @@ def check_replan_status(
 
 
 # ── 2. Trigger a replan (heavy: web research + LLM calls) ──
+
 
 @router.post("/{goal_id}/replan", response_model=ReplanResponse)
 def trigger_replan(
@@ -64,6 +66,7 @@ def trigger_replan(
 
 
 # ── 3. View past adjustments ──
+
 
 @router.get(
     "/{goal_id}/replan/history",

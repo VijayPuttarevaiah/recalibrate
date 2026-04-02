@@ -27,23 +27,25 @@ def get_user_goals(db, user_id: int):
 
     result = []
     for goal in goals:
-        task_count = (
-            db.query(Task)
-            .filter(Task.goal_id == goal.id)
-            .count()
+        task_count = db.query(Task).filter(Task.goal_id == goal.id).count()
+        result.append(
+            {
+                **_goal_dict(goal, task_count=task_count),
+            }
         )
-        result.append({
-            **_goal_dict(goal, task_count=task_count),
-        })
 
     return result
 
 
 def get_goal_tasks(db, user_id: int, goal_id: int):
-    goal = db.query(Goal).filter(
-        Goal.id == goal_id,
-        Goal.user_id == user_id,
-    ).first()
+    goal = (
+        db.query(Goal)
+        .filter(
+            Goal.id == goal_id,
+            Goal.user_id == user_id,
+        )
+        .first()
+    )
 
     if not goal:
         raise HTTPException(
@@ -51,12 +53,7 @@ def get_goal_tasks(db, user_id: int, goal_id: int):
             detail="Goal not found or does not belong to this user",
         )
 
-    tasks = (
-        db.query(Task)
-        .filter(Task.goal_id == goal_id)
-        .order_by(Task.due_date)
-        .all()
-    )
+    tasks = db.query(Task).filter(Task.goal_id == goal_id).order_by(Task.due_date).all()
 
     return {
         **_goal_dict(goal, task_count=len(tasks)),
@@ -73,6 +70,7 @@ def get_goal_tasks(db, user_id: int, goal_id: int):
             for t in tasks
         ],
     }
+
 
 def create_goal_with_tasks(db, goal_data):
     category_value = (

@@ -2,6 +2,7 @@
 from auth.models.user_models import User
 import pytest
 
+
 def test_user_model_creation(db_session):
     user = User(
         email="modeluser@example.com",

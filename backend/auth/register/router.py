@@ -11,6 +11,7 @@ logger = LogManager.get_logger()
 # Initialize the router for registration-related endpoints
 router = APIRouter()
 
+
 # Endpoint to register a new user
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user: RegisterRequest, db: Session = Depends(get_db)):

@@ -1,4 +1,5 @@
 """Check whether a goal needs replanning."""
+
 from datetime import date
 from sqlalchemy.orm import Session
 from goals.models.task_models import Task
@@ -7,7 +8,9 @@ from replan.detect.service import detect_missed_tasks
 DEFAULT_REPLAN_THRESHOLD = 3
 
 
-def check_goal_needs_replan(db: Session, goal_id: int, threshold: int = DEFAULT_REPLAN_THRESHOLD) -> dict:
+def check_goal_needs_replan(
+    db: Session, goal_id: int, threshold: int = DEFAULT_REPLAN_THRESHOLD
+) -> dict:
     """
     Quick check: does this goal need replanning?
     Returns status info without triggering a replan.

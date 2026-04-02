@@ -6,6 +6,7 @@ from core.logging_config import LogManager
 
 logger = LogManager.get_logger()
 
+
 class UserRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -23,7 +24,7 @@ class UserRepository:
             last_name=user_data.last_name,
             password=hashed_password,
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
         self.db.add(db_user)
         self.db.commit()

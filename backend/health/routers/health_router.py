@@ -15,7 +15,9 @@ def goal_category_llm_health_check():
         client.ping()
     except LLMClientError as exc:
         logger.warning(f"Goal category LLM health check failed: {exc.error_code}")
-        raise HTTPException(status_code=exc.status_code, detail=exc.to_http_detail()) from exc
+        raise HTTPException(
+            status_code=exc.status_code, detail=exc.to_http_detail()
+        ) from exc
     return {
         "status": "ok",
         "provider": client.provider,

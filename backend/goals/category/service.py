@@ -33,7 +33,9 @@ class GoalCategoryService:
         if not is_sufficient or not category:
             logger.info("Goal is too vague or category missing")
             if not follow_up_questions:
-                follow_up_questions = ["Please add more detail about your goal and timeline."]
+                follow_up_questions = [
+                    "Please add more detail about your goal and timeline."
+                ]
             return self._needs_more_info(
                 category=category,
                 follow_up_questions=follow_up_questions,
@@ -59,4 +61,3 @@ class GoalCategoryService:
                 or ["Please add more detail about your goal and timeline."]
             ),
         )
-

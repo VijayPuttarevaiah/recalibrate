@@ -6,10 +6,12 @@ from core.logging_config import LogManager
 
 logger = LogManager.get_logger()
 
+
 # Singleton class to manage the SQLAlchemy database engine and session factory
 class DBSession:
     _instance = None
     config = Config().config
+
     def __new__(cls):
         # Create a new instance only if one doesn't already exist
         if cls._instance is None:
@@ -23,7 +25,7 @@ class DBSession:
             return
 
         # Retrieve the database URL from configuration or environment variable
-        db_url = self.config['database']['url']
+        db_url = self.config["database"]["url"]
         self.DATABASE_URL = os.getenv("DATABASE_URL", db_url)
         display_url = (
             self.DATABASE_URL.split("@")[-1]
@@ -40,18 +42,15 @@ class DBSession:
 
         # Initialize the SQLAlchemy engine
         self.engine = create_engine(
-            self.DATABASE_URL,
-            connect_args=connect_args,
-            pool_pre_ping=True
+            self.DATABASE_URL, connect_args=connect_args, pool_pre_ping=True
         )
         # Create a session factory for generating new database sessions
         self.SessionLocal = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
+            autocommit=False, autoflush=False, bind=self.engine
         )
 
         self._initialized = True
+
 
 # Dependency to get a local database session
 def get_db():

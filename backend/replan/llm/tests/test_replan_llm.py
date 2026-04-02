@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from replan.services.replan_llm import (
-    _call_llm_for_tasks,
+    call_llm_for_tasks,
     ReplanTaskRequest,
     generate_replan_tasks,
     generate_replan_explanation,
@@ -9,7 +9,8 @@ from replan.services.replan_llm import (
 
 EXPECTED_TASK_COUNT_TWO = 2
 
-def test_call_llm_for_tasks_valid_response():
+
+def test_llm_tasks_valid():
     """Test _call_llm_for_tasks with a valid LLM response."""
     mock_response = MagicMock()
     mock_response.json.return_value = {
@@ -31,22 +32,17 @@ def test_call_llm_for_tasks_valid_response():
 
     with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
         with patch("requests.post", return_value=mock_response):
-            tasks = _call_llm_for_tasks("test prompt")
+            tasks = call_llm_for_tasks("test prompt")
             assert len(tasks) == EXPECTED_TASK_COUNT_TWO
             assert tasks[0]["title"] == "Task 1"
             assert tasks[1]["date"] == "2026-03-08"
 
-def test_call_llm_for_tasks_invalid_response():
+
+def test_llm_tasks_invalid():
     """Test _call_llm_for_tasks with an invalid LLM response."""
     mock_response = MagicMock()
     mock_response.json.return_value = {
-        "choices": [
-            {
-                "message": {
-                    "content": "Invalid JSON"
-                }
-            }
-        ]
+        "choices": [{"message": {"content": "Invalid JSON"}}]
     }
 
     import replan.services.replan_llm as replan_llm
@@ -54,21 +50,21 @@ def test_call_llm_for_tasks_invalid_response():
     with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
         with patch("requests.post", return_value=mock_response):
             with pytest.raises(ValueError, match="No JSON array found in LLM response"):
-                _call_llm_for_tasks("test prompt")
+                call_llm_for_tasks("test prompt")
 
 
-def test_call_llm_for_tasks_missing_api_key():
+def test_llm_tasks_missing_key():
     """RED: Fail fast when OPENROUTER_API_KEY is missing."""
     import replan.services.replan_llm as replan_llm
 
     with patch.object(replan_llm, "OPENROUTER_API_KEY", ""):
         with patch("requests.post") as mock_post:
             with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
-                replan_llm._call_llm_for_tasks("test prompt")
+                replan_llm.call_llm_for_tasks("test prompt")
             mock_post.assert_not_called()
 
 
-def test_call_llm_for_tasks_multiple_arrays_uses_first():
+def test_llm_tasks_first_array():
     """RED: If response contains multiple JSON arrays, use the first one."""
     mock_response = MagicMock()
     mock_response.json.return_value = {
@@ -77,9 +73,9 @@ def test_call_llm_for_tasks_multiple_arrays_uses_first():
                 "message": {
                     "content": (
                         "Here is the plan A: "
-                        "[{\"title\": \"Task A\", \"date\": \"2026-03-07\"}] "
+                        '[{"title": "Task A", "date": "2026-03-07"}] '
                         "And plan B: "
-                        "[{\"title\": \"Task B\", \"date\": \"2026-03-08\"}]"
+                        '[{"title": "Task B", "date": "2026-03-08"}]'
                     )
                 }
             }
@@ -90,21 +86,17 @@ def test_call_llm_for_tasks_multiple_arrays_uses_first():
 
     with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
         with patch("requests.post", return_value=mock_response):
-            tasks = _call_llm_for_tasks("test prompt")
+            tasks = call_llm_for_tasks("test prompt")
             assert len(tasks) == 1
             assert tasks[0]["title"] == "Task A"
 
 
-def test_call_llm_for_tasks_invalid_date_format():
+def test_llm_tasks_invalid_date():
     """RED: Date must be YYYY-MM-DD; invalid formats should raise."""
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "choices": [
-            {
-                "message": {
-                    "content": "[{\"title\": \"Task X\", \"date\": \"03/07/2026\"}]"
-                }
-            }
+            {"message": {"content": '[{"title": "Task X", "date": "03/07/2026"}]'}}
         ]
     }
 
@@ -113,13 +105,15 @@ def test_call_llm_for_tasks_invalid_date_format():
     with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
         with patch("requests.post", return_value=mock_response):
             with pytest.raises(ValueError, match="date format"):
-                _call_llm_for_tasks("test prompt")
+                call_llm_for_tasks("test prompt")
+
 
 def test_generate_replan_tasks():
     """Test generate_replan_tasks with mocked _call_llm_for_tasks."""
-    with patch("replan.services.replan_llm._call_llm_for_tasks", return_value=[
-        {"title": "Task 1", "date": "2026-03-07"}
-    ]):
+    with patch(
+        "replan.services.replan_llm.call_llm_for_tasks",
+        return_value=[{"title": "Task 1", "date": "2026-03-07"}],
+    ):
         request = ReplanTaskRequest(
             goal_title="Goal Title",
             category="Category",
@@ -134,16 +128,13 @@ def test_generate_replan_tasks():
         assert len(tasks) == 1
         assert tasks[0]["title"] == "Task 1"
 
-def test_generate_replan_explanation():
+
+def test_generate_explanation():
     """Test generate_replan_explanation with mocked LLM response."""
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "choices": [
-            {
-                "message": {
-                    "content": "Your plan was adjusted due to missed tasks."
-                }
-            }
+            {"message": {"content": "Your plan was adjusted due to missed tasks."}}
         ]
     }
 

@@ -3,13 +3,20 @@
 Chat API routes for in-app AI guidance.
 
 Endpoints:
-  POST   /chat/sessions                       — Start a new chat (about a goal or task)
-  POST   /chat/sessions/{id}/messages          — Send a follow-up message (non-streaming)
-  POST   /chat/sessions/{id}/messages/stream   — Send a follow-up message (SSE streaming)
-  GET    /chat/sessions/{id}                   — Get full chat history
-  GET    /chat/sessions?goal_id=X              — List all sessions for a goal
-  POST   /chat/explain/task/{id}               — Quick one-shot task explanation (no session)
-  GET    /chat/suggestions                     — Get suggested follow-up questions
+  POST /chat/sessions
+      — Start a new chat (about a goal or task)
+  POST /chat/sessions/{id}/messages
+      — Send a follow-up message (non-streaming)
+  POST /chat/sessions/{id}/messages/stream
+      — Send a follow-up message (SSE streaming)
+  GET /chat/sessions/{id}
+      — Get full chat history
+  GET /chat/sessions?goal_id=X
+      — List all sessions for a goal
+  POST /chat/explain/task/{id}
+      — Quick one-shot task explanation (no session)
+  GET /chat/suggestions
+      — Get suggested follow-up questions
 """
 
 from fastapi import APIRouter, Depends, Query
@@ -43,6 +50,7 @@ def _user_id(current_user: dict) -> int:
 
 # ── 1. Start a new chat session ──
 
+
 @router.post("/sessions", response_model=ChatReplyResponse)
 def start_chat_session(
     body: ChatSessionCreate,
@@ -56,8 +64,10 @@ def start_chat_session(
     Example request:
     {
         "goal_id": 5,
-        "task_id": 42,          // optional — omit for goal-level chat
-        "message": "What does this task mean? How should I approach it?"
+        "task_id": 42,
+        // optional — omit for goal-level chat
+        "message": "What does this task mean?
+        How should I approach it?"
     }
     """
     return create_chat_session(
@@ -70,6 +80,7 @@ def start_chat_session(
 
 
 # ── 2. Send a follow-up message (non-streaming) ──
+
 
 @router.post("/sessions/{session_id}/messages", response_model=ChatReplyResponse)
 def send_chat_message(
@@ -93,6 +104,7 @@ def send_chat_message(
 
 # ── 3. Send a follow-up message (STREAMING via SSE) ──
 
+
 @router.post("/sessions/{session_id}/messages/stream")
 def stream_chat_message(
     session_id: int,
@@ -103,10 +115,11 @@ def stream_chat_message(
     """
     Stream the AI response token-by-token via Server-Sent Events.
 
-    The frontend should read this as an SSE stream:
-    - Each event: data: {"token": "word"}
-    - Final event before [DONE]: data: {"suggestions": ["q1", "q2", "q3"]}
-    - End signal: data: [DONE]
+        The frontend should read this as an SSE stream:
+        - Each event: data: {"token": "word"}
+        - Final event before [DONE]:
+            data: {"suggestions": ["q1", "q2", "q3"]}
+        - End signal: data: [DONE]
     """
     return stream_message(
         db=db,
@@ -117,6 +130,7 @@ def stream_chat_message(
 
 
 # ── 4. Get full chat history ──
+
 
 @router.get("/sessions/{session_id}", response_model=ChatHistoryResponse)
 def get_session_history(
@@ -131,6 +145,7 @@ def get_session_history(
 
 # ── 5. List sessions for a goal ──
 
+
 @router.get("/sessions", response_model=list[ChatSessionListItem])
 def list_chat_sessions(
     goal_id: int = Query(..., description="Filter sessions by goal"),
@@ -144,6 +159,7 @@ def list_chat_sessions(
 
 # ── 6. Quick one-shot task explanation ──
 
+
 @router.post("/explain/task/{task_id}")
 def explain_task_endpoint(
     task_id: int,
@@ -154,8 +170,8 @@ def explain_task_endpoint(
     Quick "Explain this" button — no session created.
     Returns a one-shot explanation of the task.
 
-    If the user wants to ask follow-up questions,
-    they should start a full session via POST /chat/sessions.
+    If the user wants to ask follow-up questions, they should
+    start a full session via POST /chat/sessions.
     """
     user_id = _user_id(current_user)
     explanation = explain_task(db, user_id, task_id)
@@ -163,6 +179,7 @@ def explain_task_endpoint(
 
 
 # ── 7. Get suggested questions ──
+
 
 @router.get("/suggestions")
 def get_suggestions(

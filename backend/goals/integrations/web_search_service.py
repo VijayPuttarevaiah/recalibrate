@@ -13,10 +13,10 @@ DEFAULT_NUM_RESULTS = 5
 
 def build_search_queries(goal: str, category: str, notes: str = None) -> list[str]:
     """Generate category-aware search queries."""
-    
+
     queries = []
     year_range = f"{CURRENT_YEAR - 1} {CURRENT_YEAR}"
-    
+
     if category.lower() == "immigration":
         queries = [
             f"{goal} latest requirements {year_range}",
@@ -62,11 +62,13 @@ def search_web(query: str, num_results: int = DEFAULT_NUM_RESULTS) -> list[dict]
 
         results = []
         for item in data.get("organic", []):
-            results.append({
-                "title": item.get("title", ""),
-                "snippet": item.get("snippet", ""),
-                "link": item.get("link", ""),
-            })
+            results.append(
+                {
+                    "title": item.get("title", ""),
+                    "snippet": item.get("snippet", ""),
+                    "link": item.get("link", ""),
+                }
+            )
         return results
     except Exception as e:
         print(f"Search error for '{query}': {e}")
@@ -77,7 +79,7 @@ def gather_research(goal: str, category: str, notes: str = None) -> str:
     """Run multiple searches and compile into a research summary."""
     print(f"DEBUG SERPER KEY: '{SERPER_API_KEY}'")
     queries = build_search_queries(goal, category, notes)
-    
+
     all_results = []
     seen_links = set()
 

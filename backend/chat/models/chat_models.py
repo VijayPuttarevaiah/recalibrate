@@ -1,6 +1,5 @@
 # models/chat_models.py
-"""
-Chat models for in-app AI guidance.
+"""Chat models for in-app AI guidance.
 
 Two tables:
 - ChatSession: one conversation thread, scoped to a goal (and optionally a task)
@@ -59,12 +58,14 @@ class ChatSession(Base):
         }
 
     def __repr__(self) -> str:
-        return (
-            "ChatSession("
-            f"id={self.id}, user_id={self.user_id}, goal_id={self.goal_id}, "
-            f"task_id={self.task_id}, title={self.title!r}"
-            ")"
-        )
+        parts = [
+            f"id={self.id}",
+            f"user_id={self.user_id}",
+            f"goal_id={self.goal_id}",
+            f"task_id={self.task_id}",
+            f"title={self.title!r}",
+        ]
+        return "ChatSession(" + ", ".join(parts) + ")"
 
 
 class ChatMessage(Base):
@@ -93,8 +94,4 @@ class ChatMessage(Base):
         }
 
     def __repr__(self) -> str:
-        return (
-            "ChatMessage("
-            f"id={self.id}, session_id={self.session_id}, role={self.role!r}"
-            ")"
-        )
+        return f"ChatMessage(id={self.id}, session_id={self.session_id}, role={self.role!r})"

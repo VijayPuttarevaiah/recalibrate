@@ -2,6 +2,7 @@ from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from goals.models.task_models import Task
+
 RECENT_TASKS_LIMIT = 5
 MISSED_TASKS_DISPLAY_LIMIT = 20
 
@@ -23,10 +24,7 @@ def _summarize_month_stats(all_tasks: list[Task], as_of: date) -> dict:
 
 
 def _build_task_items(tasks: list[Task]) -> list[dict[str, str]]:
-    return [
-        {"title": task.title, "due_date": str(task.due_date)}
-        for task in tasks
-    ]
+    return [{"title": task.title, "due_date": str(task.due_date)} for task in tasks]
 
 
 def _completion_rate(completed: int, missed: int) -> float:
@@ -34,6 +32,7 @@ def _completion_rate(completed: int, missed: int) -> float:
     if total == 0:
         return 0.0
     return round(completed / total * 100, 1)
+
 
 def build_progress_summary(db: Session, goal_id: int, as_of: date = None) -> dict:
     """
@@ -50,10 +49,7 @@ def build_progress_summary(db: Session, goal_id: int, as_of: date = None) -> dic
         as_of = date.today()
 
     all_tasks = (
-        db.query(Task)
-        .filter(Task.goal_id == goal_id)
-        .order_by(Task.due_date)
-        .all()
+        db.query(Task).filter(Task.goal_id == goal_id).order_by(Task.due_date).all()
     )
 
     # Categorize tasks
@@ -93,8 +89,7 @@ def _append_monthly_history(lines: list[str], summary: dict) -> None:
     lines.append("Monthly history:")
     for month, data in sorted(summary["phase_summary"].items()):
         lines.append(
-            f"  {month}: {data['completed']}/{data['total']} done, "
-            f"{data['missed']} missed"
+            f"  {month}: {data['completed']}/{data['total']} done, {data['missed']} missed"
         )
     lines.append("")
 

@@ -23,9 +23,4 @@ class UserPreference(Base):
         }
 
     def __repr__(self) -> str:
-        return (
-            "UserPreference("
-            f"id={self.id}, user_id={self.user_id}, "
-            f"interest={self.interest!r}"
-            ")"
-        )
+        return f"UserPreference(id={self.id}, user_id={self.user_id}, interest={self.interest!r})"

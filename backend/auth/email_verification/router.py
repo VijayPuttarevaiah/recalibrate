@@ -11,12 +11,14 @@ logger = LogManager.get_logger()
 # Initialize the router for email verification endpoints
 router = APIRouter()
 
+
 # Endpoint to generate and send a verification code to a user's email
 @router.post("/send-code")
 def send_code(request: SendCodeRequest, db: Session = Depends(get_db)):
     logger.info(f"POST /send-code request for: {request.email}")
     verification_service = VerificationService(db)
     return verification_service.send_verification_code(request.email)
+
 
 # Endpoint to verify the user's email using the code provided
 @router.post("/verify")

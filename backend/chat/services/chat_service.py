@@ -51,9 +51,11 @@ SUGGESTIONS_LLM_MAX_TOKENS = 200
 MIN_SUGGESTIONS_REQUIRED = 2
 MAX_SUGGESTIONS_RETURNED = 3
 SSE_DATA_PREFIX_LENGTH = 6
+LAST_MESSAGE_PREVIEW_LENGTH = 100
 
 
 # ─── Context Building ────────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class GoalStatsContext:
@@ -67,27 +69,32 @@ class GoalStatsContext:
 
 
 def _format_goal_stats(context: GoalStatsContext) -> str:
-    return f"""=== GOAL CONTEXT ===
-Title: {context.goal.title}
-Category: {context.goal.category}
-Timeline: {context.goal.start_date} → {context.goal.end_date}
-Status: {context.goal.status}
-Notes: {context.goal.notes or "None"}
+    lines = [
+        "=== GOAL CONTEXT ===",
+        f"Title: {context.goal.title}",
+        f"Category: {context.goal.category}",
+        f"Timeline: {context.goal.start_date} → {context.goal.end_date}",
+        f"Status: {context.goal.status}",
+        f"Notes: {context.goal.notes or 'None'}",
+        "",
+        "=== PROGRESS ===",
+        f"Total tasks: {len(context.tasks)}",
+        f"Completed: {len(context.completed)}",
+        f"Pending: {len(context.pending)}",
+        f"Missed: {len(context.missed)}",
+        f"Overdue: {len(context.overdue)}",
+        f"Days remaining: {(context.goal.end_date - context.today).days}",
+        "",
+    ]
+    return "\n".join(lines)
 
-=== PROGRESS ===
-Total tasks: {len(context.tasks)}
-Completed: {len(context.completed)}
-Pending: {len(context.pending)}
-Missed: {len(context.missed)}
-Overdue: {len(context.overdue)}
-Days remaining: {(context.goal.end_date - context.today).days}
-
-"""
 
 def _append_recent_completed(lines: list[str], completed: list) -> None:
     lines.append(f"=== RECENTLY COMPLETED (last {RECENT_TASKS_LIMIT}) ===")
     for task in completed[-RECENT_TASKS_LIMIT:]:
-        notes_snippet = f" | Notes: {task.notes[:NOTES_SNIPPET_LENGTH]}" if task.notes else ""
+        notes_snippet = (
+            f" | Notes: {task.notes[:NOTES_SNIPPET_LENGTH]}" if task.notes else ""
+        )
         lines.append(f"- [{task.due_date}] {task.title}{notes_snippet}")
 
 
@@ -134,12 +141,7 @@ def _format_task_lists(
 def _build_goal_context(db: Session, goal: Goal) -> str:
     """Build a rich context string from goal + its tasks."""
 
-    tasks = (
-        db.query(Task)
-        .filter(Task.goal_id == goal.id)
-        .order_by(Task.due_date)
-        .all()
-    )
+    tasks = db.query(Task).filter(Task.goal_id == goal.id).order_by(Task.due_date).all()
 
     today = date.today()
 
@@ -168,15 +170,16 @@ def _build_goal_context(db: Session, goal: Goal) -> str:
 
 def _build_task_context(task: Task) -> str:
     """Build focused context for a specific task."""
-
-    context = f"""=== FOCUSED TASK ===
-Title: {task.title}
-Due Date: {task.due_date}
-Status: {task.status}
-Description: {task.description or "No description"}
-User Notes: {task.notes or "No notes yet"}
-"""
-    return context
+    lines = [
+        "=== FOCUSED TASK ===",
+        f"Title: {task.title}",
+        f"Due Date: {task.due_date}",
+        f"Status: {task.status}",
+        f"Description: {task.description or 'No description'}",
+        f"User Notes: {task.notes or 'No notes yet'}",
+        "",
+    ]
+    return "\n".join(lines)
 
 
 def _build_system_prompt(has_task_focus: bool) -> str:
@@ -218,6 +221,7 @@ def _build_system_prompt(has_task_focus: bool) -> str:
 
 # ─── Rate Limiting ───────────────────────────────────────────────────
 
+
 def _check_rate_limit(db: Session, user_id: int) -> bool:
     """Check if user has exceeded message rate limit (50/hour)."""
     one_hour_ago = datetime.utcnow() - timedelta(hours=1)
@@ -237,33 +241,32 @@ def _check_rate_limit(db: Session, user_id: int) -> bool:
 
 # ─── Session Management ──────────────────────────────────────────────
 
+
 def create_chat_session(
-    db: Session, user_id: int, goal_id: int, task_id: int | None, first_message: str
+    db: Session,
+    user_id: int,
+    goal_id: int,
+    task_id: int | None,
+    first_message: str,
 ) -> dict:
     """Create a new chat session and get the first AI response."""
 
     # Rate limit
-    if not _check_rate_limit(db, user_id):
+    if not check_rate_limit(db, user_id):
         raise HTTPException(
             status_code=429,
             detail="Rate limit exceeded. Please wait before sending more messages.",
         )
 
     # Validate ownership
-    goal = (
-        db.query(Goal)
-        .filter(Goal.id == goal_id, Goal.user_id == user_id)
-        .first()
-    )
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user_id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found or not yours")
 
     task = None
     if task_id:
         task = (
-            db.query(Task)
-            .filter(Task.id == task_id, Task.goal_id == goal_id)
-            .first()
+            db.query(Task).filter(Task.id == task_id, Task.goal_id == goal_id).first()
         )
         if not task:
             raise HTTPException(status_code=404, detail="Task not found for this goal")
@@ -283,15 +286,15 @@ def create_chat_session(
     db.flush()
 
     # Build context and get AI response
-    goal_context = _build_goal_context(db, goal)
-    task_context = _build_task_context(task) if task else ""
-    system_prompt = _build_system_prompt(has_task_focus=task is not None)
+    goal_context = build_goal_context(db, goal)
+    task_context = build_task_context(task) if task else ""
+    system_prompt = build_system_prompt(has_task_focus=task is not None)
 
     full_context = goal_context
     if task_context:
         full_context += "\n" + task_context
 
-    assistant_reply = _call_chat_llm(
+    assistant_reply = call_chat_llm(
         system_prompt=system_prompt,
         context=full_context,
         history=[],
@@ -315,16 +318,21 @@ def create_chat_session(
 
     return {
         "session_id": session.id,
-        "user_message": _msg_to_dict(user_msg),
-        "assistant_message": _msg_to_dict(assistant_msg),
+        "user_message": msg_to_dict(user_msg),
+        "assistant_message": msg_to_dict(assistant_msg),
     }
 
 
-def send_message(db: Session, user_id: int, session_id: int, message: str) -> dict:
+def send_message(
+    db: Session,
+    user_id: int,
+    session_id: int,
+    message: str,
+) -> dict:
     """Send a follow-up message in an existing chat session."""
 
     # Rate limit
-    if not _check_rate_limit(db, user_id):
+    if not check_rate_limit(db, user_id):
         raise HTTPException(
             status_code=429,
             detail="Rate limit exceeded. Please wait before sending more messages.",
@@ -355,9 +363,9 @@ def send_message(db: Session, user_id: int, session_id: int, message: str) -> di
     db.flush()
 
     # Build context fresh (reflects latest task statuses)
-    goal_context = _build_goal_context(db, goal)
-    task_context = _build_task_context(task) if task else ""
-    system_prompt = _build_system_prompt(has_task_focus=task is not None)
+    goal_context = build_goal_context(db, goal)
+    task_context = build_task_context(task) if task else ""
+    system_prompt = build_system_prompt(has_task_focus=task is not None)
 
     full_context = goal_context
     if task_context:
@@ -372,10 +380,10 @@ def send_message(db: Session, user_id: int, session_id: int, message: str) -> di
     )
     history = [
         {"role": m.role, "content": m.content}
-        for m in history_messages[-MAX_HISTORY_MESSAGES - 1:-1]
+        for m in history_messages[-MAX_HISTORY_MESSAGES - 1 : -1]
     ]
 
-    assistant_reply = _call_chat_llm(
+    assistant_reply = call_chat_llm(
         system_prompt=system_prompt,
         context=full_context,
         history=history,
@@ -395,8 +403,8 @@ def send_message(db: Session, user_id: int, session_id: int, message: str) -> di
 
     return {
         "session_id": session.id,
-        "user_message": _msg_to_dict(user_msg),
-        "assistant_message": _msg_to_dict(assistant_msg),
+        "user_message": msg_to_dict(user_msg),
+        "assistant_message": msg_to_dict(assistant_msg),
     }
 
 
@@ -423,7 +431,7 @@ def get_chat_history(db: Session, user_id: int, session_id: int) -> dict:
         "goal_id": session.goal_id,
         "task_id": session.task_id,
         "title": session.title,
-        "messages": [_msg_to_dict(m) for m in messages],
+        "messages": [msg_to_dict(m) for m in messages],
     }
 
 
@@ -446,6 +454,9 @@ def list_sessions_for_goal(db: Session, user_id: int, goal_id: int) -> list[dict
             .first()
         )
         msg_count = db.query(ChatMessage).filter(ChatMessage.session_id == s.id).count()
+        last_preview = (
+            last_msg.content[:LAST_MESSAGE_PREVIEW_LENGTH] if last_msg else None
+        )
 
         result.append(
             {
@@ -454,7 +465,7 @@ def list_sessions_for_goal(db: Session, user_id: int, goal_id: int) -> list[dict
                 "task_id": s.task_id,
                 "title": s.title,
                 "message_count": msg_count,
-                "last_message_preview": last_msg.content[:100] if last_msg else None,
+                "last_message_preview": last_preview,
                 "created_at": s.created_at.isoformat(),
                 "updated_at": s.updated_at.isoformat(),
             }
@@ -464,6 +475,7 @@ def list_sessions_for_goal(db: Session, user_id: int, goal_id: int) -> list[dict
 
 
 # ─── Quick Actions (no session needed) ───────────────────────────────
+
 
 def explain_task(db: Session, user_id: int, task_id: int) -> str:
     """
@@ -476,30 +488,31 @@ def explain_task(db: Session, user_id: int, task_id: int) -> str:
         raise HTTPException(status_code=404, detail="Task not found")
 
     goal = (
-        db.query(Goal)
-        .filter(Goal.id == task.goal_id, Goal.user_id == user_id)
-        .first()
+        db.query(Goal).filter(Goal.id == task.goal_id, Goal.user_id == user_id).first()
     )
     if not goal:
         raise HTTPException(status_code=403, detail="Not your task")
 
-    goal_context = _build_goal_context(db, goal)
-    task_context = _build_task_context(task)
+    goal_context = build_goal_context(db, goal)
+    task_context = build_task_context(task)
 
-    prompt = f"""Explain this task to the user in a helpful way:
+    prompt_lines = [
+        "Explain this task to the user in a helpful way:",
+        "",
+        goal_context,
+        "",
+        task_context,
+        "",
+        "Provide:",
+        "1. What this task means in plain language",
+        "2. 3-5 concrete steps to complete it",
+        "3. One practical tip or example",
+        "",
+        "Keep it under 250 words. Be specific to their goal, not generic.",
+    ]
+    prompt = "\n".join(prompt_lines)
 
-{goal_context}
-
-{task_context}
-
-Provide:
-1. What this task means in plain language
-2. 3-5 concrete steps to complete it
-3. One practical tip or example
-
-Keep it under 250 words. Be specific to their goal, not generic."""
-
-    return _call_chat_llm(
+    return call_chat_llm(
         system_prompt="You are a helpful productivity coach. Be concise and actionable.",
         context="",
         history=[],
@@ -508,6 +521,7 @@ Keep it under 250 words. Be specific to their goal, not generic."""
 
 
 # ─── Streaming Chat ──────────────────────────────────────────────────
+
 
 def _prepare_streaming_messages(
     system_prompt: str,
@@ -523,14 +537,14 @@ def _prepare_streaming_messages(
             {
                 "role": "system",
                 "content": (
-                    "Here is the user's current goal and task data:\n\n"
-                    f"{full_context}"
+                    f"Here is the user's current goal and task data:\n\n{full_context}"
                 ),
             }
         )
     messages.extend(history)
     messages.append({"role": "user", "content": message})
     return messages
+
 
 _STREAM_DONE_SENTINEL = "__STREAM_DONE__"
 
@@ -595,7 +609,8 @@ def _generate_event_stream(
                 break
             if token:
                 full_response += token
-                yield f"data: {json.dumps({'token': token})}\n\n"
+                token_payload = {"token": token}
+                yield f"data: {json.dumps(token_payload)}\n\n"
 
         # Store the full assistant message
         assistant_msg = ChatMessage(
@@ -607,12 +622,13 @@ def _generate_event_stream(
         db.commit()
 
         # Send done signal with suggestions
-        suggestions = _generate_suggestions(
+        suggestions = generate_suggestions(
             goal_title=goal.title if goal else "",
             task_title=task.title if task else "",
             last_response=full_response[:300],
         )
-        yield f"data: {json.dumps({'suggestions': suggestions})}\n\n"
+        suggestions_payload = {"suggestions": suggestions}
+        yield f"data: {json.dumps(suggestions_payload)}\n\n"
         yield "data: [DONE]\n\n"
 
     except Exception as e:
@@ -621,14 +637,20 @@ def _generate_event_stream(
         yield f"data: {json.dumps(error_payload)}\n\n"
         yield "data: [DONE]\n\n"
 
-def stream_message(db: Session, user_id: int, session_id: int, message: str):
+
+def stream_message(
+    db: Session,
+    user_id: int,
+    session_id: int,
+    message: str,
+):
     """
     Stream assistant response token-by-token via SSE.
     Returns a StreamingResponse.
     """
 
     # Rate limit
-    if not _check_rate_limit(db, user_id):
+    if not check_rate_limit(db, user_id):
         raise HTTPException(
             status_code=429,
             detail="Rate limit exceeded. Please wait before sending more messages.",
@@ -659,10 +681,13 @@ def stream_message(db: Session, user_id: int, session_id: int, message: str):
     db.flush()
 
     # Build context
-    goal_context = _build_goal_context(db, goal)
-    task_context = _build_task_context(task) if task else ""
-    system_prompt = _build_system_prompt(has_task_focus=task is not None)
-    full_context = goal_context + ("\n" + task_context if task_context else "")
+    goal_context = build_goal_context(db, goal)
+    task_context = build_task_context(task) if task else ""
+    system_prompt = build_system_prompt(has_task_focus=task is not None)
+    if task_context:
+        full_context = goal_context + "\n" + task_context
+    else:
+        full_context = goal_context
 
     # Load history
     history_messages = (
@@ -673,7 +698,7 @@ def stream_message(db: Session, user_id: int, session_id: int, message: str):
     )
     history = [
         {"role": m.role, "content": m.content}
-        for m in history_messages[-MAX_HISTORY_MESSAGES - 1:-1]
+        for m in history_messages[-MAX_HISTORY_MESSAGES - 1 : -1]
     ]
 
     # Build LLM messages
@@ -697,6 +722,7 @@ def stream_message(db: Session, user_id: int, session_id: int, message: str):
 
 # ─── Suggested Questions ─────────────────────────────────────────────
 
+
 def get_suggested_questions(
     db: Session,
     user_id: int,
@@ -708,26 +734,20 @@ def get_suggested_questions(
     Called on initial load and after each response.
     """
 
-    goal = (
-        db.query(Goal)
-        .filter(Goal.id == goal_id, Goal.user_id == user_id)
-        .first()
-    )
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user_id).first()
     if not goal:
         return []
 
     task = None
     if task_id:
         task = (
-            db.query(Task)
-            .filter(Task.id == task_id, Task.goal_id == goal_id)
-            .first()
+            db.query(Task).filter(Task.id == task_id, Task.goal_id == goal_id).first()
         )
 
     goal_title = goal.title
     task_title = task.title if task else None
 
-    return _generate_suggestions(goal_title, task_title)
+    return generate_suggestions(goal_title, task_title)
 
 
 def _generate_suggestions(
@@ -737,25 +757,8 @@ def _generate_suggestions(
 ) -> list[str]:
     """Ask LLM for 2-3 suggested follow-up questions."""
 
-    context = f"Goal: {goal_title}"
-    if task_title:
-        context += f"\nCurrent task: {task_title}"
-    if last_response:
-        context += f"\nLast AI response (excerpt): {last_response}"
-
-    prompt_lines = [
-        "Given this context:",
-        context,
-        "",
-        "Generate exactly 3 short follow-up questions a user might want to ask.",
-        "Each question should be specific to the goal/task, not generic.",
-        "Keep each under 60 characters.",
-        "",
-        "Return ONLY a JSON array of 3 strings, nothing else.",
-        "Example:",
-        "[\"How long does step 2 take?\", \"What tools do I need?\", \"Can I skip the review?\"]",
-    ]
-    prompt = "\n".join(prompt_lines)
+    context = _build_suggestions_context(goal_title, task_title, last_response)
+    prompt = _build_suggestions_prompt(context)
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -782,20 +785,57 @@ def _generate_suggestions(
         response.raise_for_status()
         data = response.json()
         content = data["choices"][0]["message"]["content"].strip()
-
-        if content.startswith("```"):
-            content = content.replace("```json", "").replace("```", "").strip()
-
-        suggestions = json.loads(content)
-        if (
-            isinstance(suggestions, list)
-            and len(suggestions) >= MIN_SUGGESTIONS_REQUIRED
-        ):
+        suggestions = _parse_suggestions_response(content)
+        if suggestions and len(suggestions) >= MIN_SUGGESTIONS_REQUIRED:
             return suggestions[:MAX_SUGGESTIONS_RETURNED]
     except Exception as e:
         print(f"Suggestion generation error: {e}")
 
-    # Fallback suggestions
+    return _fallback_suggestions(task_title)
+
+
+def _build_suggestions_context(
+    goal_title: str,
+    task_title: str | None,
+    last_response: str | None,
+) -> str:
+    context = f"Goal: {goal_title}"
+    if task_title:
+        context += f"\nCurrent task: {task_title}"
+    if last_response:
+        context += f"\nLast AI response (excerpt): {last_response}"
+    return context
+
+
+def _build_suggestions_prompt(context: str) -> str:
+    prompt_lines = [
+        "Given this context:",
+        context,
+        "",
+        "Generate exactly 3 short follow-up questions a user might want to ask.",
+        "Each question should be specific to the goal/task, not generic.",
+        "Keep each under 60 characters.",
+        "",
+        "Return ONLY a JSON array of 3 strings, nothing else.",
+        "Example:",
+        (
+            '["How long does step 2 take?", "What tools do I need?", "Can I skip the review?"]'
+        ),
+    ]
+    return "\n".join(prompt_lines)
+
+
+def _parse_suggestions_response(content: str) -> list[str] | None:
+    if content.startswith("```"):
+        content = content.replace("```json", "").replace("```", "").strip()
+    try:
+        suggestions = json.loads(content)
+    except json.JSONDecodeError:
+        return None
+    return suggestions if isinstance(suggestions, list) else None
+
+
+def _fallback_suggestions(task_title: str | None) -> list[str]:
     if task_title:
         return [
             "How do I complete this task?",
@@ -810,6 +850,7 @@ def _generate_suggestions(
 
 
 # ─── LLM Call ────────────────────────────────────────────────────────
+
 
 def _call_chat_llm(
     system_prompt: str,
@@ -834,8 +875,7 @@ def _call_chat_llm(
             {
                 "role": "system",
                 "content": (
-                    "Here is the user's current goal and task data:\n\n"
-                    f"{context}"
+                    f"Here is the user's current goal and task data:\n\n{context}"
                 ),
             }
         )
@@ -877,6 +917,7 @@ def _call_chat_llm(
 
 # ─── Helpers ─────────────────────────────────────────────────────────
 
+
 def _msg_to_dict(msg: ChatMessage) -> dict:
     return {
         "id": msg.id,
@@ -884,3 +925,43 @@ def _msg_to_dict(msg: ChatMessage) -> dict:
         "content": msg.content,
         "created_at": msg.created_at.isoformat(),
     }
+
+
+# ─── Public wrappers (test-friendly) ────────────────────────────────
+
+
+def build_goal_context(db: Session, goal: Goal) -> str:
+    return _build_goal_context(db, goal)
+
+
+def build_task_context(task: Task) -> str:
+    return _build_task_context(task)
+
+
+def build_system_prompt(has_task_focus: bool) -> str:
+    return _build_system_prompt(has_task_focus)
+
+
+def check_rate_limit(db: Session, user_id: int) -> bool:
+    return _check_rate_limit(db, user_id)
+
+
+def call_chat_llm(
+    system_prompt: str,
+    context: str,
+    history: list[dict],
+    user_message: str,
+) -> str:
+    return _call_chat_llm(system_prompt, context, history, user_message)
+
+
+def generate_suggestions(
+    goal_title: str,
+    task_title: str | None = None,
+    last_response: str | None = None,
+) -> list[str]:
+    return _generate_suggestions(goal_title, task_title, last_response)
+
+
+def msg_to_dict(msg: ChatMessage) -> dict:
+    return _msg_to_dict(msg)

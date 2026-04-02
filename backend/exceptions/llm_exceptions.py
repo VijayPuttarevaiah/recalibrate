@@ -1,6 +1,7 @@
 # HTTP status codes
 HTTP_SERVICE_UNAVAILABLE = 503
 
+
 class LLMClientError(Exception):
     def __init__(
         self,

@@ -3,6 +3,7 @@ import os
 from loguru import logger
 from config.config import Config
 
+
 class LogManager:
     _instance = None
 
@@ -42,10 +43,7 @@ class LogManager:
         )
 
         # Add file logger
-        file_format = (
-            "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | "
-            "{name}:{function}:{line} - {message}"
-        )
+        file_format = "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
         logger.add(
             log_file_path,
             level=log_cfg["level"],

@@ -3,16 +3,13 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any, Dict, List, TypedDict
 
-from fastapi import HTTPException, status
 from langgraph.graph import StateGraph, END
 from sqlalchemy.orm import Session
 
-from goals.models.goal_adjustment_models import GoalAdjustment
-from goals.models.task_models import Task
+
 from goals.progress.summarizer import format_summary_for_llm
 from replan.llm.service import (
     ReplanTaskRequest,
-    generate_replan_explanation,
     generate_replan_tasks,
 )
 from goals.integrations.web_search_service import gather_research
@@ -47,6 +44,10 @@ def _gather_research_node(state: ReplanState) -> ReplanState:
     return {"research_context": research_context}
 
 
+def gather_research_node(state: ReplanState) -> ReplanState:
+    return _gather_research_node(state)
+
+
 def _generate_tasks_node(state: ReplanState) -> ReplanState:
     """Generate replan tasks for the current chunk via LLM."""
     idx = state.get("current_chunk_index", 0)
@@ -76,6 +77,10 @@ def _generate_tasks_node(state: ReplanState) -> ReplanState:
     }
 
 
+def generate_tasks_node(state: ReplanState) -> ReplanState:
+    return _generate_tasks_node(state)
+
+
 def _validate_tasks_node(state: ReplanState) -> ReplanState:
     """Minimal implementation for validate_tasks node."""
     if not state.get("generated_tasks"):
@@ -85,8 +90,10 @@ def _validate_tasks_node(state: ReplanState) -> ReplanState:
 
 def _apply_plan_node(db: Session):
     """Minimal implementation for apply_plan node."""
+
     def node(state: ReplanState) -> ReplanState:
         return {"tasks_deleted": 0}  # Placeholder for tasks deleted
+
     return node
 
 
@@ -97,8 +104,10 @@ def _generate_explanation_node(state: ReplanState) -> ReplanState:
 
 def _log_adjustment_node(db: Session):
     """Minimal implementation for log_adjustment node."""
+
     def node(state: ReplanState) -> ReplanState:
         return {"adjustment_id": 1}  # Placeholder adjustment ID
+
     return node
 
 
@@ -117,6 +126,10 @@ def _should_continue_chunks(state: ReplanState) -> str:
         return "more"
     print("_should_continue_chunks: returning 'done'")
     return "done"
+
+
+def should_continue_chunks(state: ReplanState) -> str:
+    return _should_continue_chunks(state)
 
 
 def build_replan_graph(db: Session) -> StateGraph:

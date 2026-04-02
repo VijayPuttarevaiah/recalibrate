@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Date, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from core.base import Base
 
+
 class Task(Base):
     __tablename__ = "tasks"
 
@@ -31,8 +32,4 @@ class Task(Base):
         }
 
     def __repr__(self) -> str:
-        return (
-            "Task("
-            f"id={self.id}, goal_id={self.goal_id}, title={self.title!r}"
-            ")"
-        )
+        return f"Task(id={self.id}, goal_id={self.goal_id}, title={self.title!r})"

@@ -7,8 +7,8 @@ from auth.models.token_models import BlacklistedToken
 from config.config import Config
 
 config = Config()
-SECRET_KEY = config.config['oauth2']['secret_key']
-ALGORITHM = config.config['oauth2'].get('algorithm', 'HS256')
+SECRET_KEY = config.config["oauth2"]["secret_key"]
+ALGORITHM = config.config["oauth2"].get("algorithm", "HS256")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 

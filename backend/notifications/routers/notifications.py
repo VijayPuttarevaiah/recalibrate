@@ -19,8 +19,8 @@ def _notifications_query(db: Session, user_id: int, goal_id: int | None):
 @router.get("/{user_id}")
 def get_user_notifications(
     user_id: int,
-    goal_id: int | None = Query(default=None),   # ← ADD
-    db: Session = Depends(get_db)
+    goal_id: int | None = Query(default=None),  # ← ADD
+    db: Session = Depends(get_db),
 ):
     notifications = (
         _notifications_query(db, user_id, goal_id)
@@ -34,14 +34,11 @@ def get_user_notifications(
     }
 
 
-
 @router.patch("/{notification_id}/read")
 def mark_as_read(notification_id: int, db: Session = Depends(get_db)):
     """Mark a single notification as read."""
     notification = (
-        db.query(Notification)
-        .filter(Notification.id == notification_id)
-        .first()
+        db.query(Notification).filter(Notification.id == notification_id).first()
     )
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")

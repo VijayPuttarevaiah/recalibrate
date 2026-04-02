@@ -88,6 +88,10 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
     return tasks
 
 
+def call_llm_for_tasks(prompt: str) -> list[dict]:
+    return _call_llm_for_tasks(prompt)
+
+
 @dataclass(frozen=True)
 class ReplanTaskRequest:
     goal_title: str
@@ -139,12 +143,12 @@ def generate_replan_tasks(
         "",
         "Format:",
         "[",
-        "  {\"title\": \"Specific actionable task\", \"date\": \"YYYY-MM-DD\"}",
+        '  {"title": "Specific actionable task", "date": "YYYY-MM-DD"}',
         "]",
     ]
     prompt = "\n".join(prompt_lines)
 
-    return _call_llm_for_tasks(prompt)
+    return call_llm_for_tasks(prompt)
 
 
 def generate_replan_explanation(

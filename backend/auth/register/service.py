@@ -21,5 +21,7 @@ class RegisterService:
             logger.success(f"Successfully registered user: {user.email}")
             return user
         except IntegrityError:
-            logger.warning(f"Registration failed: Email {user_data.email} already exists")
+            logger.warning(
+                f"Registration failed: Email {user_data.email} already exists"
+            )
             raise HTTPException(status_code=400, detail="Email already registered")

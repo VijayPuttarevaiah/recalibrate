@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session
 
 from goals.models.task_models import Task
 from auth.models.user_models import User
-from notifications.services.notification_service import create_notification, NotificationParams
+from notifications.services.notification_service import (
+    create_notification,
+    NotificationParams,
+)
 from core.db_session import DBSession
 
 logger = logging.getLogger(__name__)
@@ -15,26 +18,42 @@ DEADLINE_WINDOW_HOURS = 24
 COMPLETED_STATUS = "completed"
 CRON_INTERVAL_HOURS = 1
 
-REMINDER_TITLE  = "Deadline Reminder"
-OVERDUE_TITLE   = "Task Overdue"
+REMINDER_TITLE = "Deadline Reminder"
+OVERDUE_TITLE = "Task Overdue"
 COMPLETED_TITLE = "Task Completed"
 
 
 # -- Message builders ----------------------------------------------------------
+
 
 def _build_reminder_message(task_title: str) -> str:
     return f"Don't forget: Your task '{task_title}' is due within 24 hours!"
 
 
 def _build_overdue_message(task_title: str) -> str:
-    return f"Your task '{task_title}' is overdue. Please complete it as soon as possible."
+    return (
+        f"Your task '{task_title}' is overdue. Please complete it as soon as possible."
+    )
 
 
 def _build_completed_message(task_title: str) -> str:
     return f"Congratulations! You have completed the task '{task_title}'. Keep it up!"
 
 
+def build_reminder_message(task_title: str) -> str:
+    return _build_reminder_message(task_title)
+
+
+def build_overdue_message(task_title: str) -> str:
+    return _build_overdue_message(task_title)
+
+
+def build_completed_message(task_title: str) -> str:
+    return _build_completed_message(task_title)
+
+
 # -- DB helper -----------------------------------------------------------------
+
 
 def _create_db_session() -> Session:
     """Thin wrapper so tests can patch DB creation without touching DBSession."""
@@ -42,6 +61,7 @@ def _create_db_session() -> Session:
 
 
 # -- Notification helpers ------------------------------------------------------
+
 
 def _notify_task_group(db, tasks, title_fn, message_fn, title):
     for task in tasks:
@@ -84,14 +104,14 @@ def _fetch_overdue_tasks(db: Session, now: datetime) -> list[Task]:
 
 
 def _fetch_completed_tasks(db: Session) -> list[Task]:
-    return (
-        db.query(Task)
-        .filter(Task.status == COMPLETED_STATUS)
-        .all()
-    )
+    return db.query(Task).filter(Task.status == COMPLETED_STATUS).all()
 
 
-def _log_notification_summary(upcoming_tasks: list[Task], overdue_tasks: list[Task], completed_tasks: list[Task]) -> None:
+def _log_notification_summary(
+    upcoming_tasks: list[Task],
+    overdue_tasks: list[Task],
+    completed_tasks: list[Task],
+) -> None:
     logger.info(
         "Cron: upcoming=%s, overdue=%s, completed=%s",
         len(upcoming_tasks),
@@ -101,6 +121,7 @@ def _log_notification_summary(upcoming_tasks: list[Task], overdue_tasks: list[Ta
 
 
 # -- Main cron function --------------------------------------------------------
+
 
 def check_upcoming_deadlines() -> None:
     """

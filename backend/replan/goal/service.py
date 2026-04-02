@@ -37,11 +37,7 @@ TASK_GENERATION_TEMPERATURE = 0.2
 
 
 def _get_goal_or_404(db: Session, user_id: int, goal_id: int) -> Goal:
-    goal = (
-        db.query(Goal)
-        .filter(Goal.id == goal_id, Goal.user_id == user_id)
-        .first()
-    )
+    goal = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user_id).first()
     if not goal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -131,6 +127,7 @@ def _insert_new_tasks(db: Session, goal_id: int, tasks: list[dict]) -> None:
 
 # ─── Replanning ──────────────────────────────────────────────────────
 
+
 def replan_goal(db: Session, user_id: int, goal_id: int) -> dict:
     """
     Main entry point: detect problems, regenerate future tasks,
@@ -174,9 +171,9 @@ def replan_goal(db: Session, user_id: int, goal_id: int) -> dict:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=(
-                f"Replan failed: LLM could not generate replacement tasks. "
-                f"Your existing plan has NOT been modified. "
-                f"Please try again in a moment."
+                "Replan failed: LLM could not generate replacement tasks. "
+                "Your existing plan has NOT been modified. "
+                "Please try again in a moment."
             ),
         )
 
@@ -233,6 +230,7 @@ def replan_goal(db: Session, user_id: int, goal_id: int) -> dict:
 
 # ─── LLM Calls ──────────────────────────────────────────────────────
 
+
 @dataclass
 class ReplanContext:
     goal_title: str
@@ -283,7 +281,7 @@ def _generate_replan_tasks(context: ReplanContext):
         "",
         "Format:",
         "[",
-        "  {\"title\": \"Specific actionable task\", \"date\": \"YYYY-MM-DD\"}",
+        '  {"title": "Specific actionable task", "date": "YYYY-MM-DD"}',
         "]",
     ]
     prompt = "\n".join(prompt_lines)
@@ -302,8 +300,7 @@ def _generate_explanation(
 
     stats = summary["stats"]
     missed_titles = [
-        task["title"]
-        for task in summary["missed_tasks"][:MAX_MISSED_TITLES_FOR_PROMPT]
+        task["title"] for task in summary["missed_tasks"][:MAX_MISSED_TITLES_FOR_PROMPT]
     ]
 
     prompt_lines = [
@@ -323,8 +320,8 @@ def _generate_explanation(
         "   dropped items)",
         "3. Key trade-offs the user should know about",
         "",
-        "Keep it friendly and motivating, not judgmental. Be specific about",
-        "what was adjusted — don't be vague.",
+        "Keep it friendly and motivating, not judgmental.",
+        "Be specific about what was adjusted — don't be vague.",
         "",
         "Return ONLY the explanation text, no JSON, no markdown headers.",
     ]
@@ -402,7 +399,8 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
                 "role": "system",
                 "content": (
                     "You are a replanning assistant. Generate adjusted tasks "
-                    "based on the user's actual progress. Return valid JSON only."
+                    "based on the user's actual progress. "
+                    "Return valid JSON only."
                 ),
             },
             {"role": "user", "content": prompt},

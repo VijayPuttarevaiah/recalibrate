@@ -29,15 +29,20 @@ class TaskNotesUpdate(BaseModel):
 
 # ── Helper: verify task belongs to user ──
 
+
 def _get_user_task(db: Session, task_id: int, user_id: int) -> Task:
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    goal = db.query(Goal).filter(
-        Goal.id == task.goal_id,
-        Goal.user_id == user_id,
-    ).first()
+    goal = (
+        db.query(Goal)
+        .filter(
+            Goal.id == task.goal_id,
+            Goal.user_id == user_id,
+        )
+        .first()
+    )
     if not goal:
         raise HTTPException(status_code=403, detail="Not your task")
 

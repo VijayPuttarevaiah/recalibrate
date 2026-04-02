@@ -3,8 +3,8 @@ GOAL_CATEGORY_PROMPT_LINES = [
     "",
     "INPUT (JSON):",
     "- goal_text: string",
-    "- start_date: string (ISO-8601, e.g., \"2026-02-14\")",
-    "- end_date: string (ISO-8601, e.g., \"2026-03-31\")",
+    '- start_date: string (ISO-8601, e.g., "2026-02-14")',
+    '- end_date: string (ISO-8601, e.g., "2026-03-31")',
     "- note: string|null",
     "",
     "TASK:",
@@ -23,19 +23,17 @@ GOAL_CATEGORY_PROMPT_LINES = [
     "",
     "   IMPORTANT — is_sufficient should be TRUE when:",
     (
-        "   - The goal has a clear destination even if the user lacks details about "
-        "HOW to get there."
+        "   - The goal has a clear destination even if the user lacks details about HOW to get there."
     ),
     "   - The user explicitly states they have no information, no prior research, or are",
     "     starting from scratch — this is FINE. The planning system will research the steps.",
     "     Lack of domain knowledge is NOT a reason to ask follow-up questions.",
-    "   - The note says things like \"no knowledge\", \"haven't consulted anyone\",",
-    "     \"don't know requirements\" — still mark as sufficient if the WHAT and WHEN are clear.",
+    '   - The note says things like "no knowledge", "haven\'t consulted anyone",',
+    '     "don\'t know requirements" — still mark as sufficient if the WHAT and WHEN are clear.',
     "",
     "   is_sufficient should be FALSE only when:",
     (
-        "   - The goal itself is genuinely ambiguous (e.g., \"improve my life\", "
-        "\"get better at stuff\")"
+        '   - The goal itself is genuinely ambiguous (e.g., "improve my life", "get better at stuff")'
     ),
     "   - There is no discernible outcome or destination",
     "   - The timeframe is missing or contradictory (end_date <= start_date)",
@@ -83,31 +81,30 @@ GOAL_CATEGORY_PROMPT_LINES = [
     "",
     "EXAMPLES (with is_sufficient reasoning):",
     "",
-    "- \"I want to lose 5 kg in 40 days\" -> fitness, is_sufficient: true (quantifiable)",
-    "- \"Gain 5kg by April 30\" -> fitness, is_sufficient: true (quantifiable)",
-    "- \"Move to Germany on work visa\" -> immigration, is_sufficient: true (binary outcome)",
-    "- \"Need Canada PR roadmap\" -> immigration, is_sufficient: true (binary: get PR)",
-    "- \"Plan for H1B this year\" -> immigration, is_sufficient: true (binary: get H1B)",
+    '- "I want to lose 5 kg in 40 days" -> fitness, is_sufficient: true (quantifiable)',
+    '- "Gain 5kg by April 30" -> fitness, is_sufficient: true (quantifiable)',
+    '- "Move to Germany on work visa" -> immigration, is_sufficient: true (binary outcome)',
+    '- "Need Canada PR roadmap" -> immigration, is_sufficient: true (binary: get PR)',
+    '- "Plan for H1B this year" -> immigration, is_sufficient: true (binary: get H1B)',
     (
-        "- \"Crack data engineer interviews in 3 months\" -> career_and_learning, "
-        "is_sufficient: true (binary: land job)"
+        '- "Crack data engineer interviews in 3 months" -> career_and_learning, is_sufficient: true (binary: land job)'
     ),
-    "- \"Improve DSA and get job in 90 days\" -> career_and_learning, is_sufficient: true (binary: get job)",
-    "- \"Prepare IELTS for Canada PR\" -> immigration, is_sufficient: true (binary: pass IELTS for PR)",
-    "- \"Prepare IELTS for master's admission\" -> career_and_learning, is_sufficient: true (binary: pass IELTS)",
-    "- \"Get into Dalhousie MACS program\" -> career_and_learning, is_sufficient: true (binary: get accepted)",
+    '- "Improve DSA and get job in 90 days" -> career_and_learning, is_sufficient: true (binary: get job)',
+    '- "Prepare IELTS for Canada PR" -> immigration, is_sufficient: true (binary: pass IELTS for PR)',
+    '- "Prepare IELTS for master\'s admission" -> career_and_learning, is_sufficient: true (binary: pass IELTS)',
+    '- "Get into Dalhousie MACS program" -> career_and_learning, is_sufficient: true (binary: get accepted)',
     (
-        "- \"Join a university in Canada\" + note: \"no knowledge, haven't consulted anyone\" "
+        '- "Join a university in Canada" + note: "no knowledge, haven\'t consulted anyone" '
         "-> career_and_learning, is_sufficient: true (binary: get accepted; lack of knowledge is fine)"
     ),
-    "- \"Get better at things\" -> career_and_learning, is_sufficient: false (no clear outcome)",
-    "- \"Be healthier\" -> fitness, is_sufficient: false (no specific outcome)",
+    '- "Get better at things" -> career_and_learning, is_sufficient: false (no clear outcome)',
+    '- "Be healthier" -> fitness, is_sufficient: false (no specific outcome)',
     "",
     "OUTPUT (STRICT JSON ONLY):",
     "{",
-    "  \"category\": \"<one of provided categories>\",",
-    "  \"is_sufficient\": true|false,",
-    "  \"follow_up_questions\": [\"...\"]",
+    '  "category": "<one of provided categories>",',
+    '  "is_sufficient": true|false,',
+    '  "follow_up_questions": ["..."]',
     "}",
     "",
     "OUTPUT RULES:",

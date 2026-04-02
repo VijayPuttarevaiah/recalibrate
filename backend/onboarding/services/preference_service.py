@@ -34,7 +34,9 @@ class PreferenceService:
         self.db.refresh(pref)
         return pref
 
-    def save_preferences_with_roadmap(self, user_id: int, data: PreferenceCreate) -> dict:
+    def save_preferences_with_roadmap(
+        self, user_id: int, data: PreferenceCreate
+    ) -> dict:
         pref = self.save_preferences(user_id=user_id, data=data)
         roadmap_service = RoadmapService()
         roadmap = roadmap_service.generate_roadmap(

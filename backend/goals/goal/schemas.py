@@ -1,6 +1,5 @@
 from datetime import date
-from typing import Literal
-from pydantic import BaseModel, Field, model_validator, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 from domain.goal_category import GoalCategory
 
 

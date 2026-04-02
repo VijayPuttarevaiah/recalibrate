@@ -1,11 +1,14 @@
 """Backward-compatible re-exports. Canonical code lives in feature folders."""
+
 from auth.login.service import LoginService
 from auth.register.service import RegisterService
 from auth.logout.service import LogoutService
 
+
 # AuthService facade for backward compatibility
 class AuthService:
     """Facade that delegates to feature-specific services."""
+
     def __init__(self, db):
         self._login = LoginService(db)
         self._register = RegisterService(db)

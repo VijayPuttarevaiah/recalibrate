@@ -4,6 +4,7 @@ RED   → route delegates to service, history returns list with required fields
 GREEN → default threshold=3, exceptions propagate, empty history returns []
 REFACTOR → route is thin (no direct db.query), history ordered DESC
 """
+
 import pytest
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
@@ -51,47 +52,79 @@ def make_adjustment(params: AdjustmentParams | None = None):
     return a
 
 
+def _set_history_return(db, adjustments):
+    query = db.query.return_value
+    filtered = query.filter.return_value
+    ordered = filtered.order_by.return_value
+    ordered.all.return_value = adjustments
+
+
 # ── RED ──────────────────────────────────────────────────────────────────────
 
+
 @patch("replan.routers.replan_routes.check_goal_needs_replan")
-def test_RED_check_route_delegates_to_service(mock_check):
+def test_red_check_delegates(mock_check):
     """RED: check route must call check_goal_needs_replan with goal_id + threshold."""
     from replan.routers.replan_routes import check_replan_status
+
     mock_check.return_value = {
-        "goal_id": DEFAULT_GOAL_ID, "missed_count": 0, "completed_count": 0,
-        "total_past_tasks": 0, "threshold": DEFAULT_THRESHOLD, "needs_replan": False
+        "goal_id": DEFAULT_GOAL_ID,
+        "missed_count": 0,
+        "completed_count": 0,
+        "total_past_tasks": 0,
+        "threshold": DEFAULT_THRESHOLD,
+        "needs_replan": False,
     }
     db = MagicMock()
-    check_replan_status(goal_id=DEFAULT_GOAL_ID, threshold=DEFAULT_THRESHOLD, current_user={"user_id": DEFAULT_USER_ID}, db=db)
+    check_replan_status(
+        goal_id=DEFAULT_GOAL_ID,
+        threshold=DEFAULT_THRESHOLD,
+        current_user={"user_id": DEFAULT_USER_ID},
+        db=db,
+    )
     mock_check.assert_called_once_with(db, DEFAULT_GOAL_ID, threshold=DEFAULT_THRESHOLD)
 
 
 @patch("replan.routers.replan_routes.replan_goal")
-def test_RED_trigger_passes_user_id_to_service(mock_replan):
+def test_red_trigger_user_id(mock_replan):
     """RED: user_id from JWT must be forwarded to replan_goal — not hardcoded."""
     from replan.routers.replan_routes import trigger_replan
+
     mock_replan.return_value = {"adjusted": True, "goal_id": DEFAULT_GOAL_ID}
     db = MagicMock()
-    trigger_replan(goal_id=DEFAULT_GOAL_ID, current_user={"user_id": ALT_USER_ID}, db=db)
+    trigger_replan(
+        goal_id=DEFAULT_GOAL_ID,
+        current_user={"user_id": ALT_USER_ID},
+        db=db,
+    )
     mock_replan.assert_called_once_with(db, ALT_USER_ID, DEFAULT_GOAL_ID)
 
 
-def test_RED_history_returns_list_of_items():
+def test_red_history_returns_list():
     """RED: History endpoint must return a list."""
     from replan.routers.replan_routes import get_adjustment_history
-    adj = make_adjustment(AdjustmentParams(id=DEFAULT_ADJUSTMENT_ID, goal_id=DEFAULT_GOAL_ID))
+
+    adj = make_adjustment(
+        AdjustmentParams(id=DEFAULT_ADJUSTMENT_ID, goal_id=DEFAULT_GOAL_ID)
+    )
     db = MagicMock()
-    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [adj]
-    result = get_adjustment_history(goal_id=DEFAULT_GOAL_ID, current_user={"user_id": DEFAULT_USER_ID}, db=db)
+    _set_history_return(db, [adj])
+    result = get_adjustment_history(
+        goal_id=DEFAULT_GOAL_ID,
+        current_user={"user_id": DEFAULT_USER_ID},
+        db=db,
+    )
     assert isinstance(result, list)
     assert len(result) == DEFAULT_ADJUSTMENT_ID
 
 
 # ── GREEN ─────────────────────────────────────────────────────────────────────
 
-def test_GREEN_check_default_threshold_is_three():
+
+def test_green_default_threshold():
     """GREEN: Inspect check route — default threshold must be 3."""
     from replan.routers.replan_routes import check_replan_status
+
     sig = inspect.signature(check_replan_status)
     default_value = sig.parameters["threshold"].default
     if hasattr(default_value, "default"):
@@ -101,55 +134,88 @@ def test_GREEN_check_default_threshold_is_three():
 
 
 @patch("replan.routers.replan_routes.replan_goal")
-def test_GREEN_404_from_service_propagates(mock_replan):
+def test_green_404_propagates(mock_replan):
     """GREEN: HTTPException from service must not be swallowed by the route."""
     from replan.routers.replan_routes import trigger_replan
+
     mock_replan.side_effect = HTTPException(status_code=404, detail="Not found")
     db = MagicMock()
     with pytest.raises(HTTPException) as exc:
-        trigger_replan(goal_id=999, current_user={"user_id": DEFAULT_USER_ID}, db=db)
+        trigger_replan(
+            goal_id=999,
+            current_user={"user_id": DEFAULT_USER_ID},
+            db=db,
+        )
     assert exc.value.status_code == HTTP_NOT_FOUND
 
 
-def test_GREEN_empty_history_returns_empty_list():
+def test_green_empty_history():
     """GREEN: No adjustments exist → return [] not None."""
     from replan.routers.replan_routes import get_adjustment_history
+
     db = MagicMock()
-    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
-    result = get_adjustment_history(goal_id=DEFAULT_GOAL_ID, current_user={"user_id": DEFAULT_USER_ID}, db=db)
+    _set_history_return(db, [])
+    result = get_adjustment_history(
+        goal_id=DEFAULT_GOAL_ID,
+        current_user={"user_id": DEFAULT_USER_ID},
+        db=db,
+    )
     assert result == []
 
 
-def test_GREEN_history_created_at_is_iso_string():
+def test_green_history_created_iso():
     """GREEN: created_at in history items must be a string in ISO format."""
     from replan.routers.replan_routes import get_adjustment_history
-    adj = make_adjustment(AdjustmentParams(id=DEFAULT_ADJUSTMENT_ID, goal_id=DEFAULT_GOAL_ID))
+
+    adj = make_adjustment(
+        AdjustmentParams(id=DEFAULT_ADJUSTMENT_ID, goal_id=DEFAULT_GOAL_ID)
+    )
     db = MagicMock()
-    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [adj]
-    result = get_adjustment_history(goal_id=DEFAULT_GOAL_ID, current_user={"user_id": DEFAULT_USER_ID}, db=db)
+    _set_history_return(db, [adj])
+    result = get_adjustment_history(
+        goal_id=DEFAULT_GOAL_ID,
+        current_user={"user_id": DEFAULT_USER_ID},
+        db=db,
+    )
     assert isinstance(result[0].created_at, str)
     assert "2026-03-01" in result[0].created_at
 
 
 # ── REFACTOR ──────────────────────────────────────────────────────────────────
 
+
 @patch("replan.routers.replan_routes.check_goal_needs_replan")
-def test_REFACTOR_check_route_does_not_query_db_directly(mock_check):
+def test_refactor_check_no_query(mock_check):
     """REFACTOR: Route must not call db.query() — only service layer should."""
     from replan.routers.replan_routes import check_replan_status
+
     mock_check.return_value = {
-        "goal_id": DEFAULT_GOAL_ID, "missed_count": 0, "completed_count": 0,
-        "total_past_tasks": 0, "threshold": DEFAULT_THRESHOLD, "needs_replan": False
+        "goal_id": DEFAULT_GOAL_ID,
+        "missed_count": 0,
+        "completed_count": 0,
+        "total_past_tasks": 0,
+        "threshold": DEFAULT_THRESHOLD,
+        "needs_replan": False,
     }
     db = MagicMock()
-    check_replan_status(goal_id=DEFAULT_GOAL_ID, threshold=DEFAULT_THRESHOLD, current_user={"user_id": DEFAULT_USER_ID}, db=db)
+    check_replan_status(
+        goal_id=DEFAULT_GOAL_ID,
+        threshold=DEFAULT_THRESHOLD,
+        current_user={"user_id": DEFAULT_USER_ID},
+        db=db,
+    )
     db.query.assert_not_called()
 
 
-def test_REFACTOR_history_query_uses_order_by():
+def test_refactor_history_order_by():
     """REFACTOR: History query must use .order_by() for DESC created_at."""
     from replan.routers.replan_routes import get_adjustment_history
+
     db = MagicMock()
-    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
-    get_adjustment_history(goal_id=DEFAULT_GOAL_ID, current_user={"user_id": DEFAULT_USER_ID}, db=db)
+    _set_history_return(db, [])
+    get_adjustment_history(
+        goal_id=DEFAULT_GOAL_ID,
+        current_user={"user_id": DEFAULT_USER_ID},
+        db=db,
+    )
     db.query.return_value.filter.return_value.order_by.assert_called_once()

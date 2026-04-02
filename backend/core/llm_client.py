@@ -10,6 +10,7 @@ logger = LogManager.get_logger()
 DEFAULT_TIMEOUT_SECONDS = 12.0
 HTTP_STATUS_OK = 200
 
+
 class LLMClient:
     def __init__(self, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS):
         # Use OpenRouter instead of Google
@@ -24,7 +25,9 @@ class LLMClient:
         self.base_url = "https://openrouter.ai/api/v1"
         self.timeout_seconds = timeout_seconds
 
-    def _call_generate_content(self, model_name: str, payload: dict) -> tuple[int, dict]:
+    def _call_generate_content(
+        self, model_name: str, payload: dict
+    ) -> tuple[int, dict]:
         url = f"{self.base_url}/chat/completions"
 
         try:
@@ -102,10 +105,7 @@ class LLMClient:
             "messages": [
                 {
                     "role": "user",
-                    "content": (
-                        f"{prompt}\n\nInput JSON:\n"
-                        f"{json.dumps(user_payload)}"
-                    ),
+                    "content": (f"{prompt}\n\nInput JSON:\n{json.dumps(user_payload)}"),
                 }
             ],
             "temperature": 0,

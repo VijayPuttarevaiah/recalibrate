@@ -11,6 +11,7 @@ router = APIRouter()
 # OAuth2 scheme for extracting the Bearer token from the Authorization header
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
+
 @router.post("/logout")
 def logout(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """

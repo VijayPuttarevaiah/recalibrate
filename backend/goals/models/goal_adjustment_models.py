@@ -18,8 +18,8 @@ class GoalAdjustment(Base):
     total_task_count = Column(Integer, nullable=False, default=0)
 
     # What changed
-    tasks_deleted = Column(Integer, default=0)       # old future tasks removed
-    tasks_created = Column(Integer, default=0)       # new tasks generated
+    tasks_deleted = Column(Integer, default=0)  # old future tasks removed
+    tasks_created = Column(Integer, default=0)  # new tasks generated
     original_end_date = Column(Date)
     new_end_date = Column(Date)
 

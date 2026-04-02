@@ -2,11 +2,12 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from core.base import Base
 
+
 class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)   # ← ADD
+    goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)  # ← ADD
     title = Column(String(255), nullable=False)
     message = Column(String(500), nullable=False)
     is_read = Column(Boolean, default=False)
@@ -25,7 +26,5 @@ class Notification(Base):
 
     def __repr__(self) -> str:
         return (
-            "Notification("
-            f"id={self.id}, user_id={self.user_id}, title={self.title!r}"
-            ")"
+            f"Notification(id={self.id}, user_id={self.user_id}, title={self.title!r})"
         )

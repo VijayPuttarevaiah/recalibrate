@@ -1,6 +1,7 @@
-from sqlalchemy import Column,Integer,String,DateTime,Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from datetime import datetime, timezone
 from core.base import Base
+
 
 # Represents the User entity in the database
 class User(Base):
@@ -16,9 +17,17 @@ class User(Base):
     # Hashed version of the user's password for security
     password = Column(String(512), nullable=False)
     # Timestamp when the user record was created
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
     # Timestamp when the user record was last updated
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=True)
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=True,
+    )
     # Flag to enable/disable email notifications for the user
     user_email_enabled = Column(Boolean, default=True)
     # Flag to enable/disable SMS notifications for the user
@@ -41,8 +50,5 @@ class User(Base):
 
     def __repr__(self) -> str:
         return (
-            "User("
-            f"id={self.id}, email={self.email!r}, "
-            f"is_verified={self.is_verified}"
-            ")"
+            f"User(id={self.id}, email={self.email!r}, is_verified={self.is_verified})"
         )

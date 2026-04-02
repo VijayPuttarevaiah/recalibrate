@@ -6,9 +6,11 @@ from auth.register.schemas import validate_strong_password
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
+
 class VerifyResetCodeRequest(BaseModel):
     email: EmailStr
     code: str
+
 
 class ResetPasswordConfirm(BaseModel):
     email: EmailStr

@@ -39,11 +39,7 @@ def get_roadmap(user_id: int, db: Session = Depends(get_db)):
     Fetch the stored preferences for a user and return their roadmap.
     Returns 404 if the user has not completed onboarding yet.
     """
-    pref = (
-        db.query(UserPreference)
-        .filter(UserPreference.user_id == user_id)
-        .first()
-    )
+    pref = db.query(UserPreference).filter(UserPreference.user_id == user_id).first()
 
     if not pref:
         raise HTTPException(

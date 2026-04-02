@@ -1,4 +1,5 @@
 """Detection functions for missed tasks."""
+
 from datetime import date
 from sqlalchemy.orm import Session
 from goals.models.task_models import Task

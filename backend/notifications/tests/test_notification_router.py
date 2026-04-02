@@ -5,6 +5,7 @@ Covers:
   - GET /notifications/{user_id}  → list, empty list, success flag
   - PATCH /notifications/{id}/read → marks read, 404 on missing
 """
+
 import pytest
 from datetime import datetime
 from types import SimpleNamespace
@@ -28,6 +29,7 @@ EXPECTED_NOTIFICATIONS_COUNT = 2
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_db():
@@ -57,85 +59,115 @@ def _make_notification(notif_id: int, user_id: int, is_read: bool = False):
     )
 
 
+def _set_notifications_return(mock_db, notifications):
+    query = mock_db.query.return_value
+    filtered = query.filter.return_value
+    ordered = filtered.order_by.return_value
+    ordered.all.return_value = notifications
+
+
+def _set_first_notification(mock_db, notification):
+    query = mock_db.query.return_value
+    filtered = query.filter.return_value
+    filtered.first.return_value = notification
+
+
 # ── GET /notifications/{user_id} ───────────────────────────────────────────────
 
-class TestGetUserNotifications:
 
-    def test_returns_200_ok(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value \
-            .order_by.return_value.all.return_value = []
-        response = client.get(f"/notifications/{DEFAULT_USER_ID}")
-        assert response.status_code == HTTP_OK
+def test_get_returns_200_ok(client, mock_db):
+    _set_notifications_return(mock_db, [])
+    response = client.get(f"/notifications/{DEFAULT_USER_ID}")
+    assert response.status_code == HTTP_OK
 
-    def test_success_field_is_true(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value \
-            .order_by.return_value.all.return_value = []
-        response = client.get(f"/notifications/{DEFAULT_USER_ID}")
-        assert response.json()["success"] is True
 
-    def test_returns_empty_list_when_no_notifications(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value \
-            .order_by.return_value.all.return_value = []
-        response = client.get(f"/notifications/{NO_NOTIFICATIONS_USER_ID}")
-        assert response.json()["data"] == []
+def test_get_success_field_is_true(client, mock_db):
+    _set_notifications_return(mock_db, [])
+    response = client.get(f"/notifications/{DEFAULT_USER_ID}")
+    assert response.json()["success"] is True
 
-    def test_returns_notifications_for_user(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value \
-            .order_by.return_value.all.return_value = [
-                _make_notification(DEFAULT_NOTIFICATION_ID, ALT_USER_ID),
-                _make_notification(SECOND_NOTIFICATION_ID, ALT_USER_ID),
-            ]
-        response = client.get(f"/notifications/{ALT_USER_ID}")
-        assert len(response.json()["data"]) == EXPECTED_NOTIFICATIONS_COUNT
 
-    def test_notification_user_id_matches_request(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value \
-            .order_by.return_value.all.return_value = [_make_notification(DEFAULT_NOTIFICATION_ID, OTHER_USER_ID)]
-        response = client.get(f"/notifications/{OTHER_USER_ID}")
-        assert response.json()["data"][0]["user_id"] == OTHER_USER_ID
+def test_get_returns_empty_list(client, mock_db):
+    _set_notifications_return(mock_db, [])
+    response = client.get(f"/notifications/{NO_NOTIFICATIONS_USER_ID}")
+    assert response.json()["data"] == []
 
-    def test_notification_has_expected_fields(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value \
-            .order_by.return_value.all.return_value = [_make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID)]
-        data = client.get(f"/notifications/{DEFAULT_USER_ID}").json()["data"][0]
-        for field in ("id", "user_id", "title", "message", "is_read", "created_at"):
-            assert field in data
+
+def test_get_returns_notifications(client, mock_db):
+    _set_notifications_return(
+        mock_db,
+        [
+            _make_notification(DEFAULT_NOTIFICATION_ID, ALT_USER_ID),
+            _make_notification(SECOND_NOTIFICATION_ID, ALT_USER_ID),
+        ],
+    )
+    response = client.get(f"/notifications/{ALT_USER_ID}")
+    assert len(response.json()["data"]) == EXPECTED_NOTIFICATIONS_COUNT
+
+
+def test_get_notification_user_id(client, mock_db):
+    _set_notifications_return(
+        mock_db,
+        [_make_notification(DEFAULT_NOTIFICATION_ID, OTHER_USER_ID)],
+    )
+    response = client.get(f"/notifications/{OTHER_USER_ID}")
+    assert response.json()["data"][0]["user_id"] == OTHER_USER_ID
+
+
+def test_get_notification_fields(client, mock_db):
+    _set_notifications_return(
+        mock_db,
+        [_make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID)],
+    )
+    data = client.get(f"/notifications/{DEFAULT_USER_ID}").json()["data"][0]
+    for field in ("id", "user_id", "title", "message", "is_read", "created_at"):
+        assert field in data
 
 
 # ── PATCH /notifications/{notification_id}/read ────────────────────────────────
 
-class TestMarkAsRead:
 
-    def test_returns_200_when_notification_found(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value.first.return_value = \
-            _make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID)
-        response = client.patch(f"/notifications/{DEFAULT_NOTIFICATION_ID}/read")
-        assert response.status_code == HTTP_OK
+def test_mark_read_200(client, mock_db):
+    _set_first_notification(
+        mock_db,
+        _make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID),
+    )
+    response = client.patch(f"/notifications/{DEFAULT_NOTIFICATION_ID}/read")
+    assert response.status_code == HTTP_OK
 
-    def test_sets_is_read_to_true(self, client, mock_db):
-        notif = _make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID, is_read=False)
-        mock_db.query.return_value.filter.return_value.first.return_value = notif
-        client.patch(f"/notifications/{DEFAULT_NOTIFICATION_ID}/read")
-        assert notif.is_read is True
 
-    def test_commits_after_marking_read(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value.first.return_value = \
-            _make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID)
-        client.patch(f"/notifications/{DEFAULT_NOTIFICATION_ID}/read")
-        mock_db.commit.assert_called_once()
+def test_mark_read_sets_read(client, mock_db):
+    notif = _make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID, is_read=False)
+    _set_first_notification(mock_db, notif)
+    client.patch(f"/notifications/{DEFAULT_NOTIFICATION_ID}/read")
+    assert notif.is_read is True
 
-    def test_success_field_is_true(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value.first.return_value = \
-            _make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID)
-        response = client.patch(f"/notifications/{DEFAULT_NOTIFICATION_ID}/read")
-        assert response.json()["success"] is True
 
-    def test_returns_404_when_notification_not_found(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value.first.return_value = None
-        response = client.patch(f"/notifications/{MISSING_NOTIFICATION_ID}/read")
-        assert response.status_code == HTTP_NOT_FOUND
+def test_mark_read_commits(client, mock_db):
+    _set_first_notification(
+        mock_db,
+        _make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID),
+    )
+    client.patch(f"/notifications/{DEFAULT_NOTIFICATION_ID}/read")
+    mock_db.commit.assert_called_once()
 
-    def test_404_detail_message(self, client, mock_db):
-        mock_db.query.return_value.filter.return_value.first.return_value = None
-        response = client.patch(f"/notifications/{MISSING_NOTIFICATION_ID}/read")
-        assert "not found" in response.json()["detail"].lower()
+
+def test_mark_read_success_true(client, mock_db):
+    _set_first_notification(
+        mock_db,
+        _make_notification(DEFAULT_NOTIFICATION_ID, DEFAULT_USER_ID),
+    )
+    response = client.patch(f"/notifications/{DEFAULT_NOTIFICATION_ID}/read")
+    assert response.json()["success"] is True
+
+
+def test_mark_read_404(client, mock_db):
+    _set_first_notification(mock_db, None)
+    response = client.patch(f"/notifications/{MISSING_NOTIFICATION_ID}/read")
+    assert response.status_code == HTTP_NOT_FOUND
+
+
+def test_mark_read_404_detail(client, mock_db):
+    _set_first_notification(mock_db, None)
+    response = client.patch(f"/notifications/{MISSING_NOTIFICATION_ID}/read")
+    assert "not found" in response.json()["detail"].lower()

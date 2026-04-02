@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from core.base import Base
 
+
 class Goal(Base):
     __tablename__ = "goals"
 
@@ -14,7 +15,6 @@ class Goal(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     status = Column(String(50), default="pending")
-
 
     tasks = relationship("Task", back_populates="goal")
 
@@ -31,8 +31,4 @@ class Goal(Base):
         }
 
     def __repr__(self) -> str:
-        return (
-            "Goal("
-            f"id={self.id}, user_id={self.user_id}, title={self.title!r}"
-            ")"
-        )
+        return f"Goal(id={self.id}, user_id={self.user_id}, title={self.title!r})"
