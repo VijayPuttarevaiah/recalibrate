@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from replan.services.replan_llm import (
+from replan.llm.service import (
     call_llm_for_tasks,
     ReplanTaskRequest,
     generate_replan_tasks,
@@ -28,7 +28,7 @@ def test_llm_tasks_valid():
         ]
     }
 
-    import replan.services.replan_llm as replan_llm
+    import replan.llm.service as replan_llm
 
     with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
         with patch("requests.post", return_value=mock_response):
@@ -45,7 +45,7 @@ def test_llm_tasks_invalid():
         "choices": [{"message": {"content": "Invalid JSON"}}]
     }
 
-    import replan.services.replan_llm as replan_llm
+    import replan.llm.service as replan_llm
 
     with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
         with patch("requests.post", return_value=mock_response):
@@ -55,7 +55,7 @@ def test_llm_tasks_invalid():
 
 def test_llm_tasks_missing_key():
     """RED: Fail fast when OPENROUTER_API_KEY is missing."""
-    import replan.services.replan_llm as replan_llm
+    import replan.llm.service as replan_llm
 
     with patch.object(replan_llm, "OPENROUTER_API_KEY", ""):
         with patch("requests.post") as mock_post:
@@ -82,7 +82,7 @@ def test_llm_tasks_first_array():
         ]
     }
 
-    import replan.services.replan_llm as replan_llm
+    import replan.llm.service as replan_llm
 
     with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
         with patch("requests.post", return_value=mock_response):
@@ -100,7 +100,7 @@ def test_llm_tasks_invalid_date():
         ]
     }
 
-    import replan.services.replan_llm as replan_llm
+    import replan.llm.service as replan_llm
 
     with patch.object(replan_llm, "OPENROUTER_API_KEY", "test-key"):
         with patch("requests.post", return_value=mock_response):
@@ -111,7 +111,7 @@ def test_llm_tasks_invalid_date():
 def test_generate_replan_tasks():
     """Test generate_replan_tasks with mocked _call_llm_for_tasks."""
     with patch(
-        "replan.services.replan_llm.call_llm_for_tasks",
+        "replan.llm.service.call_llm_for_tasks",
         return_value=[{"title": "Task 1", "date": "2026-03-07"}],
     ):
         request = ReplanTaskRequest(

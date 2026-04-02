@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from onboarding.models.user_preference_model import UserPreference
 from onboarding.schemas.preference_schema import PreferenceCreate
 from onboarding.services.preference_service import PreferenceService
+from goals.roadmap.service import RoadmapService
 from core.db_session import get_db
 
 router = APIRouter(tags=["Onboarding"])

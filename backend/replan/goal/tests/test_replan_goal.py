@@ -48,7 +48,7 @@ def _set_goal_lookup(db, goal):
 
 def test_red_404_no_goal():
     """RED: Goal not found → HTTP 404."""
-    from replan.services.replan_service import replan_goal
+    from replan.goal.service import replan_goal
 
     db = MagicMock()
     _set_goal_lookup(db, None)
@@ -59,7 +59,7 @@ def test_red_404_no_goal():
 
 def test_red_404_wrong_user():
     """RED: Goal belongs to different user → HTTP 404."""
-    from replan.services.replan_service import replan_goal
+    from replan.goal.service import replan_goal
 
     db = MagicMock()
     _set_goal_lookup(db, None)
@@ -70,7 +70,7 @@ def test_red_404_wrong_user():
 
 def test_red_400_goal_ended():
     """RED: end_date in the past → HTTP 400."""
-    from replan.services.replan_service import replan_goal
+    from replan.goal.service import replan_goal
 
     past_goal = make_goal(
         DEFAULT_GOAL_ID,
@@ -89,11 +89,11 @@ def test_red_400_goal_ended():
 # ── GREEN ─────────────────────────────────────────────────────────────────────
 
 
-@patch("replan.services.replan_service.build_progress_summary")
-@patch("replan.services.replan_service.format_summary_for_llm")
+@patch("replan.goal.service.build_progress_summary")
+@patch("replan.goal.service.format_summary_for_llm")
 def test_green_not_adjusted(mock_format, mock_summary):
     """GREEN: 0 missed tasks → adjusted=False, no DB writes."""
-    from replan.services.replan_service import replan_goal
+    from replan.goal.service import replan_goal
 
     future_goal = make_goal(
         DEFAULT_GOAL_ID,
@@ -120,13 +120,13 @@ def test_green_not_adjusted(mock_format, mock_summary):
 # ── REFACTOR ──────────────────────────────────────────────────────────────────
 
 
-@patch("replan.services.replan_service.gather_research", return_value="")
-@patch("replan.services.replan_service._generate_replan_tasks", return_value=[])
-@patch("replan.services.replan_service.format_summary_for_llm", return_value="ctx")
-@patch("replan.services.replan_service.build_progress_summary")
+@patch("replan.goal.service.gather_research", return_value="")
+@patch("replan.goal.service._generate_replan_tasks", return_value=[])
+@patch("replan.goal.service.format_summary_for_llm", return_value="ctx")
+@patch("replan.goal.service.build_progress_summary")
 def test_refactor_502_no_data_loss(mock_summary, *_):
     """REFACTOR: Empty LLM output → 502, existing tasks must NOT be deleted."""
-    from replan.services.replan_service import replan_goal
+    from replan.goal.service import replan_goal
 
     future_goal = make_goal(
         DEFAULT_GOAL_ID,

@@ -62,10 +62,10 @@ def _set_history_return(db, adjustments):
 # ── RED ──────────────────────────────────────────────────────────────────────
 
 
-@patch("replan.routers.replan_routes.check_goal_needs_replan")
+@patch("replan.routes.router.check_goal_needs_replan")
 def test_red_check_delegates(mock_check):
     """RED: check route must call check_goal_needs_replan with goal_id + threshold."""
-    from replan.routers.replan_routes import check_replan_status
+    from replan.routes.router import check_replan_status
 
     mock_check.return_value = {
         "goal_id": DEFAULT_GOAL_ID,
@@ -85,10 +85,10 @@ def test_red_check_delegates(mock_check):
     mock_check.assert_called_once_with(db, DEFAULT_GOAL_ID, threshold=DEFAULT_THRESHOLD)
 
 
-@patch("replan.routers.replan_routes.replan_goal")
+@patch("replan.routes.router.replan_goal")
 def test_red_trigger_user_id(mock_replan):
     """RED: user_id from JWT must be forwarded to replan_goal — not hardcoded."""
-    from replan.routers.replan_routes import trigger_replan
+    from replan.routes.router import trigger_replan
 
     mock_replan.return_value = {"adjusted": True, "goal_id": DEFAULT_GOAL_ID}
     db = MagicMock()
@@ -102,7 +102,7 @@ def test_red_trigger_user_id(mock_replan):
 
 def test_red_history_returns_list():
     """RED: History endpoint must return a list."""
-    from replan.routers.replan_routes import get_adjustment_history
+    from replan.routes.router import get_adjustment_history
 
     adj = make_adjustment(
         AdjustmentParams(id=DEFAULT_ADJUSTMENT_ID, goal_id=DEFAULT_GOAL_ID)
@@ -123,7 +123,7 @@ def test_red_history_returns_list():
 
 def test_green_default_threshold():
     """GREEN: Inspect check route — default threshold must be 3."""
-    from replan.routers.replan_routes import check_replan_status
+    from replan.routes.router import check_replan_status
 
     sig = inspect.signature(check_replan_status)
     default_value = sig.parameters["threshold"].default
@@ -133,10 +133,10 @@ def test_green_default_threshold():
         assert default_value == DEFAULT_THRESHOLD
 
 
-@patch("replan.routers.replan_routes.replan_goal")
+@patch("replan.routes.router.replan_goal")
 def test_green_404_propagates(mock_replan):
     """GREEN: HTTPException from service must not be swallowed by the route."""
-    from replan.routers.replan_routes import trigger_replan
+    from replan.routes.router import trigger_replan
 
     mock_replan.side_effect = HTTPException(status_code=404, detail="Not found")
     db = MagicMock()
@@ -151,7 +151,7 @@ def test_green_404_propagates(mock_replan):
 
 def test_green_empty_history():
     """GREEN: No adjustments exist → return [] not None."""
-    from replan.routers.replan_routes import get_adjustment_history
+    from replan.routes.router import get_adjustment_history
 
     db = MagicMock()
     _set_history_return(db, [])
@@ -165,7 +165,7 @@ def test_green_empty_history():
 
 def test_green_history_created_iso():
     """GREEN: created_at in history items must be a string in ISO format."""
-    from replan.routers.replan_routes import get_adjustment_history
+    from replan.routes.router import get_adjustment_history
 
     adj = make_adjustment(
         AdjustmentParams(id=DEFAULT_ADJUSTMENT_ID, goal_id=DEFAULT_GOAL_ID)
@@ -184,10 +184,10 @@ def test_green_history_created_iso():
 # ── REFACTOR ──────────────────────────────────────────────────────────────────
 
 
-@patch("replan.routers.replan_routes.check_goal_needs_replan")
+@patch("replan.routes.router.check_goal_needs_replan")
 def test_refactor_check_no_query(mock_check):
     """REFACTOR: Route must not call db.query() — only service layer should."""
-    from replan.routers.replan_routes import check_replan_status
+    from replan.routes.router import check_replan_status
 
     mock_check.return_value = {
         "goal_id": DEFAULT_GOAL_ID,
@@ -209,7 +209,7 @@ def test_refactor_check_no_query(mock_check):
 
 def test_refactor_history_order_by():
     """REFACTOR: History query must use .order_by() for DESC created_at."""
-    from replan.routers.replan_routes import get_adjustment_history
+    from replan.routes.router import get_adjustment_history
 
     db = MagicMock()
     _set_history_return(db, [])
