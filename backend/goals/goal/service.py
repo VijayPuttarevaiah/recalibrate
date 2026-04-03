@@ -256,7 +256,10 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
     db.flush()
 
     for task_data in all_new_tasks:
-        db.add(Task(goal_id=goal.id, title=task_data["title"], due_date=task_data["date"], status="pending"))
+        due = task_data["date"]
+        if isinstance(due, str):
+            due = date.fromisoformat(due)
+        db.add(Task(goal_id=goal.id, title=task_data["title"], due_date=due, status="pending"))
     db.flush()
 
     goal.end_date = effective_end_date
