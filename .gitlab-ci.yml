@@ -184,10 +184,10 @@ publish:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
-        VITE_API_BASE_URL: "http://3.22.221.134:8073"
+        VITE_API_BASE_URL: "http://3.145.124.33:8073"
     - if: '$CI_COMMIT_BRANCH == "develop"'
       variables:
-        VITE_API_BASE_URL: "http://3.22.221.134:8074"
+        VITE_API_BASE_URL: "http://3.145.124.33:8074"
 
 # ── Deploy ────────────────────────────────────────────────────────────────────
 
@@ -209,7 +209,7 @@ deploy:
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $FRONTEND_HOST_PORT:80 --name $APP_NAME_FRONTEND --restart always $DOCKER_FRONTEND_IMAGE"
   environment:
     name: $ENV_NAME
-    url: "http://3.22.221.134:$FRONTEND_HOST_PORT"
+    url: "http://3.145.124.33:$FRONTEND_HOST_PORT"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
