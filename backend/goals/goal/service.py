@@ -209,7 +209,14 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
 
     summary = build_progress_summary(db, goal_id, as_of=today)
     progress_text = format_summary_for_llm(summary, goal.title)
-    research_context = gather_research(goal.title, goal.category, goal.notes)
+
+    pause_days = (today - goal.paused_at.date()).days if goal.paused_at else 0
+    remaining_days = (effective_end_date - today).days
+    pause_context = (
+        f"{progress_text}\n\n"
+        f"The user paused this goal for {pause_days} days. "
+        f"There are {remaining_days} days remaining until the deadline."
+    )
 
     all_new_tasks = []
     current_start = today
@@ -222,8 +229,8 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
             end_date=current_end,
             goal_end_date=effective_end_date,
             notes=goal.notes,
-            progress_context=progress_text,
-            research_context=research_context,
+            progress_context=pause_context,
+            research_context="",
         )
         all_new_tasks.extend(new_tasks)
         current_start = current_end + timedelta(days=1)

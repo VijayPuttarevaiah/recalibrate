@@ -36,11 +36,10 @@ class GoalResumeRequest(BaseModel):
             raise ValueError("new_end_date is required when mode is 'new_end_date'")
         if (
             self.mode == "new_end_date"
-            and self.original_end_date is not None
             and self.new_end_date is not None
-            and self.new_end_date <= self.original_end_date
+            and self.new_end_date <= date.today()
         ):
-            raise ValueError("new_end_date must be after the original end date")
+            raise ValueError("new_end_date must be a future date")
         return self
 
 
