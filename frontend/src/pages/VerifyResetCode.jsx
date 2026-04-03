@@ -58,16 +58,16 @@ export default function VerifyResetCode() {
 
     setResendLoading(true);
     try {
-      // Backend contract suggestion:
-      // POST /auth/resend-reset-code  { email } -> { ok: true }
       await AuthApi.resend_password_reset({ email: email.trim() });
-
-      setInfo("If an account exists, we sent a new reset code.");
+      setInfo("A new reset code has been sent to your email.");
       start_timer();
     } catch (err) {
-      // Company standard: keep message generic
-      setInfo("If an account exists, we sent a new reset code.");
-      start_timer();
+      const msg = err?.response?.data?.detail || err?.message || "";
+      if (msg.toLowerCase().includes("not found")) {
+        setError("No account found with this email address.");
+      } else {
+        setError(msg || "Failed to resend code. Please try again.");
+      }
     } finally {
       setResendLoading(false);
     }
