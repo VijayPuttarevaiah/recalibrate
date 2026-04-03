@@ -371,18 +371,68 @@ uv run pytest --cov=. --cov-branch --cov-report=term-missing
 
 ### Test Breakdown
 
-| Module | Unit | Integration | Total |
-|--------|------|-------------|-------|
-| Goals (pause/resume, CRUD) | 27 | 23 | 50 |
-| Replanning | 25 | - | 25 |
-| Authentication | 20 | - | 20 |
-| Chat | 72 | - | 72 |
-| Notifications | 35 | - | 35 |
-| Progress Summarizer | 11 | - | 11 |
-| Onboarding/Roadmap | 22 | - | 22 |
-| Models/Schemas/Utils | 17 | - | 17 |
-| Workflows | 10 | - | 10 |
-| Frontend (React) | 65 | - | 65 |
+#### Backend Unit Tests (329 tests)
+
+| Feature | Tests |
+|---------|-------|
+| Goal pause and resume | 27 |
+| Task status update | 8 |
+| Task notes and batch update | 6 |
+| Missed task detection | 5 |
+| Replan threshold check | 6 |
+| Replan execution | 5 |
+| Replan routes | 9 |
+| Replan task generation | 7 |
+| Progress summarizer | 11 |
+| Chat service | 45 |
+| Chat routes | 15 |
+| Chat models and schemas | 36 |
+| Notification service | 20 |
+| Notification routes | 12 |
+| Reminder service | 24 |
+| Onboarding routes | 10 |
+| Preference service | 10 |
+| Roadmap service | 23 |
+| Roadmap API | 10 |
+| Core models and utilities | 5 |
+| Workflows | 10 |
+| Task notes column | 2 |
+| Auth API utilities | 3 |
+
+#### Backend Integration Tests (23 tests)
+
+These tests use `TestClient` with an in-memory SQLite database to verify that router, service, and model layers work together end-to-end.
+
+| Feature | Tests |
+|---------|-------|
+| Goal list, create, and task endpoints | 5 |
+| Goal pause endpoint | 6 |
+| Goal resume endpoint | 4 |
+| Task status and notes endpoints | 5 |
+| Replan check endpoint | 2 |
+| Full pause-resume lifecycle | 1 |
+
+#### Auth Integration Tests (23 tests)
+
+| Feature | Tests |
+|---------|-------|
+| Login | 6 |
+| Register | 5 |
+| Email verification | 6 |
+| Logout | 3 |
+| Password reset | 3 |
+
+#### Frontend Tests (65 tests)
+
+| Feature | Tests |
+|---------|-------|
+| Chat components (ChatMessage, ChatInput, SuggestionChips) | 27 |
+| Chat API service | 13 |
+| useChat hook | 11 |
+| Email verification page | 9 |
+| Login page | 2 |
+| Register page | 2 |
+| Auth API utility | 1 |
 
 ### Test Types
 
