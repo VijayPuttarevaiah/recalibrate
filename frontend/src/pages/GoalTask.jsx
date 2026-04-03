@@ -727,7 +727,7 @@ function ResumeModal({ goal, onConfirm, onClose, loading }) {
                 <div style={{ fontSize: 12, color: deadlinePassed ? "#DC2626" : "var(--Muted)", marginTop: 2 }}>
                   {deadlinePassed
                     ? `Deadline has already passed (${formatDate(goal?.end_date)}). Please set a new end date.`
-                    : `${remainingDays} days remaining — AI will compress tasks to fit (ends ${formatDate(goal?.end_date)})`
+                    : `${remainingDays} days remaining — tasks will be adjusted to fit (ends ${formatDate(goal?.end_date)})`
                   }
                 </div>
               </div>
@@ -747,7 +747,7 @@ function ResumeModal({ goal, onConfirm, onClose, loading }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--Text)" }}>Set a new end date</div>
                 <div style={{ fontSize: 12, color: "var(--Muted)", marginTop: 2 }}>
-                  Pick any future date — shorten or extend. AI will regenerate tasks.
+                  Pick any future date — shorten or extend your deadline.
                 </div>
               </div>
             </div>
