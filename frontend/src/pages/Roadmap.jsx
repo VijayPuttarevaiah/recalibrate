@@ -75,7 +75,7 @@ export default function Roadmap() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F9FAFB", padding: "40px 24px" }}>
+    <div style={{ minHeight: "100vh", background: "#F9FAFB", padding: "32px 24px" }}>
       <div style={{ maxWidth: "720px", margin: "0 auto" }}>
 
         {/* Header */}

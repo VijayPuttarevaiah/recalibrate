@@ -52,9 +52,9 @@ function StatusBadge({ status }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center",
-      fontSize: 10, fontWeight: 700,
+      fontSize: 11, fontWeight: 700,
       textTransform: "uppercase", letterSpacing: "0.6px",
-      padding: "3px 10px", borderRadius: 99,
+      padding: "4px 12px", borderRadius: 99,
       color: statusColor(status),
       background: statusBg(status),
       border: `1px solid ${statusColor(status)}35`,
