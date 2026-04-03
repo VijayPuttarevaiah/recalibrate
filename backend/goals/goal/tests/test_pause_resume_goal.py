@@ -232,15 +232,14 @@ def test_red_resume_new_end_date_updates_goal(mock_summary, mock_fmt, mock_resea
     resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
     assert goal.end_date == date(2026, 8, 31)
 
-def test_red_resume_new_end_date_before_original_raises():
-    """new_end_date before original end_date must raise validation error."""
+def test_red_resume_new_end_date_before_today_raises():
+    """new_end_date in the past must raise validation error."""
     from goals.goal.schemas import GoalResumeRequest
 
     with pytest.raises(Exception):
         GoalResumeRequest(
             mode="new_end_date",
-            new_end_date=date(2026, 5, 1),
-            original_end_date=date(2026, 6, 30),
+            new_end_date=date(2020, 1, 1),
         )
 
 def test_red_resume_new_end_date_requires_date():
@@ -296,6 +295,65 @@ def test_red_resume_llm_failure_raises_502(mock_summary, mock_fmt, mock_research
         resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
     assert exc.value.status_code == HTTP_BAD_GATEWAY
     assert goal.status == "paused"
+
+@patch("goals.goal.service.generate_resume_tasks")
+@patch("goals.goal.service.gather_research")
+@patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
+@patch("goals.goal.service.build_progress_summary")
+def test_red_resume_skips_web_research(mock_summary, mock_fmt, mock_research, mock_gen):
+    """resume must NOT call gather_research — reuses existing goal context."""
+    from goals.goal.service import resume_goal
+    from goals.goal.schemas import GoalResumeRequest
+
+    mock_summary.return_value = {"stats": {"completed": 5, "missed": 0, "total_tasks": 10}}
+    mock_gen.return_value = [{"title": "Task 1", "date": "2026-04-05"}]
+
+    goal = make_goal(status="paused", paused_at=PAUSED_AT, end_date=date(2026, 6, 30))
+    db = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = goal
+    db.query.return_value.filter.return_value.all.return_value = []
+
+    body = GoalResumeRequest(mode="keep_original")
+    resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
+    mock_research.assert_not_called()
+
+
+@patch("goals.goal.service.generate_resume_tasks")
+@patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
+@patch("goals.goal.service.build_progress_summary")
+def test_red_resume_passes_pause_duration_to_llm(mock_summary, mock_fmt, mock_gen):
+    """resume must pass pause duration context to LLM for better planning."""
+    from goals.goal.service import resume_goal
+    from goals.goal.schemas import GoalResumeRequest
+
+    mock_summary.return_value = {"stats": {"completed": 5, "missed": 0, "total_tasks": 10}}
+    mock_gen.return_value = [{"title": "Task 1", "date": "2026-04-05"}]
+
+    goal = make_goal(status="paused", paused_at=PAUSED_AT, end_date=date(2026, 6, 30))
+    db = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = goal
+    db.query.return_value.filter.return_value.all.return_value = []
+
+    body = GoalResumeRequest(mode="keep_original")
+    resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
+    call_kwargs = mock_gen.call_args
+    assert "paused" in call_kwargs.kwargs.get("progress_context", "").lower() or \
+           "paused" in str(call_kwargs).lower()
+
+
+def test_red_resume_new_end_date_before_today_allows_shortening():
+    """new_end_date after today but before original should be allowed."""
+    from goals.goal.schemas import GoalResumeRequest
+    from datetime import timedelta
+
+    tomorrow = date.today() + timedelta(days=7)
+    body = GoalResumeRequest(
+        mode="new_end_date",
+        new_end_date=tomorrow,
+        original_end_date=date(2026, 12, 31),
+    )
+    assert body.new_end_date == tomorrow
+
 
 def test_red_resume_past_deadline_keep_original_raises_400():
     """Resume with keep_original must raise 400 when deadline has passed."""
