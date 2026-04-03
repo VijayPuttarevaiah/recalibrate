@@ -423,24 +423,21 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
         return []
 
 
-def generate_resume_tasks(
-    goal_title, category, start_date, end_date, goal_end_date,
-    notes, progress_context, research_context,
-):
+def generate_resume_tasks(context: ReplanContext):
     """Generate tasks for a resumed goal. Public API used by resume_goal."""
 
     prompt = f"""
 You are creating a plan for a goal that was paused and is now being resumed.
 
-Goal: {goal_title}
-Category: {category}
-This chunk: {start_date} → {end_date}
-Goal final deadline: {goal_end_date}
-Notes: {notes or "None"}
+Goal: {context.goal_title}
+Category: {context.category}
+This chunk: {context.start_date} → {context.end_date}
+Goal final deadline: {context.goal_end_date}
+Notes: {context.notes or "None"}
 
-{progress_context}
+{context.progress_context}
 
-{research_context}
+{context.research_context}
 
 === RESUME INSTRUCTIONS ===
 
@@ -454,7 +451,7 @@ The user paused this goal and is resuming. Create a REALISTIC adjusted plan:
 6. Maintain proper sequencing — prerequisites before advanced tasks
 
 Rules:
-- One task per day (every day from {start_date} to {end_date})
+- One task per day (every day from {context.start_date} to {context.end_date})
 - Tasks must build on the user's completed progress (see completed tasks)
 - Tasks must pick up where the user left off, not restart from scratch
 - Be specific and actionable

@@ -563,6 +563,7 @@ def _extract_stream_token(line: bytes) -> str | None:
     try:
         chunk = json.loads(data_str)
     except json.JSONDecodeError:
+        logger.debug("Skipping malformed SSE chunk")
         return None
 
     delta = chunk.get("choices", [{}])[0].get("delta", {})
@@ -831,6 +832,7 @@ def _parse_suggestions_response(content: str) -> list[str] | None:
     try:
         suggestions = json.loads(content)
     except json.JSONDecodeError:
+        logger.debug("Could not parse suggestions response as JSON")
         return None
     return suggestions if isinstance(suggestions, list) else None
 
