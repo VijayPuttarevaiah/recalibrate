@@ -123,9 +123,7 @@ def make_message(**overrides):
     msg.created_at = MagicMock(isoformat=lambda: "2026-03-18T10:00:00")
     return msg
 
-# ═══════════════════════════════════════════════════════
 # Context Building
-# ═══════════════════════════════════════════════════════
 
 def test_includes_goal_title():
     db = MagicMock()
@@ -222,9 +220,7 @@ def test_prompt_word_limit():
     prompt = build_system_prompt(has_task_focus=False)
     assert "400 words" in prompt
 
-# ═══════════════════════════════════════════════════════
 # Rate Limiting
-# ═══════════════════════════════════════════════════════
 
 def test_rate_allows_under():
     db = MagicMock()
@@ -241,9 +237,7 @@ def test_rate_blocks_over():
     _set_rate_limit_count(db, RATE_LIMIT_OVER)
     assert check_rate_limit(db, user_id=DEFAULT_USER_ID) is False
 
-# ═══════════════════════════════════════════════════════
 # LLM Call
-# ═══════════════════════════════════════════════════════
 
 @patch("chat.services.chat_service.requests.post")
 def test_llm_returns_content(mock_post):
@@ -336,9 +330,7 @@ def test_llm_skips_empty_ctx(mock_post):
     messages = payload["messages"]
     assert len(messages) == MESSAGES_WITHOUT_CONTEXT_COUNT  # system + user, no context
 
-# ═══════════════════════════════════════════════════════
 # Create Chat Session
-# ═══════════════════════════════════════════════════════
 
 @patch("chat.services.chat_service.call_chat_llm", return_value="AI response here.")
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
@@ -450,9 +442,7 @@ def test_create_calls_llm(mock_rate, mock_llm):
         "user_message", ""
     )
 
-# ═══════════════════════════════════════════════════════
 # Send Message
-# ═══════════════════════════════════════════════════════
 
 @patch("chat.services.chat_service.call_chat_llm", return_value="Follow-up response.")
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
@@ -516,9 +506,7 @@ def test_send_rejects_rate_limited(mock_rate):
         )
     assert exc_info.value.status_code == HTTP_RATE_LIMIT
 
-# ═══════════════════════════════════════════════════════
 # Get History
-# ═══════════════════════════════════════════════════════
 
 def test_history_returns_session():
     db = MagicMock()
@@ -548,9 +536,7 @@ def test_history_missing_session():
         get_chat_history(db, user_id=DEFAULT_USER_ID, session_id=999)
     assert exc_info.value.status_code == HTTP_NOT_FOUND
 
-# ═══════════════════════════════════════════════════════
 # List Sessions
-# ═══════════════════════════════════════════════════════
 
 def test_list_returns_list():
     db = MagicMock()
@@ -578,9 +564,7 @@ def test_list_empty_sessions():
     result = list_sessions_for_goal(db, user_id=DEFAULT_USER_ID, goal_id=ALT_GOAL_ID)
     assert result == []
 
-# ═══════════════════════════════════════════════════════
 # Explain Task
-# ═══════════════════════════════════════════════════════
 
 @patch(
     "chat.services.chat_service.call_chat_llm",
@@ -617,9 +601,7 @@ def test_explain_other_user(mock_llm):
         explain_task(db, user_id=OTHER_USER_ID, task_id=DEFAULT_TASK_ID)
     assert exc_info.value.status_code == HTTP_FORBIDDEN
 
-# ═══════════════════════════════════════════════════════
 # Suggestions
-# ═══════════════════════════════════════════════════════
 
 @patch("chat.services.chat_service.requests.post")
 def test_suggestions_returns3(mock_post):
@@ -680,9 +662,7 @@ def test_get_suggested_empty():
     )
     assert result == []
 
-# ═══════════════════════════════════════════════════════
 # Helpers
-# ═══════════════════════════════════════════════════════
 
 def test_msg_to_dict():
     msg = make_message(id=ALT_MESSAGE_ID_5, role="assistant", content="Hello there")

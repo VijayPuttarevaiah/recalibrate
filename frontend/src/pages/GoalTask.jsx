@@ -655,7 +655,9 @@ function TaskExplanation({ text, onDismiss }) {
    ═══════════════════════════════════════════════════════ */
 
 function ResumeModal({ goal, onConfirm, onClose, loading }) {
-  const [mode, setMode] = useState("keep_original");
+  const today = new Date().toISOString().split("T")[0];
+  const deadlinePassed = goal?.end_date && goal.end_date <= today;
+  const [mode, setMode] = useState(deadlinePassed ? "new_end_date" : "keep_original");
   const [newEndDate, setNewEndDate] = useState("");
   const modalRef = useRef(null);
   const minDate = goal?.end_date
@@ -674,7 +676,7 @@ function ResumeModal({ goal, onConfirm, onClose, loading }) {
     onConfirm(body);
   };
 
-  const canSubmit = mode === "keep_original" || (mode === "new_end_date" && newEndDate > minDate);
+  const canSubmit = (!deadlinePassed && mode === "keep_original") || (mode === "new_end_date" && newEndDate > minDate);
 
   return (
     <div onClick={(e) => { if (modalRef.current && !modalRef.current.contains(e.target)) onClose(); }}
@@ -695,20 +697,25 @@ function ResumeModal({ goal, onConfirm, onClose, loading }) {
         </div>
 
         <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
-          <label onClick={() => setMode("keep_original")} style={{
-            padding: "14px 16px", borderRadius: 12, cursor: "pointer",
-            border: mode === "keep_original" ? "2px solid #059669" : "1px solid var(--Border)",
-            background: mode === "keep_original" ? "rgba(5,150,105,0.04)" : "#fff",
+          <label onClick={() => !deadlinePassed && setMode("keep_original")} style={{
+            padding: "14px 16px", borderRadius: 12,
+            cursor: deadlinePassed ? "not-allowed" : "pointer",
+            opacity: deadlinePassed ? 0.5 : 1,
+            border: mode === "keep_original" && !deadlinePassed ? "2px solid #059669" : "1px solid var(--Border)",
+            background: mode === "keep_original" && !deadlinePassed ? "rgba(5,150,105,0.04)" : "#fff",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{
                 width: 18, height: 18, borderRadius: "50%",
-                border: mode === "keep_original" ? "5px solid #059669" : "2px solid var(--Border)",
+                border: mode === "keep_original" && !deadlinePassed ? "5px solid #059669" : "2px solid var(--Border)",
               }} />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--Text)" }}>Keep original deadline</div>
-                <div style={{ fontSize: 12, color: "var(--Muted)", marginTop: 2 }}>
-                  Compress remaining tasks into the time left (ends {formatDate(goal?.end_date)})
+                <div style={{ fontSize: 12, color: deadlinePassed ? "#DC2626" : "var(--Muted)", marginTop: 2 }}>
+                  {deadlinePassed
+                    ? `Deadline has already passed (${formatDate(goal?.end_date)}). Please set a new end date.`
+                    : `Compress remaining tasks into the time left (ends ${formatDate(goal?.end_date)})`
+                  }
                 </div>
               </div>
             </div>
