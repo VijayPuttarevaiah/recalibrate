@@ -1,5 +1,6 @@
 # This file is a template-style CI/CD pipeline adapted for this project.
 # Stages run in order; jobs in same stage can run in parallel.
+# Pipeline only runs on: develop and main branches.
 
 stages:
   - build
@@ -11,9 +12,16 @@ stages:
 
 variables:
   DOCKER_REPO: "docker.io/vijayputtarevaiah/projectgroup2"
-  # Backend and frontend images share a single DockerHub repo but use distinct tags per commit
   DOCKER_BACKEND_IMAGE: "$DOCKER_REPO:backend-$CI_COMMIT_SHORT_SHA"
   DOCKER_FRONTEND_IMAGE: "$DOCKER_REPO:frontend-$CI_COMMIT_SHORT_SHA"
+
+# ── Reusable rule anchor ──────────────────────────────────────────────────────
+.only_main_develop: &only_main_develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# ── Build ─────────────────────────────────────────────────────────────────────
 
 build:
   stage: build
@@ -28,8 +36,7 @@ build:
     - uv sync --frozen
     - uv run python -m compileall -q .
     - echo "Dependencies installed successfully"
-  rules:
-    - if: '$CI_COMMIT_BRANCH'
+  <<: *only_main_develop
 
 frontend_build:
   stage: build
@@ -38,8 +45,9 @@ frontend_build:
     - cd frontend
     - npm install
     - npm run build
-  rules:
-    - if: '$CI_COMMIT_BRANCH'
+  <<: *only_main_develop
+
+# ── Test ──────────────────────────────────────────────────────────────────────
 
 test:
   stage: test
@@ -52,8 +60,9 @@ test:
     - pip install uv
     - uv sync --frozen
     - uv run pytest
-  rules:
-    - if: '$CI_COMMIT_BRANCH'
+  <<: *only_main_develop
+
+# ── Designite ─────────────────────────────────────────────────────────────────
 
 run-dpy-job:
   stage: run-dpy
@@ -74,8 +83,7 @@ run-dpy-job:
     paths:
       - smells/
     expire_in: 4 weeks
-  rules:
-    - if: '$CI_COMMIT_BRANCH'
+  <<: *only_main_develop
 
 submit-dcode-job:
   stage: submit-dcode
@@ -87,8 +95,9 @@ submit-dcode-job:
   script:
     - pip3 install -r $CI_PROJECT_DIR/.quality/requirements.txt
     - python3 $CI_PROJECT_DIR/.quality/push_to_dcode.py $DCODE_PROJECT_ID $DCODE_API_KEY $CI_PROJECT_DIR/smells/ $CI_COMMIT_SHA
-  rules:
-    - if: '$CI_COMMIT_BRANCH'
+  <<: *only_main_develop
+
+# ── Publish ───────────────────────────────────────────────────────────────────
 
 publish:
   stage: publish
@@ -103,21 +112,19 @@ publish:
   script:
     - docker --version
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-    # Build and push backend image
     - docker build -f backend/Dockerfile -t "$DOCKER_BACKEND_IMAGE" backend
     - docker push "$DOCKER_BACKEND_IMAGE"
-    # Build and push frontend image; pass API base URL so the SPA talks to the right backend
     - docker build -f frontend/Dockerfile -t "$DOCKER_FRONTEND_IMAGE" --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL" frontend
     - docker push "$DOCKER_FRONTEND_IMAGE"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
-        # Public URL the frontend will hit for the production backend
         VITE_API_BASE_URL: "http://3.22.221.134:8073"
     - if: '$CI_COMMIT_BRANCH == "develop"'
       variables:
-        # Public URL the frontend will hit for the development backend
         VITE_API_BASE_URL: "http://3.22.221.134:8074"
+
+# ── Deploy ────────────────────────────────────────────────────────────────────
 
 deploy:
   image: alpine:latest
@@ -128,18 +135,12 @@ deploy:
     - chmod 400 "$EC2_SSH_KEY"
     - apk add --no-cache openssh-client
   script:
-    # 1. Login to Docker Hub on EC2
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
-    # 2. Ensure Docker network exists (your mysql_db must already be attached to this)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker network create app_net || true"
-    # 3. Pull latest backend and frontend images for this commit
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker pull $DOCKER_BACKEND_IMAGE && docker pull $DOCKER_FRONTEND_IMAGE"
-    # 4. Remove old containers (ignore error if they don't exist)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME || true"
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME_FRONTEND || true"
-    # 5. Run new backend container (connects to existing mysql_db)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $HOST_PORT:8000 --name $APP_NAME --restart always -e DATABASE_URL=$DATABASE_URL -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_BACKEND_IMAGE"
-    # 6. Run new frontend container
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $FRONTEND_HOST_PORT:80 --name $APP_NAME_FRONTEND --restart always $DOCKER_FRONTEND_IMAGE"
   environment:
     name: $ENV_NAME
