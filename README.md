@@ -625,6 +625,46 @@ TASK_STATUSES = {"pending", "completed", "missed", "skipped"}
 | Structured logging | `logger.info(...)` instead of `print()` |
 | No double negatives | All conditions use positive logic |
 
+### Code Smell Reports
+
+Code smell analysis is performed using **Designite DPy** in the CI/CD pipeline. Reports are generated as pipeline artifacts on every push and can be downloaded from the GitLab pipeline page under the `run-dpy-job` artifacts.
+
+**How to access:**
+1. Go to the GitLab project -> Build -> Pipelines
+2. Click on the latest pipeline
+3. Find the `run-dpy-job` job
+4. Click "Download artifacts" -> `smells/` folder contains all CSV reports
+
+**Report files generated:**
+
+| File | Smell Category | Description |
+|------|---------------|-------------|
+| `ArchitectureSmells.csv` | Architecture | Feature Concentration, Cyclic Dependencies, God Component |
+| `DesignSmells.csv` | Design | Long Method, Long Parameter List, Multifaceted Abstraction |
+| `ImplementationSmells.csv` | Implementation | Long Statement, Magic Number, Complex Conditional |
+
+Each CSV contains the detected smell instances. Below is a summary of smells detected and their justification:
+
+#### Architecture Smells
+
+| Smell | Location | Status | Justification |
+|-------|----------|--------|---------------|
+| Feature Concentration in `core/` | `core/` module | Resolved | Moved `password.py` to `auth/utils/` and `llm_client.py` to `clients/`. Now `core/` has LCOM near 0 with only DB and logging. |
+
+#### Design Smells
+
+| Smell | Location | Status | Justification |
+|-------|----------|--------|---------------|
+| Long Statement in `LLMClient` | `clients/llm_client.py` | False positive | DPy measures runtime string length. Actual max line is 88 chars (under 120 limit). |
+| Long Method in `resume_goal` | `goals/goal/service.py` | Acceptable | ~50 lines for an orchestration function that coordinates progress summary, task generation, deletion, and insertion. Further splitting would scatter related logic. |
+
+#### Implementation Smells
+
+| Smell | Location | Status | Justification |
+|-------|----------|--------|---------------|
+| Magic Number `29` | `goals/goal/service.py`, `replan/goal/service.py` | Resolved | Replaced with named constant `CHUNK_DAYS = 29` with comment explaining the 30-day chunking strategy. |
+| Long Statement | Various | False positive | DPy counts expanded f-string length at runtime, not source line length. All source lines are under 120 chars. |
+
 ### Key Metrics Summary
 
 | Metric | Value | Target |
