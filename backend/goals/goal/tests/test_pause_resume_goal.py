@@ -363,3 +363,32 @@ def test_red_replan_raises_400_for_paused():
     with pytest.raises(HTTPException) as exc:
         replan_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert exc.value.status_code == HTTP_BAD_REQUEST
+
+
+# ══════════════════════════════════════════════════════════════════════
+# REFACTOR — _get_user_goal helper
+# ══════════════════════════════════════════════════════════════════════
+
+
+def test_refactor_get_user_goal_returns_goal():
+    """REFACTOR: _get_user_goal returns goal when ownership confirmed."""
+    from goals.goal.service import _get_user_goal
+
+    goal = make_goal(id=5, user_id=DEFAULT_USER_ID)
+    db = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = goal
+
+    result = _get_user_goal(db, user_id=DEFAULT_USER_ID, goal_id=5)
+    assert result.id == 5
+
+
+def test_refactor_get_user_goal_raises_404():
+    """REFACTOR: _get_user_goal raises 404 when goal not found."""
+    from goals.goal.service import _get_user_goal
+
+    db = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = None
+
+    with pytest.raises(HTTPException) as exc:
+        _get_user_goal(db, user_id=DEFAULT_USER_ID, goal_id=999)
+    assert exc.value.status_code == HTTP_NOT_FOUND
