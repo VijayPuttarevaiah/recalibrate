@@ -24,6 +24,7 @@ const statusColor = (s) => {
   switch (s?.toLowerCase()) {
     case "completed":   return "#059669";
     case "in_progress": return "#6366F1";
+    case "paused":      return "#9CA3AF";
     default:            return "#F59E0B";
   }
 };
@@ -31,6 +32,7 @@ const statusBg = (s) => {
   switch (s?.toLowerCase()) {
     case "completed":   return "rgba(5,150,105,0.09)";
     case "in_progress": return "rgba(99,102,241,0.09)";
+    case "paused":      return "rgba(156,163,175,0.09)";
     default:            return "rgba(245,158,11,0.09)";
   }
 };
@@ -95,9 +97,11 @@ function GoalCard({ goal, replanInfo, onClick }) {
   const [hovered, setHovered] = useState(false);
   const accent = statusColor(goal.status);
   const icon   = categoryIcon(goal.category);
+  const isPaused = goal.status === "paused";
   const progress =
     goal.status === "completed"   ? 100 :
-    goal.status === "in_progress" ?  55 : 0;
+    goal.status === "in_progress" ?  55 :
+    goal.status === "paused"      ?   0 : 0;
 
   const needsReplan = replanInfo?.needs_replan;
 
@@ -120,6 +124,7 @@ function GoalCard({ goal, replanInfo, onClick }) {
           ? "0 2px 12px -2px rgba(245,158,11,0.15)"
           : "0 2px 8px -2px rgba(0,0,0,0.05)",
         transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        opacity: isPaused ? 0.65 : 1,
         position: "relative", overflow: "hidden",
       }}
     >
@@ -237,7 +242,7 @@ export default function Dashboard() {
       // Check replan status for each active (non-completed) goal
       const statuses = {};
       const activeGoals = data.filter(
-        (g) => g.status !== "completed"
+        (g) => g.status !== "completed" && g.status !== "paused"
       );
       await Promise.allSettled(
         activeGoals.map(async (g) => {
@@ -264,6 +269,7 @@ export default function Dashboard() {
 
   const totalGoals     = goals.length;
   const completedGoals = goals.filter((g) => g.status === "completed").length;
+  const pausedGoals    = goals.filter((g) => g.status === "paused").length;
   const totalTasks     = goals.reduce((sum, g) => sum + (g.task_count || 0), 0);
   const goalsBehind    = Object.values(replanStatuses).filter(
     (r) => r?.needs_replan
@@ -291,6 +297,9 @@ export default function Dashboard() {
           <StatCard label="Total Goals" value={totalGoals}     color="var(--Primary)" icon="" />
           <StatCard label="Completed"   value={completedGoals} color="#059669"        icon="" />
           <StatCard label="Total Tasks" value={totalTasks}     color="var(--Accent)"  icon="" />
+          {pausedGoals > 0 && (
+            <StatCard label="Paused"         value={pausedGoals}  color="#9CA3AF"       icon="⏸" />
+          )}
           {goalsBehind > 0 && (
             <StatCard label="Need Attention" value={goalsBehind}  color="#DC2626"       icon="" />
           )}

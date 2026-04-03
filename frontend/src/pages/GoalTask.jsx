@@ -123,6 +123,7 @@ const statusColor = (s) => {
     case "in_progress": return "#6366F1";
     case "missed":      return "#DC2626";
     case "skipped":     return "#9CA3AF";
+    case "paused":      return "#9CA3AF";
     default:            return "#F59E0B";
   }
 };
@@ -132,6 +133,7 @@ const statusBg = (s) => {
     case "in_progress": return "rgba(99,102,241,0.09)";
     case "missed":      return "rgba(220,38,38,0.09)";
     case "skipped":     return "rgba(156,163,175,0.09)";
+    case "paused":      return "rgba(156,163,175,0.09)";
     default:            return "rgba(245,158,11,0.09)";
   }
 };
@@ -649,10 +651,137 @@ function TaskExplanation({ text, onDismiss }) {
 }
 
 /* ═══════════════════════════════════════════════════════
+   RESUME MODAL
+   ═══════════════════════════════════════════════════════ */
+
+function ResumeModal({ goal, onConfirm, onClose, loading }) {
+  const [mode, setMode] = useState("keep_original");
+  const [newEndDate, setNewEndDate] = useState("");
+  const modalRef = useRef(null);
+  const minDate = goal?.end_date
+    ? new Date(new Date(goal.end_date).getTime() + 86400000).toISOString().split("T")[0]
+    : "";
+
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  const handleSubmit = () => {
+    const body = { mode, original_end_date: goal?.end_date };
+    if (mode === "new_end_date") body.new_end_date = newEndDate;
+    onConfirm(body);
+  };
+
+  const canSubmit = mode === "keep_original" || (mode === "new_end_date" && newEndDate > minDate);
+
+  return (
+    <div onClick={(e) => { if (modalRef.current && !modalRef.current.contains(e.target)) onClose(); }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 9999,
+        background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+      }}>
+      <div ref={modalRef} style={{
+        background: "#fff", borderRadius: 20, width: "100%", maxWidth: 480,
+        boxShadow: "0 25px 60px -12px rgba(0,0,0,0.25)", overflow: "hidden",
+      }}>
+        <div style={{ padding: "24px 24px 16px", borderBottom: "1px solid var(--Border)" }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--Text)" }}>Resume Goal</h3>
+          <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--Muted)", lineHeight: 1.5 }}>
+            How would you like to continue?
+          </p>
+        </div>
+
+        <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <label onClick={() => setMode("keep_original")} style={{
+            padding: "14px 16px", borderRadius: 12, cursor: "pointer",
+            border: mode === "keep_original" ? "2px solid #059669" : "1px solid var(--Border)",
+            background: mode === "keep_original" ? "rgba(5,150,105,0.04)" : "#fff",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: "50%",
+                border: mode === "keep_original" ? "5px solid #059669" : "2px solid var(--Border)",
+              }} />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--Text)" }}>Keep original deadline</div>
+                <div style={{ fontSize: 12, color: "var(--Muted)", marginTop: 2 }}>
+                  Compress remaining tasks into the time left (ends {formatDate(goal?.end_date)})
+                </div>
+              </div>
+            </div>
+          </label>
+
+          <label onClick={() => setMode("new_end_date")} style={{
+            padding: "14px 16px", borderRadius: 12, cursor: "pointer",
+            border: mode === "new_end_date" ? "2px solid #6366F1" : "1px solid var(--Border)",
+            background: mode === "new_end_date" ? "rgba(99,102,241,0.04)" : "#fff",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: "50%",
+                border: mode === "new_end_date" ? "5px solid #6366F1" : "2px solid var(--Border)",
+              }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--Text)" }}>Set a new end date</div>
+                <div style={{ fontSize: 12, color: "var(--Muted)", marginTop: 2 }}>
+                  Must be after original deadline ({formatDate(goal?.end_date)}). AI will regenerate tasks.
+                </div>
+              </div>
+            </div>
+            {mode === "new_end_date" && (
+              <input type="date" value={newEndDate} min={minDate}
+                onChange={(e) => setNewEndDate(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  marginTop: 12, padding: "8px 12px", borderRadius: 8,
+                  border: "1px solid var(--Border)", fontSize: 13, width: "100%",
+                }}
+              />
+            )}
+          </label>
+        </div>
+
+        <div style={{
+          padding: "16px 24px 20px", borderTop: "1px solid var(--Border)",
+          display: "flex", justifyContent: "flex-end", gap: 10, background: "#FAFBFC",
+        }}>
+          <button onClick={onClose} style={{
+            padding: "9px 20px", borderRadius: 10, border: "1px solid var(--Border)",
+            background: "#fff", color: "var(--Muted)", fontSize: 13, fontWeight: 600, cursor: "pointer",
+          }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={!canSubmit || loading} style={{
+            padding: "9px 24px", borderRadius: 10, border: "none",
+            background: !canSubmit || loading ? "#E5E7EB" : "#059669",
+            color: !canSubmit || loading ? "#9CA3AF" : "#fff",
+            fontSize: 13, fontWeight: 700,
+            cursor: !canSubmit || loading ? "not-allowed" : "pointer",
+            display: "flex", alignItems: "center", gap: 7,
+          }}>
+            {loading ? (
+              <>
+                <span style={{
+                  display: "inline-block", width: 14, height: 14,
+                  border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff",
+                  borderRadius: "50%", animation: "spin 0.8s linear infinite",
+                }} />
+                Regenerating...
+              </>
+            ) : "Resume Goal"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    TASK CARD — with AI buttons
    ═══════════════════════════════════════════════════════ */
 
-function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
+function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI, goalPaused }) {
   const [hovered, setHovered] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [explanation, setExplanation] = useState(null);
@@ -660,10 +789,11 @@ function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
   const accent = statusColor(task.status);
   const isCompleted = task.status === "completed";
   const isMissed = task.status === "missed";
+  const isDisabled = goalPaused || isMissed;
   const hasNotes = task.notes && task.notes.trim().length > 0;
 
   const handleToggle = async () => {
-    if (toggling) return;
+    if (toggling || goalPaused) return;
     setToggling(true);
     const newStatus = isCompleted ? "pending" : "completed";
     await onToggleStatus(task.id, newStatus);
@@ -706,17 +836,18 @@ function TaskCard({ task, onToggleStatus, onOpenNotes, onAskAI }) {
         {/* Checkbox */}
         <button
           onClick={handleToggle}
-          disabled={isMissed || toggling}
+          disabled={isDisabled || toggling}
           title={
-            isMissed ? "This task was missed"
+            goalPaused ? "Goal is paused"
+            : isMissed ? "This task was missed"
             : isCompleted ? "Mark as pending"
             : "Mark as completed"
           }
           style={{
             width: 22, height: 22, borderRadius: 6,
-            border: `2px solid ${isCompleted ? "#059669" : isMissed ? "#DC2626" : "var(--Border)"}`,
-            background: isCompleted ? "#059669" : isMissed ? "#DC262620" : "transparent",
-            cursor: isMissed ? "not-allowed" : "pointer",
+            border: `2px solid ${isCompleted ? "#059669" : isDisabled ? "#DC2626" : "var(--Border)"}`,
+            background: isCompleted ? "#059669" : isDisabled ? "#DC262620" : "transparent",
+            cursor: isDisabled ? "not-allowed" : "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 12, color: "#fff", flexShrink: 0, marginTop: 2,
             transition: "all 0.15s ease",
@@ -905,6 +1036,10 @@ export default function GoalTasksPage() {
   const [adjustmentHistory, setAdjustmentHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
+  // Pause/Resume state
+  const [pauseResumeLoading, setPauseResumeLoading] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+
   // Notes modal state
   const [notesTask, setNotesTask] = useState(null);
 
@@ -995,6 +1130,33 @@ export default function GoalTasksPage() {
     setNotesTask(task);
   };
 
+  const handlePauseGoal = async () => {
+    setPauseResumeLoading(true);
+    try {
+      await apiFetch(`/goals/${goalId}/pause`, token, { method: "PATCH" });
+      await fetchTasks();
+    } catch (e) { setError(`Pause failed: ${e.message}`); }
+    finally { setPauseResumeLoading(false); }
+  };
+
+  const handleResumeGoal = () => setShowResumeModal(true);
+
+  const handleResumeConfirm = async (body) => {
+    setPauseResumeLoading(true);
+    setShowResumeModal(false);
+    try {
+      await apiFetch(`/goals/${goalId}/resume`, token, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      await fetchTasks();
+      await checkReplan();
+    } catch (e) { setError(`Resume failed: ${e.message}`); }
+    finally { setPauseResumeLoading(false); }
+  };
+
+  const goalPaused = goal?.status === "paused";
+
   /* ── Filters ── */
   const visible = tasks.filter((t) => {
     const matchFilter = filter === "all" || t.status === filter;
@@ -1043,6 +1205,16 @@ export default function GoalTasksPage() {
           task={notesTask}
           onSave={handleSaveNotes}
           onClose={() => setNotesTask(null)}
+        />
+      )}
+
+      {/* Resume Modal */}
+      {showResumeModal && (
+        <ResumeModal
+          goal={goal}
+          onConfirm={handleResumeConfirm}
+          onClose={() => setShowResumeModal(false)}
+          loading={pauseResumeLoading}
         />
       )}
 
@@ -1145,7 +1317,27 @@ export default function GoalTasksPage() {
                 <span>📅 {formatDate(goal.start_date)} → {formatDate(goal.end_date)}</span>
               </div>
             </div>
-            <StatusBadge status={goal.status} />
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              {goal.status !== "completed" && goal.status !== "paused" && (
+                <button onClick={handlePauseGoal} disabled={pauseResumeLoading} style={{
+                  padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  border: "1px solid var(--Border)", background: "#fff",
+                  color: "var(--Muted)", cursor: pauseResumeLoading ? "not-allowed" : "pointer",
+                }}>
+                  {pauseResumeLoading ? "..." : "⏸ Pause"}
+                </button>
+              )}
+              {goal.status === "paused" && (
+                <button onClick={handleResumeGoal} disabled={pauseResumeLoading} style={{
+                  padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                  border: "none", background: "#059669", color: "#fff",
+                  cursor: pauseResumeLoading ? "not-allowed" : "pointer",
+                }}>
+                  {pauseResumeLoading ? "Resuming..." : "▶ Resume"}
+                </button>
+              )}
+              <StatusBadge status={goal.status} />
+            </div>
           </div>
 
           {goal.notes && (
@@ -1177,7 +1369,21 @@ export default function GoalTasksPage() {
         </div>
       )}
 
-      <ReplanBanner replanStatus={replanStatus} onReplan={handleReplan} replanning={replanning} />
+      {goalPaused && (
+        <div style={{
+          padding: "14px 18px", borderRadius: 12, marginBottom: 16,
+          background: "rgba(156,163,175,0.08)", border: "1px solid rgba(156,163,175,0.2)",
+          display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#6B7280",
+        }}>
+          <span style={{ fontSize: 18 }}>⏸️</span>
+          <div>
+            <strong>This goal is paused.</strong> Reminders and replan checks are stopped.
+            Task interactions are disabled until you resume.
+          </div>
+        </div>
+      )}
+
+      {!goalPaused && <ReplanBanner replanStatus={replanStatus} onReplan={handleReplan} replanning={replanning} />}
       <ReplanExplanation result={replanResult} onDismiss={() => setReplanResult(null)} />
       <AdjustmentHistory history={adjustmentHistory} show={showHistory} onToggle={() => setShowHistory(!showHistory)} />
 
@@ -1230,6 +1436,7 @@ export default function GoalTasksPage() {
               onToggleStatus={handleToggleStatus}
               onOpenNotes={handleOpenNotes}
               onAskAI={openTaskChat}
+              goalPaused={goalPaused}
             />
           ))}
         </div>
