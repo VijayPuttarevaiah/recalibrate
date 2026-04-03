@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { create_auth_api } from "../utils/auth_api.js";
 import { use_resend_timer } from "../hooks/use_resend_timer.js";
 import { format_time } from "../utils/format_time.js";
@@ -11,6 +11,7 @@ const DEFAULT_MAX_RESENDS = 3;
 
 export default function VerifyEmail({ maxResends = DEFAULT_MAX_RESENDS }) {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const prefilled_email = useMemo(() => params.get("email") || "", [params]);
 
   const [email, setEmail] = useState(prefilled_email);
@@ -44,6 +45,17 @@ export default function VerifyEmail({ maxResends = DEFAULT_MAX_RESENDS }) {
     try {
       await AuthApi.verify_email({ email: email.trim(), code: code.trim() });
       setSuccess(true);
+      // Navigate to onboarding if coming from registration, otherwise login
+      const next = params.get("next");
+      const emailParam = encodeURIComponent(email.trim());
+
+      setTimeout(() => {
+        if (next === "onboarding") {
+          navigate(`/onboarding?email=${emailParam}`);
+        } else {
+          navigate("/login");
+        }
+      }, 1000); // 1 second delay so user sees the success message
     } catch (err) {
       setError(err.message || "Verification failed.");
     } finally {

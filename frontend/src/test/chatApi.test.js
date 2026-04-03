@@ -21,7 +21,7 @@ const {
   listChatSessions,
   explainTask,
   getSuggestedQuestions,
-} = await import("../services/chatApi.js");
+} = await import("../services/Chatapi.js");
 
 
 describe("chatApi", () => {

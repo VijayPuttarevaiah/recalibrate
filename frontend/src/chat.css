@@ -138,12 +138,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
   background: #FEF2F2;
   border: 1px solid #FECACA;
   color: #B91C1C;
-  font-size: 13px;
+  font-size: 14px;
   margin: 8px 0;
 }
 
@@ -171,7 +171,7 @@
 
 .ChatInputWrap:focus-within {
   border-color: var(--Primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .ChatTextarea {
@@ -360,7 +360,7 @@
 .ChatDrawerBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 1100;
   animation: chatFadeIn 0.2s ease;
 }
@@ -733,7 +733,7 @@
     position: fixed;
     inset: 0;
     top: 56px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 1049;
   }
 
