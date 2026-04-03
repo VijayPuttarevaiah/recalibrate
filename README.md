@@ -464,7 +464,8 @@ group02/
 │   ├── tests/                 # Shared test fixtures, model tests, workflow tests
 │   ├── main.py                # FastAPI app entry point
 │   ├── Dockerfile
-│   └── pyproject.toml
+│   ├── pyproject.toml
+│   └── [README.md](backend/README.md)  # Backend quick reference
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/             # React page components
