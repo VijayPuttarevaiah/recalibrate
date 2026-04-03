@@ -1,32 +1,53 @@
+/**
+ * @file Onboarding.jsx
+ * @description Multi-step onboarding wizard — professional UI.
+ * Collects user preferences (interest, level, hours, goal) and submits
+ * them to generate a personalized roadmap.
+ */
+
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
 const API = "http://localhost:8000";
 
+// ── Data ──────────────────────────────────────────────────────────────────────
 const INTERESTS = [
-  { value: "coding", label: "💻 Coding / Software" },
-  { value: "fitness", label: "🏋️ Fitness / Health" },
-  { value: "immigration", label: "✈️ Immigration / Visa" },
-  { value: "career", label: "💼 Career Development" },
+  { value: "coding",       icon: "💻", label: "Coding / Software" },
+  { value: "fitness",      icon: "🏋️", label: "Fitness / Health" },
+  { value: "immigration",  icon: "✈️",  label: "Immigration / Visa" },
+  { value: "career",       icon: "💼", label: "Career Development" },
 ];
 
 const LEVELS = [
-  { value: "beginner",     label: "Beginner",     desc: "Just starting out" },
-  { value: "intermediate", label: "Intermediate", desc: "Some experience" },
-  { value: "advanced",     label: "Advanced",     desc: "Highly experienced" },
+  { value: "beginner",     icon: "🌱", label: "Beginner",     desc: "Just starting out" },
+  { value: "intermediate", icon: "🌿", label: "Intermediate", desc: "Some experience" },
+  { value: "advanced",     icon: "🌳", label: "Advanced",     desc: "Highly experienced" },
 ];
 
-const HOURS = [5, 10, 15, 20];
+const HOURS = [
+  { value: 5,  icon: "⚡", label: "5h / week" },
+  { value: 10, icon: "🔥", label: "10h / week" },
+  { value: 15, icon: "💪", label: "15h / week" },
+  { value: 20, icon: "🚀", label: "20h / week" },
+];
 
+const STEP_META = [
+  { key: "interest",         label: "Interest", emoji: "🎯" },
+  { key: "experience_level", label: "Level",    emoji: "📊" },
+  { key: "hours_per_week",   label: "Schedule", emoji: "⏰" },
+  { key: "target_goal",      label: "Goal",     emoji: "🏆" },
+];
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function Onboarding() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const email = params.get("email") || "";
 
-  const [step, setStep]     = useState(0);
+  const [step, setStep]       = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState("");
+  const [error, setError]     = useState("");
 
   const [form, setForm] = useState({
     interest: "",
@@ -37,7 +58,7 @@ export default function Onboarding() {
 
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
-  // ── Step guards ────────────────────────────────────────────────────────────
+  // ── Step guards ───────────────────────────────────────────────────────────
   const canNext = [
     form.interest !== "",
     form.experience_level !== "",
@@ -48,9 +69,6 @@ export default function Onboarding() {
   const handleSubmit = async () => {
     setError(""); setLoading(true);
     try {
-      // Get user_id from URL param (set during registration response)
-      // or fall back to reading from localStorage
-      const params = new URLSearchParams(window.location.search);
       const userId = localStorage.getItem("pending_user_id") || 1;
 
       await axios.post("http://localhost:8000/onboarding/preferences", {
@@ -61,7 +79,6 @@ export default function Onboarding() {
         target_goal:      form.target_goal,
       });
 
-      // Clear pending id and redirect to login with success message
       localStorage.removeItem("pending_user_id");
       navigate("/login?registered=true");
     } catch (err) {
@@ -72,227 +89,184 @@ export default function Onboarding() {
     }
   };
 
-  // ── Step definitions ───────────────────────────────────────────────────────
-  const steps = [
-    {
-      title: "What are you interested in?",
-      subtitle: "We'll build your roadmap around this.",
-      content: (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          {INTERESTS.map((i) => (
-            <button
-              key={i.value}
-              onClick={() => set("interest", i.value)}
-              style={{
-                padding: "16px",
-                borderRadius: "10px",
-                border: `2px solid ${form.interest === i.value ? "#4F46E5" : "#E5E7EB"}`,
-                background: form.interest === i.value ? "#EEF2FF" : "white",
-                color: form.interest === i.value ? "#4F46E5" : "#374151",
-                fontWeight: 600,
-                fontSize: "15px",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {i.label}
-            </button>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: "What's your experience level?",
-      subtitle: "Be honest — we'll tailor the pace accordingly.",
-      content: (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {LEVELS.map((l) => (
-            <button
-              key={l.value}
-              onClick={() => set("experience_level", l.value)}
-              style={{
-                padding: "16px 20px",
-                borderRadius: "10px",
-                border: `2px solid ${form.experience_level === l.value ? "#4F46E5" : "#E5E7EB"}`,
-                background: form.experience_level === l.value ? "#EEF2FF" : "white",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              <span style={{
-                fontWeight: 700, fontSize: "15px",
-                color: form.experience_level === l.value ? "#4F46E5" : "#111827",
-              }}>
-                {l.label}
-              </span>
-              <span style={{ fontSize: "13px", color: "#6B7280" }}>{l.desc}</span>
-            </button>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: "How many hours per week can you dedicate?",
-      subtitle: "We'll make sure the plan is realistic for your schedule.",
-      content: (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          {HOURS.map((h) => (
-            <button
-              key={h}
-              onClick={() => set("hours_per_week", h)}
-              style={{
-                padding: "20px",
-                borderRadius: "10px",
-                border: `2px solid ${form.hours_per_week === h ? "#4F46E5" : "#E5E7EB"}`,
-                background: form.hours_per_week === h ? "#EEF2FF" : "white",
-                color: form.hours_per_week === h ? "#4F46E5" : "#374151",
-                fontWeight: 700,
-                fontSize: "18px",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {h}h / week
-            </button>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: "What's your main goal?",
-      subtitle: "In one sentence, what do you want to achieve?",
-      content: (
-        <textarea
-          value={form.target_goal}
-          onChange={(e) => set("target_goal", e.target.value)}
-          placeholder="e.g. Get a junior developer job within 6 months"
-          rows={4}
-          style={{
-            width: "100%",
-            padding: "14px",
-            borderRadius: "10px",
-            border: "2px solid #E5E7EB",
-            fontSize: "15px",
-            fontFamily: "inherit",
-            resize: "none",
-            outline: "none",
-            boxSizing: "border-box",
-            transition: "border-color 0.15s",
-          }}
-          onFocus={(e) => (e.target.style.borderColor = "#4F46E5")}
-          onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-        />
-      ),
-    },
-  ];
+  const isLast = step === STEP_META.length - 1;
 
-  const currentStep = steps[step];
-  const isLast = step === steps.length - 1;
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#F9FAFB",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px",
-    }}>
-      <div style={{
-        background: "white",
-        borderRadius: "16px",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-        padding: "40px",
-        width: "100%",
-        maxWidth: "520px",
-      }}>
+    <div className="OnboardShell">
+      <div className="OnboardCard">
 
-        {/* Progress bar */}
-        <div style={{ marginBottom: "32px" }}>
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: "8px",
-          }}>
-            <span style={{ fontSize: "13px", color: "#6B7280", fontWeight: 600 }}>
-              Step {step + 1} of {steps.length}
-            </span>
-            <span style={{ fontSize: "13px", color: "#4F46E5", fontWeight: 600 }}>
-              {Math.round(((step + 1) / steps.length) * 100)}%
-            </span>
-          </div>
-          <div style={{
-            height: "6px", background: "#E5E7EB", borderRadius: "999px", overflow: "hidden",
-          }}>
-            <div style={{
-              height: "100%",
-              width: `${((step + 1) / steps.length) * 100}%`,
-              background: "#4F46E5",
-              borderRadius: "999px",
-              transition: "width 0.3s ease",
-            }} />
-          </div>
+        {/* Badge */}
+        <div className="OnboardBadge">🎯 Personalize Your Journey</div>
+
+        {/* ── Progress indicator ── */}
+        <div className="OnboardProgress">
+          {STEP_META.map((s, i) => (
+            <ProgressNode key={s.key} index={i} current={step} label={s.label} />
+          ))}
         </div>
 
-        {/* Step content */}
-        <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#111827", marginBottom: "6px" }}>
-          {currentStep.title}
-        </h2>
-        <p style={{ fontSize: "14px", color: "#6B7280", marginBottom: "24px" }}>
-          {currentStep.subtitle}
-        </p>
+        {/* ── Step content (animated) ── */}
+        <div className="OnboardStepContent" key={step}>
+          <span className="OnboardStepEmoji">{STEP_META[step].emoji}</span>
 
-        {currentStep.content}
+          {/* Step 0 — Interest */}
+          {step === 0 && (
+            <>
+              <h2 className="OnboardTitle">What are you interested in?</h2>
+              <p className="OnboardSubtitle">We'll build your roadmap around this.</p>
+              <div className="OnboardGrid">
+                {INTERESTS.map((i) => (
+                  <button
+                    key={i.value}
+                    className={`OnboardOption ${form.interest === i.value ? "OnboardOption--active" : ""}`}
+                    onClick={() => set("interest", i.value)}
+                    type="button"
+                  >
+                    <span className="OnboardOptionIcon">{i.icon}</span>
+                    <span className="OnboardOptionLabel">{i.label}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
+          {/* Step 1 — Experience Level */}
+          {step === 1 && (
+            <>
+              <h2 className="OnboardTitle">What's your experience level?</h2>
+              <p className="OnboardSubtitle">Be honest — we'll tailor the pace accordingly.</p>
+              <div className="OnboardLevels">
+                {LEVELS.map((l) => (
+                  <button
+                    key={l.value}
+                    className={`OnboardLevel ${form.experience_level === l.value ? "OnboardLevel--active" : ""}`}
+                    onClick={() => set("experience_level", l.value)}
+                    type="button"
+                  >
+                    <div>
+                      <span className="OnboardLevelName">{l.icon} {l.label}</span>
+                      <div className="OnboardLevelDesc">{l.desc}</div>
+                    </div>
+                    <span className="OnboardLevelCheck">
+                      {form.experience_level === l.value ? "✓" : ""}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Step 2 — Hours per Week */}
+          {step === 2 && (
+            <>
+              <h2 className="OnboardTitle">How many hours per week can you dedicate?</h2>
+              <p className="OnboardSubtitle">We'll make sure the plan is realistic for your schedule.</p>
+              <div className="OnboardGrid">
+                {HOURS.map((h) => (
+                  <button
+                    key={h.value}
+                    className={`OnboardOption OnboardOption--hours ${form.hours_per_week === h.value ? "OnboardOption--active" : ""}`}
+                    onClick={() => set("hours_per_week", h.value)}
+                    type="button"
+                  >
+                    <span className="OnboardOptionIcon">{h.icon}</span>
+                    <span className="OnboardOptionLabel">{h.label}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Step 3 — Target Goal */}
+          {step === 3 && (
+            <>
+              <h2 className="OnboardTitle">What's your main goal?</h2>
+              <p className="OnboardSubtitle">In one sentence, what do you want to achieve?</p>
+              <textarea
+                className="OnboardTextarea"
+                value={form.target_goal}
+                onChange={(e) => set("target_goal", e.target.value)}
+                placeholder="e.g. Get a junior developer job within 6 months"
+                rows={4}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Error */}
         {error && (
-          <div style={{
-            marginTop: "16px", padding: "12px", background: "#FEF2F2",
-            border: "1px solid #FECACA", borderRadius: "8px",
-            color: "#DC2626", fontSize: "14px",
-          }}>
-            {error}
+          <div className="OnboardAlert">
+            <span>⚠️</span> {error}
           </div>
         )}
 
-        {/* Navigation buttons */}
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "32px",
-          gap: "12px",
-        }}>
+        {/* ── Navigation ── */}
+        <div className="OnboardNav">
           {step > 0 && (
             <button
+              className="OnboardBtnGhost"
               onClick={() => setStep((s) => s - 1)}
-              style={{
-                flex: 1, padding: "12px", borderRadius: "8px",
-                border: "2px solid #E5E7EB", background: "white",
-                color: "#374151", fontWeight: 600, cursor: "pointer",
-                fontSize: "15px",
-              }}
+              type="button"
             >
-              Back
+              ← Back
             </button>
           )}
 
           <button
+            className="OnboardBtnPrimary"
             onClick={isLast ? handleSubmit : () => setStep((s) => s + 1)}
             disabled={!canNext[step] || loading}
-            style={{
-              flex: 1, padding: "12px", borderRadius: "8px",
-              background: canNext[step] && !loading ? "#4F46E5" : "#E5E7EB",
-              color: canNext[step] && !loading ? "white" : "#9CA3AF",
-              fontWeight: 700, cursor: canNext[step] && !loading ? "pointer" : "not-allowed",
-              border: "none", fontSize: "15px", transition: "all 0.15s",
-            }}
+            type="button"
           >
-            {loading ? "Generating..." : isLast ? "Generate My Roadmap 🚀" : "Next →"}
+            {loading ? (
+              <>
+                <span className="OnboardSpinner" />
+                Generating…
+              </>
+            ) : isLast ? (
+              "Generate My Roadmap 🚀"
+            ) : (
+              "Next →"
+            )}
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Progress Node sub-component ─────────────────────────────────────────────
+function ProgressNode({ index, current, label }) {
+  const isDone   = index < current;
+  const isActive = index === current;
+  const total    = STEP_META.length;
+
+  const dotClass = [
+    "OnboardProgressDot",
+    isActive ? "OnboardProgressDot--active" : "",
+    isDone   ? "OnboardProgressDot--done"   : "",
+  ].join(" ");
+
+  const labelClass = [
+    "OnboardProgressLabel",
+    isActive ? "OnboardProgressLabel--active" : "",
+    isDone   ? "OnboardProgressLabel--done"   : "",
+  ].join(" ");
+
+  return (
+    <>
+      <div className="OnboardProgressStep">
+        <div className={dotClass}>
+          {isDone ? "✓" : index + 1}
+        </div>
+        <span className={labelClass}>{label}</span>
+      </div>
+      {index < total - 1 && (
+        <div
+          className={`OnboardProgressConnector ${isDone ? "OnboardProgressConnector--done" : ""}`}
+        />
+      )}
+    </>
   );
 }

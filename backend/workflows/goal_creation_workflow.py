@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from typing import List, Optional, TypedDict, Dict, Any
 
 from langgraph.graph import StateGraph, END
 
-from models.goal_models import Goal
-from models.task_models import Task
-from services.llm_service import generate_tasks_llm
-from services.web_search_service import gather_research
+from goals.models.goal_models import Goal
+from goals.models.task_models import Task
+from goals.ai.llm_service import generate_tasks_llm, TaskGenerationContext
+from goals.integrations.web_search_service import gather_research
 
 
 class GoalCreationState(TypedDict, total=False):
@@ -56,6 +56,10 @@ def _create_goal_node(db):
     return node
 
 
+def create_goal_node(db):
+    return _create_goal_node(db)
+
+
 def _gather_research_node(state: GoalCreationState) -> GoalCreationState:
     """Gather web research once for the entire goal."""
 
@@ -69,6 +73,10 @@ def _gather_research_node(state: GoalCreationState) -> GoalCreationState:
     return {"research_context": research_context}
 
 
+def gather_research_node(state: GoalCreationState) -> GoalCreationState:
+    return _gather_research_node(state)
+
+
 def _generate_tasks_node(state: GoalCreationState) -> GoalCreationState:
     """Generate tasks for the current date chunk via LLM."""
 
@@ -78,20 +86,25 @@ def _generate_tasks_node(state: GoalCreationState) -> GoalCreationState:
         return {}
 
     chunk = chunks[idx]
-    tasks = generate_tasks_llm(
-        state["goal_title"],
-        state["category"],
-        chunk["start"],
-        chunk["end"],
-        state.get("notes"),
-        state.get("research_context"),
+    context = TaskGenerationContext(
+        goal=state["goal_title"],
+        category=state["category"],
+        start_date=chunk["start"],
+        end_date=chunk["end"],
+        notes=state.get("notes"),
+        research_context=state.get("research_context"),
     )
+    tasks = generate_tasks_llm(context)
 
     existing_tasks = state.get("tasks") or []
     return {
         "tasks": existing_tasks + tasks,
         "current_chunk_index": idx + 1,
     }
+
+
+def generate_tasks_node(state: GoalCreationState) -> GoalCreationState:
+    return _generate_tasks_node(state)
 
 
 def _persist_tasks_node(db):
@@ -117,6 +130,10 @@ def _persist_tasks_node(db):
     return node
 
 
+def persist_tasks_node(db):
+    return _persist_tasks_node(db)
+
+
 def _should_continue_chunks(state: GoalCreationState) -> str:
     """Control whether we keep generating tasks for more chunks."""
 
@@ -125,6 +142,10 @@ def _should_continue_chunks(state: GoalCreationState) -> str:
     if idx < len(chunks):
         return "more"
     return "done"
+
+
+def should_continue_chunks(state: GoalCreationState) -> str:
+    return _should_continue_chunks(state)
 
 
 def build_goal_creation_graph(db):
@@ -141,13 +162,14 @@ def build_goal_creation_graph(db):
     # Edges
     workflow.set_entry_point("create_goal")
     workflow.add_edge("create_goal", "gather_research")
+    next_nodes = {
+        "more": "generate_tasks",
+        "done": "persist_tasks",
+    }
     workflow.add_conditional_edges(
         "generate_tasks",
         _should_continue_chunks,
-        {
-            "more": "generate_tasks",
-            "done": "persist_tasks",
-        },
+        next_nodes,
     )
     workflow.add_edge("gather_research", "generate_tasks")
     workflow.add_edge("persist_tasks", END)
@@ -162,9 +184,9 @@ def run_goal_creation_workflow(db, goal_data):
     but runs it as a LangGraph workflow and returns the created Goal.
     """
 
-    category_value = (
-        goal_data.category.value if hasattr(goal_data.category, "value") else goal_data.category
-    )
+    category_value = goal_data.category
+    if hasattr(category_value, "value"):
+        category_value = category_value.value
 
     graph = build_goal_creation_graph(db)
 
@@ -182,5 +204,6 @@ def run_goal_creation_workflow(db, goal_data):
 
     # Reload and return the goal from DB using the id recorded in the state
     goal_id = final_state["goal_id"]
-    goal = db.query(Goal).get(goal_id)
+    goal_query = db.query(Goal)
+    goal = goal_query.get(goal_id)
     return goal

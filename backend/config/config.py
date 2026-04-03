@@ -1,6 +1,7 @@
 import os
 import configparser
 
+
 # Singleton class to manage and provide application configuration from a file
 class Config:
     _instance = None
@@ -20,8 +21,8 @@ class Config:
         # Initialize the configparser and read settings from the local config.ini file
         config = configparser.ConfigParser()
         # Resolve the absolute path to the config.ini file located in the same directory
-        config_path = os.path.join(os.path.dirname(__file__), 'config.ini')
-        
+        config_path = os.path.join(os.path.dirname(__file__), "config.ini")
+
         if not os.path.exists(config_path):
             # Fallback to example if the main config is missing (useful for fresh installs)
             example_path = config_path + ".example"
@@ -32,16 +33,18 @@ class Config:
                 pass
         else:
             config.read(config_path)
-            
+
         self.config = config
-        
+
         # Mark the instance as initialized
         self._initialized = True
 
     def get_logging_config(self):
         return {
             "level": self.config.get("logging", "level", fallback="INFO"),
-            "file_path": self.config.get("logging", "file_path", fallback="logs/backend.log"),
+            "file_path": self.config.get(
+                "logging", "file_path", fallback="logs/backend.log"
+            ),
             "rotation": self.config.get("logging", "rotation", fallback="10 MB"),
             "retention": self.config.get("logging", "retention", fallback="1 week"),
         }

@@ -3,16 +3,16 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any, Dict, List, TypedDict
 
-from fastapi import HTTPException, status
 from langgraph.graph import StateGraph, END
 from sqlalchemy.orm import Session
 
-from models.goal_adjustment_models import GoalAdjustment
-from models.task_models import Task
-from services.progress_summarizer import format_summary_for_llm
-from services.replan_llm import (generate_replan_explanation,
-                                 generate_replan_tasks)
-from services.web_search_service import gather_research
+
+from goals.progress.summarizer import format_summary_for_llm
+from replan.llm.service import (
+    ReplanTaskRequest,
+    generate_replan_tasks,
+)
+from goals.integrations.web_search_service import gather_research
 
 
 class ReplanState(TypedDict, total=False):
@@ -44,6 +44,10 @@ def _gather_research_node(state: ReplanState) -> ReplanState:
     return {"research_context": research_context}
 
 
+def gather_research_node(state: ReplanState) -> ReplanState:
+    return _gather_research_node(state)
+
+
 def _generate_tasks_node(state: ReplanState) -> ReplanState:
     """Generate replan tasks for the current chunk via LLM."""
     idx = state.get("current_chunk_index", 0)
@@ -52,22 +56,29 @@ def _generate_tasks_node(state: ReplanState) -> ReplanState:
         return {}
 
     chunk = chunks[idx]
-    tasks = generate_replan_tasks(
-        state["goal_title"],
-        state["category"],
-        chunk["start"],
-        chunk["end"],
-        state["end_date"],
-        state.get("notes"),
-        state.get("progress_context", ""),
-        state.get("research_context", ""),
+    request = ReplanTaskRequest(
+        goal_title=state["goal_title"],
+        category=state["category"],
+        start_date=chunk["start"],
+        end_date=chunk["end"],
+        goal_end_date=state["end_date"],
+        notes=state.get("notes"),
+        progress_context=state.get("progress_context", ""),
+        research_context=state.get("research_context", ""),
     )
+    tasks = generate_replan_tasks(request)
 
     existing_tasks = state.get("generated_tasks") or []
+    updated_tasks = existing_tasks + tasks
+    next_chunk_index = idx + 1
     return {
-        "generated_tasks": existing_tasks + tasks,
-        "current_chunk_index": idx + 1,
+        "generated_tasks": updated_tasks,
+        "current_chunk_index": next_chunk_index,
     }
+
+
+def generate_tasks_node(state: ReplanState) -> ReplanState:
+    return _generate_tasks_node(state)
 
 
 def _validate_tasks_node(state: ReplanState) -> ReplanState:
@@ -79,8 +90,10 @@ def _validate_tasks_node(state: ReplanState) -> ReplanState:
 
 def _apply_plan_node(db: Session):
     """Minimal implementation for apply_plan node."""
+
     def node(state: ReplanState) -> ReplanState:
         return {"tasks_deleted": 0}  # Placeholder for tasks deleted
+
     return node
 
 
@@ -91,8 +104,10 @@ def _generate_explanation_node(state: ReplanState) -> ReplanState:
 
 def _log_adjustment_node(db: Session):
     """Minimal implementation for log_adjustment node."""
+
     def node(state: ReplanState) -> ReplanState:
         return {"adjustment_id": 1}  # Placeholder adjustment ID
+
     return node
 
 
@@ -113,6 +128,10 @@ def _should_continue_chunks(state: ReplanState) -> str:
     return "done"
 
 
+def should_continue_chunks(state: ReplanState) -> str:
+    return _should_continue_chunks(state)
+
+
 def build_replan_graph(db: Session) -> StateGraph:
     wf = StateGraph(ReplanState)
 
@@ -126,10 +145,14 @@ def build_replan_graph(db: Session) -> StateGraph:
 
     wf.set_entry_point("gather_research")
     wf.add_edge("gather_research", "generate_tasks")
+    continuation_edges = {
+        "more": "generate_tasks",
+        "done": "validate_tasks",
+    }
     wf.add_conditional_edges(
         "generate_tasks",
         _should_continue_chunks,
-        {"more": "generate_tasks", "done": "validate_tasks"},
+        continuation_edges,
     )
     wf.add_edge("validate_tasks", "apply_plan")
     wf.add_edge("apply_plan", "generate_explanation")
@@ -151,6 +174,7 @@ def run_replan_workflow(db: Session, goal, summary: dict, today: date):
         chunks.append({"start": current_start, "end": current_end})
         current_start = current_end + timedelta(days=1)
 
+    progress_context = format_summary_for_llm(summary, goal.title)
     initial_state: ReplanState = {
         "goal_id": goal.id,
         "goal_title": goal.title,
@@ -159,7 +183,7 @@ def run_replan_workflow(db: Session, goal, summary: dict, today: date):
         "end_date": goal.end_date,
         "today": today,
         "summary": summary,
-        "progress_context": format_summary_for_llm(summary, goal.title),
+        "progress_context": progress_context,
         "chunks": chunks,
         "current_chunk_index": 0,
         "generated_tasks": [],

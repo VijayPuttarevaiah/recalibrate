@@ -1,9 +1,13 @@
+# HTTP status codes
+HTTP_SERVICE_UNAVAILABLE = 503
+
+
 class LLMClientError(Exception):
     def __init__(
         self,
         message: str,
         *,
-        status_code: int = 503,
+        status_code: int = HTTP_SERVICE_UNAVAILABLE,
         error_code: str = "llm_unavailable",
         retryable: bool = True,
     ):

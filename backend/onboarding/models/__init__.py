@@ -1,0 +1,1 @@
+from .user_preference_model import UserPreference
