@@ -25,6 +25,7 @@ from goals.models.task_models import Task
 from goals.models.goal_adjustment_models import GoalAdjustment
 from goals.progress.summarizer import build_progress_summary, format_summary_for_llm
 from goals.integrations.web_search_service import gather_research
+from goals.ai.llm_service import _strip_code_fences, extract_json, _validate_task_list
 from replan.detect.service import detect_missed_tasks
 
 
@@ -369,25 +370,6 @@ def _generate_explanation(
         )
 
 
-def _strip_code_fences(content: str) -> str:
-    if not content.startswith("```"):
-        return content
-    return content.replace("```json", "").replace("```", "").strip()
-
-
-def _extract_json_array(content: str) -> str:
-    match = re.search(r"\[.*\]", content, re.DOTALL)
-    if not match:
-        raise ValueError("No JSON array found in LLM response")
-    return match.group(0)
-
-
-def _validate_task_list(tasks: list) -> None:
-    if not isinstance(tasks, list):
-        raise ValueError("LLM did not return a list")
-    for task in tasks:
-        if "title" not in task or "date" not in task:
-            raise ValueError("Invalid task structure")
 
 
 def _call_llm_for_tasks(prompt: str) -> list[dict]:
@@ -427,7 +409,9 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
         content = data["choices"][0]["message"]["content"].strip()
         content = _strip_code_fences(content)
 
-        json_array = _extract_json_array(content)
+        json_array = extract_json(content)
+        if not json_array:
+            raise ValueError("No JSON array found in response")
         tasks = json.loads(json_array)
         _validate_task_list(tasks)
 

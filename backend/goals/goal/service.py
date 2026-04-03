@@ -7,8 +7,7 @@ from goals.integrations.web_search_service import gather_research
 from goals.progress.summarizer import build_progress_summary, format_summary_for_llm
 from replan.goal.service import generate_resume_tasks
 from fastapi import HTTPException, status
-
-PAUSABLE_STATUSES = {"pending", "in_progress"}
+from domain.goal_status import PAUSABLE_GOAL_STATUSES as PAUSABLE_STATUSES
 
 
 def _goal_dict(goal: Goal, task_count: int | None = None) -> dict:

@@ -6,47 +6,7 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-
-async function apiFetch(url, token) {
-  const res = await fetch(`${API_BASE}${url}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Request failed (${res.status})`);
-  }
-  return res.json();
-}
-
-const statusColor = (s) => {
-  switch (s?.toLowerCase()) {
-    case "completed":   return "#059669";
-    case "in_progress": return "#6366F1";
-    case "paused":      return "#9CA3AF";
-    default:            return "#F59E0B";
-  }
-};
-const statusBg = (s) => {
-  switch (s?.toLowerCase()) {
-    case "completed":   return "rgba(5,150,105,0.09)";
-    case "in_progress": return "rgba(99,102,241,0.09)";
-    case "paused":      return "rgba(156,163,175,0.09)";
-    default:            return "rgba(245,158,11,0.09)";
-  }
-};
-const categoryIcon = (cat) => {
-  const c = (cat || "").toLowerCase();
-  if (c.includes("fit"))     return "🏃";
-  if (c.includes("career"))  return "💼";
-  if (c.includes("learn"))   return "📚";
-  if (c.includes("health"))  return "❤️";
-  if (c.includes("finance")) return "💰";
-  return "🎯";
-};
-const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
+import { apiFetch, statusColor, statusBg, categoryIcon, formatDate } from "../utils/designTokens";
 
 function StatusBadge({ status }) {
   return (

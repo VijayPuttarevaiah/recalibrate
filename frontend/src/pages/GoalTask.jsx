@@ -14,23 +14,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import ChatDrawer from "../components/ChatDrawer";
 import { explainTask } from "../services/Chatapi";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-
-async function apiFetch(url, token, options = {}) {
-  const res = await fetch(`${API_BASE}${url}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    ...options,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Request failed (${res.status})`);
-  }
-  return res.json();
-}
+import { apiFetch, statusColor, statusBg, formatDateFull as formatDate } from "../utils/designTokens";
 
 /* ───── Markdown-like formatting (shared with ChatMessage) ───── */
 
@@ -117,32 +101,6 @@ function formatContent(text) {
 }
 /* ───── Design tokens ───── */
 
-const statusColor = (s) => {
-  switch (s?.toLowerCase()) {
-    case "completed":   return "#059669";
-    case "in_progress": return "#6366F1";
-    case "missed":      return "#DC2626";
-    case "skipped":     return "#9CA3AF";
-    case "paused":      return "#9CA3AF";
-    default:            return "#F59E0B";
-  }
-};
-const statusBg = (s) => {
-  switch (s?.toLowerCase()) {
-    case "completed":   return "rgba(5,150,105,0.09)";
-    case "in_progress": return "rgba(99,102,241,0.09)";
-    case "missed":      return "rgba(220,38,38,0.09)";
-    case "skipped":     return "rgba(156,163,175,0.09)";
-    case "paused":      return "rgba(156,163,175,0.09)";
-    default:            return "rgba(245,158,11,0.09)";
-  }
-};
-const formatDate = (d) =>
-  d
-    ? new Date(d).toLocaleDateString("en-US", {
-        month: "short", day: "numeric", year: "numeric",
-      })
-    : "—";
 
 /* ───── Reusable components ───── */
 
