@@ -7,15 +7,15 @@ A full-stack goal planning application that helps users create, track, pause, an
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
-- [Quick Start (Docker)](#quick-start-docker)
-- [Manual Setup](#manual-setup)
+- [How to Run](#how-to-run)
 - [Environment Variables](#environment-variables)
 - [API Endpoints](#api-endpoints)
 - [Use Case Scenarios](#use-case-scenarios)
 - [Testing](#testing)
+- [TDD Commit History](#tdd-commit-history)
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Project Structure](#project-structure)
-- [Design Principles](#design-principles)
+- [Design Principles and Metrics](#design-principles-and-metrics)
 
 ---
 
@@ -49,84 +49,72 @@ A full-stack goal planning application that helps users create, track, pause, an
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-- (For manual setup) Python >= 3.11 with [uv](https://docs.astral.sh/uv/), Node.js >= 20
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose (v2+)
+- (For manual setup only) Python >= 3.11 with [uv](https://docs.astral.sh/uv/), Node.js >= 20
 
 ---
 
-## Quick Start (Docker)
+## How to Run
+
+### Option 1: Docker (Recommended)
+
+This is the easiest way to run the entire application with a single command.
 
 ```bash
+# 1. Clone the repository
 git clone <repository-url>
 cd group02
 
-# Create backend environment file
+# 2. Create the backend environment file
 cp backend/.env.example backend/.env
-# Edit backend/.env with your API keys (see Environment Variables section)
+# Edit backend/.env and add your API keys (see Environment Variables section)
 
-# Start all services
+# 3. Build and start all services (backend + frontend + database)
 docker compose up --build -d
+
+# 4. Verify all containers are running
+docker compose ps
 ```
 
-The application will be available at:
-- **Frontend**: http://localhost
-- **Backend API**: http://localhost:8000
-- **MySQL**: localhost:3306
+After startup, the application is available at:
 
-To stop:
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Frontend** | http://localhost | React application served by Nginx |
+| **Backend API** | http://localhost:8000 | FastAPI server |
+| **API Docs** | http://localhost:8000/docs | Interactive Swagger documentation |
+| **MySQL** | localhost:3306 | Database (user: `user`, password: `password`) |
+
+**Useful Docker commands:**
+
 ```bash
+# View backend logs
+docker compose logs -f api
+
+# View frontend logs
+docker compose logs -f frontend
+
+# Stop all services
 docker compose down
-```
 
-To reset database:
-```bash
+# Stop and remove all data (reset database)
 docker compose down -v
+
+# Rebuild after code changes
 docker compose up --build -d
 ```
 
----
+### Option 2: Manual Setup (Development)
 
-## Manual Setup
+#### Step 1: Start MySQL
 
-### Backend
-
-```bash
-cd backend
-
-# Install uv (Python package manager)
-pip install uv
-
-# Install dependencies
-uv sync --frozen
-
-# Set environment variables
-cp .env.example .env
-# Edit .env with your API keys
-
-# Run database migrations
-uv run alembic upgrade head
-
-# Start the server
-uv run uvicorn main:app --reload --port 8000
-```
-
-### Frontend
+You need a running MySQL 8.0 instance. Using Docker for just the database:
 
 ```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
+docker compose up db -d
 ```
 
-Open http://localhost:5173 in your browser (development mode).
-
-### Database
-
-If not using Docker, you need a MySQL 8.0 instance:
+Or create the database manually:
 
 ```sql
 CREATE DATABASE backend_db;
@@ -134,21 +122,55 @@ CREATE USER 'user'@'%' IDENTIFIED BY 'password';
 GRANT ALL PRIVILEGES ON backend_db.* TO 'user'@'%';
 ```
 
+#### Step 2: Start Backend
+
+```bash
+cd backend
+
+# Install uv (Python package manager)
+pip install uv
+
+# Install all dependencies
+uv sync --frozen
+
+# Create environment file and add API keys
+cp .env.example .env
+
+# Start the backend server (auto-reloads on code changes)
+uv run uvicorn main:app --reload --port 8000
+```
+
+Backend runs at http://localhost:8000
+
+#### Step 3: Start Frontend
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server (auto-reloads on code changes)
+npm run dev
+```
+
+Frontend runs at http://localhost:5173
+
 ---
 
 ## Environment Variables
 
-Create `backend/.env` with the following:
+Create `backend/.env` with the following variables:
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | MySQL connection string. Default: `mysql+pymysql://user:password@localhost:3306/backend_db` |
-| `OPENROUTER_API_KEY` | Yes | API key for task generation and chat features |
-| `SERPER_API_KEY` | Yes | API key for web research during goal creation |
-| `GOOGLE_API_KEY` | No | Google API key (alternative provider) |
-| `LLM_MODEL` | No | Model identifier. Default: `openai/gpt-4o-mini` |
-| `SMTP_USER` | No | Email address for sending notifications |
-| `SMTP_PASSWORD` | No | Email password/app password |
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `DATABASE_URL` | Yes | MySQL connection string | `mysql+pymysql://user:password@localhost:3306/backend_db` |
+| `OPENROUTER_API_KEY` | Yes | API key for task generation and chat | `sk-or-v1-...` |
+| `SERPER_API_KEY` | Yes | API key for web research during goal creation | `abc123...` |
+| `GOOGLE_API_KEY` | No | Google API key (alternative provider) | `AIza...` |
+| `LLM_MODEL` | No | Model identifier (default: `openai/gpt-4o-mini`) | `openai/gpt-4o-mini` |
+| `SMTP_USER` | No | Email address for sending notifications | `user@gmail.com` |
+| `SMTP_PASSWORD` | No | Email app password for notifications | `xxxx xxxx xxxx xxxx` |
 
 ---
 
@@ -191,7 +213,7 @@ Create `backend/.env` with the following:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/goals/{id}/replan/check` | Check if goal needs replanning |
+| GET | `/goals/{id}/replan/check` | Check if goal needs replanning (threshold query param) |
 | POST | `/goals/{id}/replan` | Trigger adaptive replanning |
 | GET | `/goals/{id}/replan/history` | Get adjustment history |
 
@@ -286,19 +308,26 @@ cd frontend
 npm run test -- --run
 ```
 
-### Test Coverage
+### Code Coverage
 
 ```bash
+# Line and branch coverage report
 cd backend
 uv run pytest --cov=. --cov-branch --cov-report=term-missing
 ```
 
-Current coverage: **89% line coverage, 86% branch coverage**
+| Metric | Value |
+|--------|-------|
+| **Line Coverage** | 89% |
+| **Branch Coverage** | 86% |
+| **Backend Tests** | 352 |
+| **Frontend Tests** | 65 |
+| **Total** | **417** |
 
 ### Test Breakdown
 
-| Module | Unit Tests | Integration Tests | Total |
-|--------|-----------|-------------------|-------|
+| Module | Unit | Integration | Total |
+|--------|------|-------------|-------|
 | Goals (pause/resume, CRUD) | 27 | 23 | 50 |
 | Replanning | 25 | - | 25 |
 | Authentication | 20 | - | 20 |
@@ -309,13 +338,80 @@ Current coverage: **89% line coverage, 86% branch coverage**
 | Models/Schemas/Utils | 17 | - | 17 |
 | Workflows | 10 | - | 10 |
 | Frontend (React) | 65 | - | 65 |
-| **Total** | | | **417** |
 
-### Test Categories
+### Test Types
 
-- **Unit tests**: Test individual functions with mocked dependencies (MagicMock)
-- **Integration tests**: Test API endpoints with in-memory SQLite database (TestClient)
-- **Frontend tests**: Component rendering and interaction tests (Vitest + React Testing Library)
+- **Unit tests** -- Test individual functions with mocked dependencies (`MagicMock`). Fast, isolated, no DB or network.
+- **Integration tests** -- Test full API endpoints using `TestClient` with an in-memory SQLite database. Verify router-service-model layers work together.
+- **Frontend tests** -- Component rendering and user interaction tests using Vitest and React Testing Library.
+
+---
+
+## TDD Commit History
+
+All new features were developed following the Red-Green-Refactor TDD cycle. Each RED commit introduces a failing test, each GREEN commit adds the minimal code to pass it, and each REFACTOR commit improves code quality without changing behavior.
+
+### Pause/Resume Goal Feature
+
+| Hash | Phase | Description |
+|------|-------|-------------|
+| `28ff1a9` | RED | Add failing tests for pause/resume goal with smart regeneration |
+| `53ba6d7` | GREEN | Implement pause/resume goal with smart task regeneration |
+| `db713e8` | GREEN | Add frontend pause/resume UI with ResumeModal and disabled tasks |
+| `47cd4a2` | REFACTOR | Add tests for _get_user_goal helper extraction |
+| `d75f94f` | GREEN | Handle resume after deadline passed |
+| `ba3c888` | RED | Add failing tests for resume improvements |
+| `3ca7131` | GREEN | Skip web research on resume and allow flexible end dates |
+| `c13921d` | GREEN | Add remaining days warning and flexible date picker |
+
+### Replanning Engine
+
+| Hash | Phase | Description |
+|------|-------|-------------|
+| `222f61a` | RED | Add failing tests for detect_missed_tasks |
+| `9a8947e` | GREEN | Implement detect_missed_tasks |
+| `f04e3cc` | REFACTOR | Extract default threshold as named parameter |
+| `45be3eb` | RED | Add failing tests for check_goal_needs_replan |
+| `66ad12d` | GREEN | Implement check_goal_needs_replan |
+| `19d1be4` | RED | Add failing tests for replan_goal |
+| `eec5450` | GREEN | Implement replan_goal ownership check and guards |
+| `03d9135` | REFACTOR | Abort with 502 and preserve plan when generation fails |
+
+### Task Management
+
+| Hash | Phase | Description |
+|------|-------|-------------|
+| `66a12ad` | RED | Add failing tests for task status update |
+| `42bb179` | GREEN | Implement update_task_status with validation |
+| `b06cfd2` | REFACTOR | Extract _get_user_task helper |
+| `74fd175` | RED | Add failing tests for task notes and batch update |
+| `e8be577` | GREEN | Implement task notes and batch update |
+| `66e74b0` | REFACTOR | Batch update uses single commit |
+
+### Progress Summarizer
+
+| Hash | Phase | Description |
+|------|-------|-------------|
+| `6e005a2` | RED | Add failing tests for build_progress_summary |
+| `c007425` | GREEN | Implement build_progress_summary and format_summary_for_llm |
+| `f4fd2b5` | REFACTOR | Cap missed tasks at 20 in output |
+
+### Replan Routes
+
+| Hash | Phase | Description |
+|------|-------|-------------|
+| `9a8a791` | RED | Add failing tests for replan routes |
+| `45a6239` | GREEN | Implement check/trigger/history routes |
+| `9e75f68` | REFACTOR | Routes are thin, history ordered DESC |
+
+### Code Quality Refactors
+
+| Hash | Phase | Description |
+|------|-------|-------------|
+| `4d4ab3c` | REFACTOR | Apply DRY and SRP across backend and frontend |
+| `2a23411` | REFACTOR | Apply clean code practices across codebase |
+| `5a17208` | REFACTOR | Resolve Feature Concentration smell in core module |
+| `5303f5a` | REFACTOR | Unify UI consistency across all pages |
 
 ---
 
@@ -324,18 +420,19 @@ Current coverage: **89% line coverage, 86% branch coverage**
 The GitLab CI pipeline runs automatically on every push:
 
 ```
-build          test                    run-dpy         submit-dcode     publish      deploy
-+--------------+---------------------+---------------+---------------+------------+---------+
-| backend-build| backend-test        | run-dpy-job   | submit-dcode  | publish    | deploy  |
-| frontend-build| backend-test-coverage|              |               |            |         |
-|              | frontend-test       |               |               |            |         |
-+--------------+---------------------+---------------+---------------+------------+---------+
-  All branches   All branches         All branches    All branches    main/develop  main/develop
-  (on change)    (on change)          (backend only)  (backend only)
+build              test                     run-dpy          submit-dcode      publish       deploy
++----------------+----------------------+----------------+----------------+-------------+----------+
+| backend-build  | backend-test         | run-dpy-job    | submit-dcode   | publish     | deploy   |
+| frontend-build | backend-test-coverage|                |                |             |          |
+|                | frontend-test        |                |                |             |          |
++----------------+----------------------+----------------+----------------+-------------+----------+
+  All branches     All branches           All branches     All branches     main/develop  main/develop
+  (on change)      (on change)            (backend only)   (backend only)
 ```
 
 - **Build and test stages** run only when relevant files change (`backend/**/*` or `frontend/**/*`)
 - **Publish and deploy** run only on `main` and `develop` branches
+- **Code quality** (DPy/DCode) runs on all branches for backend changes
 
 ---
 
@@ -346,7 +443,7 @@ group02/
 ├── backend/
 │   ├── auth/                  # Authentication (login, register, verification, password reset)
 │   ├── chat/                  # In-app chat with streaming
-│   ├── clients/               # External service clients (LLM provider)
+│   ├── clients/               # External service clients
 │   ├── core/                  # App foundation (DB session, base model, logging)
 │   ├── domain/                # Domain constants (goal categories, statuses)
 │   ├── goals/
@@ -384,28 +481,115 @@ group02/
 
 ---
 
-## Design Principles
+## Design Principles and Metrics
 
-For a detailed analysis of design principles, metrics, and examples, see [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
+### SOLID Principles
 
-### Summary
+#### Single Responsibility (SRP)
 
-| Principle | How It's Applied |
-|-----------|-----------------|
-| **Single Responsibility** | Each module has one purpose: `detect/service.py` only detects missed tasks, `check/service.py` only checks thresholds |
-| **Open/Closed** | New goal categories can be added to `domain/goal_category.py` without modifying service logic |
-| **Dependency Inversion** | Services depend on abstract DB session (`get_db`), not concrete connections |
-| **DRY** | Shared utilities: `domain/goal_status.py` (status constants), `utils/designTokens.js` (frontend), `goals/ai/llm_service.py` (JSON parsing) |
-| **Separation of Concerns** | Three-layer architecture: Router (HTTP) -> Service (Business Logic) -> Model (Data) |
-| **High Cohesion** | `core/` contains only app foundation (DB, logging, base model). External clients separated to `clients/` |
+Each module has exactly one reason to change. The replan engine is split into focused modules:
 
-### Key Metrics
+- `replan/detect/service.py` (6 lines) -- only detects missed tasks
+- `replan/check/service.py` (15 lines) -- only checks if replan threshold is met
+- `replan/goal/service.py` -- only executes replanning
+- `replan/routes/router.py` -- only defines HTTP endpoints
+
+If detection logic changes (e.g., add grace period), only `detect/service.py` changes. Check logic, replan logic, and routes are unaffected.
+
+#### Open/Closed (OCP)
+
+New goal categories can be added to `domain/goal_category.py` without modifying any service code:
+
+```python
+class GoalCategory(str, Enum):
+    CAREER_AND_LEARNING = "career_and_learning"
+    FITNESS = "fitness"
+    IMMIGRATION = "immigration"
+    # Add new categories here -- no service changes needed
+```
+
+#### Dependency Inversion (DIP)
+
+Services depend on abstract `get_db` dependency, not concrete database connections. In tests, this is overridden with an in-memory SQLite database:
+
+```python
+# Production: real MySQL via dependency injection
+db: Session = Depends(get_db)
+
+# Tests: overridden with in-memory SQLite
+app.dependency_overrides[get_db] = override_with_sqlite
+```
+
+#### Separation of Concerns
+
+Three-layer architecture enforced throughout:
+
+```
+Router (HTTP) --> Service (Business Logic) --> Model (Data)
+```
+
+Routes never contain `db.query()` calls. Services never return HTTP responses. Models never contain business logic.
+
+### Cohesion and LCOM
+
+**LCOM (Lack of Cohesion of Methods)** measures how related the methods in a module are. Lower is better (0 = perfectly cohesive).
+
+| Module | Files | LCOM | Status |
+|--------|-------|------|--------|
+| `core/` (base, db_session, logging) | 3 | ~0 | Cohesive -- all app foundation |
+| `clients/` (llm_client) | 1 | 0 | Cohesive -- single responsibility |
+| `domain/` (goal_category, goal_status) | 2 | 0 | Cohesive -- domain constants |
+| `replan/detect/` | 1 | 0 | Cohesive -- single function |
+| `auth/utils/` (password, email, auth) | 3 | ~0 | Cohesive -- all auth helpers |
+
+**Resolved smell:** `core/` previously had LCOM = 1.0 (Feature Concentration) because it contained `password.py` and `llm_client.py` alongside DB code. These were moved to `auth/utils/` and `clients/` respectively, reducing LCOM to near 0.
+
+### Coupling
+
+Dependencies flow in one direction only (no circular imports):
+
+```
+goals/goal/service.py --> replan/goal/service.py (for generate_resume_tasks)
+replan/goal/service.py --> goals/progress/summarizer.py (for progress summary)
+replan/goal/service.py --> goals/ai/llm_service.py (for shared JSON parsing)
+```
+
+Shared constants avoid cross-module duplication:
+
+```python
+# domain/goal_status.py -- single source of truth, imported by service and router
+GOAL_STATUSES = {"pending", "in_progress", "completed", "paused"}
+TASK_STATUSES = {"pending", "completed", "missed", "skipped"}
+```
+
+### DRY (Don't Repeat Yourself)
+
+| What was duplicated | Where | Resolution |
+|---------------------|-------|------------|
+| JSON parsing (strip fences, extract array, validate) | `goals/ai/llm_service.py` and `replan/goal/service.py` | Replan imports from `goals/ai/llm_service` |
+| Status constants | `goal/service.py` and `task/router.py` | Centralized in `domain/goal_status.py` |
+| `statusColor()`, `apiFetch()`, `formatDate()` | `Dashboard.jsx` and `GoalTask.jsx` | Extracted to `utils/designTokens.js` |
+
+### Clean Code Practices
+
+| Practice | Example |
+|----------|---------|
+| Named constants | `CHUNK_DAYS = 29` instead of magic number `timedelta(days=29)` |
+| Why-comments | `# Single research pass avoids redundant API calls across chunks` |
+| Meaningful names | `task_data` instead of `t`, `goal` instead of `g` |
+| Structured logging | `logger.info(...)` instead of `print()` |
+| No double negatives | All conditions use positive logic |
+
+### Key Metrics Summary
 
 | Metric | Value | Target |
 |--------|-------|--------|
 | Line Coverage | 89% | > 80% |
 | Branch Coverage | 86% | > 75% |
 | Total Tests | 417 | - |
-| Feature Concentration (core/) | Resolved | LCC < 0.5 |
+| Backend Unit Tests | 329 | - |
+| Integration Tests | 23 | - |
+| Frontend Tests | 65 | - |
+| LCOM (core/) | ~0 (resolved from 1.0) | < 0.5 |
 | Longest Method | ~50 lines | < 60 |
-| Max Function Parameters | 8 (resolved via dataclass) | <= 5 |
+| Max Function Parameters | 5 | <= 5 |
