@@ -62,6 +62,49 @@ test:
     - uv run pytest
   <<: *only_main_develop
 
+test-coverage:
+  stage: test
+  image: python:3.11
+  before_script:
+    - pip install uv
+  script:
+    - cd backend
+    - pip install --upgrade pip
+    - pip install uv
+    - uv sync --frozen
+    - |
+      {
+        echo "=== Python Syntax Check ==="
+        python -m py_compile app.py || echo "SKIP: app.py not found"
+        python -m py_compile wsgi.py || echo "SKIP: wsgi.py not found"
+        python -m compileall src/ || echo "SKIP: src/ compile issues"
+        echo "=== Running Pytest with Coverage ==="
+        pytest tests/ -v --tb=short \
+          --cov=src \
+          --cov-config=.coveragerc \
+          --cov-report=term-missing \
+          --cov-report=html:coverage_html \
+          --cov-report=xml:coverage.xml \
+          || echo "Some tests failed"
+        echo "=== Backend Test Complete ==="
+      } 2>&1 | tee backend_test_output.log
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    name: "backend-test-$CI_COMMIT_SHORT_SHA"
+    expose_as: "Coverage Report"
+    paths:
+      - backend/backend_test_output.log
+      - backend/coverage_html/
+      - backend/coverage.xml
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
+    expire_in: 1 week
+    when: always
+  allow_failure: true
+  
+
 # ── Designite ─────────────────────────────────────────────────────────────────
 
 run-dpy-job:
