@@ -135,7 +135,7 @@ run-dpy-job:
     - chmod +x DPy/DPy
     - echo "Running DPy"
     - mkdir smells/
-    - DPy/DPy analyze -i $CI_PROJECT_DIR -o $CI_PROJECT_DIR/smells/ -f csv
+    - DPy/DPy analyze -i $CI_PROJECT_DIR/backend -o $CI_PROJECT_DIR/smells/ -f csv
   artifacts:
     name: "designite-smells-$CI_COMMIT_SHORT_SHA"
     expose_as: "DPy Smell Reports"

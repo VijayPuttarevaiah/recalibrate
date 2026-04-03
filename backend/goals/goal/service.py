@@ -4,7 +4,7 @@ from goals.models.task_models import Task
 from goals.ai.llm_service import generate_tasks_llm, TaskGenerationContext
 from goals.integrations.web_search_service import gather_research
 from goals.progress.summarizer import build_progress_summary, format_summary_for_llm
-from replan.goal.service import generate_resume_tasks
+from replan.goal.service import generate_resume_tasks, ReplanContext
 from fastapi import HTTPException, status
 from domain.goal_status import PAUSABLE_GOAL_STATUSES as PAUSABLE_STATUSES
 from core.logging_config import LogManager
@@ -225,7 +225,7 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
     current_start = today
     while current_start <= effective_end_date:
         current_end = min(current_start + timedelta(days=CHUNK_DAYS), effective_end_date)
-        new_tasks = generate_resume_tasks(
+        resume_context = ReplanContext(
             goal_title=goal.title,
             category=goal.category,
             start_date=current_start,
@@ -235,6 +235,7 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
             progress_context=pause_context,
             research_context="",
         )
+        new_tasks = generate_resume_tasks(resume_context)
         all_new_tasks.extend(new_tasks)
         current_start = current_end + timedelta(days=1)
 
