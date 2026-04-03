@@ -13,7 +13,6 @@ CREATED_GOAL_ID = 42
 CHUNK_INDEX_START = 0
 CHUNK_INDEX_NEXT = 1
 
-
 def test_minimal_create_goal_node():
     """Test that the create_goal node initializes correctly."""
     db = MagicMock()
@@ -43,7 +42,6 @@ def test_minimal_create_goal_node():
         result = graph.invoke(state)
     assert "goal_id" in result, "Goal ID should be in the result."
 
-
 def test_minimal_generate_tasks():
     """Test that the generate_tasks node initializes correctly."""
     db = MagicMock()
@@ -72,7 +70,6 @@ def test_minimal_generate_tasks():
     ):
         result = graph.invoke(state)
     assert "tasks" in result, "Tasks should be in the result."
-
 
 def test_minimal_workflow_exec():
     """Test that the workflow executes minimally."""
@@ -104,9 +101,8 @@ def test_minimal_workflow_exec():
     assert "goal_id" in result, "Goal ID should be in the result."
     assert "tasks" in result, "Tasks should be in the result."
 
-
 def test_create_goal_persists():
-    """RED: create_goal should persist a Goal and return its id."""
+    """create_goal should persist a Goal and return its id."""
     db = MagicMock()
 
     def add_side_effect(goal):
@@ -139,9 +135,8 @@ def test_create_goal_persists():
     assert created_goal.end_date == date(2026, 3, 31)
     assert result["goal_id"] == CREATED_GOAL_ID
 
-
 def test_generate_tasks_calls_llm():
-    """RED: generate_tasks should call LLM and increment chunk index."""
+    """generate_tasks should call LLM and increment chunk index."""
     state = {
         "goal_title": "Test Goal",
         "category": "Health",

@@ -17,7 +17,6 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 # Use an in-memory SQLite database to ensure tests are fast and isolated
 DATABASE_URL = "sqlite:///:memory:"
 
-
 @pytest.fixture(name="db_session")
 def db_session_fixture():
     engine = create_engine(
@@ -35,7 +34,6 @@ def db_session_fixture():
         Base.metadata.drop_all(bind=engine)
         engine.dispose()
 
-
 @pytest.fixture(name="client")
 def client_fixture(db_session):
     def override_get_db():
@@ -50,7 +48,6 @@ def client_fixture(db_session):
         yield test_client
 
     app.dependency_overrides.clear()
-
 
 @pytest.fixture(name="auth_client")
 def auth_client_fixture(db_session):

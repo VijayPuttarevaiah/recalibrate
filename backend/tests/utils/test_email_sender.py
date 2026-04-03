@@ -6,7 +6,6 @@ import smtplib
 import os
 import types
 
-
 def test_send_email(monkeypatch):
     # Patch smtplib.SMTP to avoid real email sending
     class DummySMTP:

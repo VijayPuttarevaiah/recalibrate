@@ -1,6 +1,6 @@
 # backend/tests/services/test_chat_service.py
 """
-RED: Unit tests for chat_service.py
+Unit tests for chat_service.py
 All DB calls mocked. All LLM calls mocked. Pure unit tests.
 """
 
@@ -24,11 +24,9 @@ from chat.services.chat_service import (
     send_message,
 )
 
-
 def _get_post_payload(mock_post: MagicMock) -> dict:
     call_args = mock_post.call_args
     return call_args.kwargs.get("json") or call_args[1]["json"]
-
 
 def _set_task_query_results(db: MagicMock, tasks: list) -> None:
     query = db.query.return_value
@@ -36,25 +34,21 @@ def _set_task_query_results(db: MagicMock, tasks: list) -> None:
     ordered = filtered.order_by.return_value
     ordered.all.return_value = tasks
 
-
 def _set_rate_limit_count(db: MagicMock, count: int) -> None:
     query = db.query.return_value
     joined = query.join.return_value
     filtered = joined.filter.return_value
     filtered.scalar.return_value = count
 
-
 def _set_first_result(db: MagicMock, value) -> None:
     query = db.query.return_value
     filtered = query.filter.return_value
     filtered.first.return_value = value
 
-
 def _set_first_side_effect(db: MagicMock, values: list) -> None:
     query = db.query.return_value
     filtered = query.filter.return_value
     filtered.first.side_effect = values
-
 
 HTTP_BAD_REQUEST = 400
 HTTP_FORBIDDEN = 403
@@ -83,9 +77,7 @@ HISTORY_USER_COUNT = 2
 HISTORY_ASSISTANT_COUNT = 1
 MESSAGES_WITHOUT_CONTEXT_COUNT = 2
 
-
 # ── Mock factories ──
-
 
 def make_goal(**overrides):
     goal = MagicMock()
@@ -99,7 +91,6 @@ def make_goal(**overrides):
     goal.status = overrides.get("status", "pending")
     return goal
 
-
 def make_task(**overrides):
     task = MagicMock()
     task.id = overrides.get("id", DEFAULT_TASK_ID)
@@ -110,7 +101,6 @@ def make_task(**overrides):
     task.description = overrides.get("description", None)
     task.notes = overrides.get("notes", None)
     return task
-
 
 def make_session(**overrides):
     session = MagicMock()
@@ -124,7 +114,6 @@ def make_session(**overrides):
     session.updated_at = MagicMock(isoformat=lambda: "2026-03-18T10:05:00")
     return session
 
-
 def make_message(**overrides):
     msg = MagicMock()
     msg.id = overrides.get("id", DEFAULT_MESSAGE_ID)
@@ -134,11 +123,9 @@ def make_message(**overrides):
     msg.created_at = MagicMock(isoformat=lambda: "2026-03-18T10:00:00")
     return msg
 
-
 # ═══════════════════════════════════════════════════════
 # Context Building
 # ═══════════════════════════════════════════════════════
-
 
 def test_includes_goal_title():
     db = MagicMock()
@@ -148,7 +135,6 @@ def test_includes_goal_title():
     ctx = build_goal_context(db, goal)
     assert "Dalhousie" in ctx
 
-
 def test_includes_category():
     db = MagicMock()
     goal = make_goal(category="career_and_learning")
@@ -156,7 +142,6 @@ def test_includes_category():
 
     ctx = build_goal_context(db, goal)
     assert "career_and_learning" in ctx
-
 
 def test_includes_progress_section():
     db = MagicMock()
@@ -170,7 +155,6 @@ def test_includes_progress_section():
     assert "Completed: 1" in ctx
     assert "Pending: 1" in ctx
 
-
 def test_includes_days_remaining():
     db = MagicMock()
     goal = make_goal(end_date=date.today() + timedelta(days=30))
@@ -178,7 +162,6 @@ def test_includes_days_remaining():
 
     ctx = build_goal_context(db, goal)
     assert "Days remaining:" in ctx
-
 
 def test_includes_today_section():
     db = MagicMock()
@@ -188,7 +171,6 @@ def test_includes_today_section():
     ctx = build_goal_context(db, goal)
     assert "TODAY'S TASKS" in ctx
 
-
 def test_includes_upcoming_section():
     db = MagicMock()
     goal = make_goal()
@@ -197,86 +179,71 @@ def test_includes_upcoming_section():
     ctx = build_goal_context(db, goal)
     assert "UPCOMING" in ctx
 
-
 def test_task_includes_title():
     task = make_task(title="Write SOP")
     ctx = build_task_context(task)
     assert "Write SOP" in ctx
-
 
 def test_task_includes_status():
     task = make_task(status="pending")
     ctx = build_task_context(task)
     assert "pending" in ctx
 
-
 def test_task_includes_due_date():
     task = make_task(due_date=date(2026, 4, 15))
     ctx = build_task_context(task)
     assert "2026-04-15" in ctx
-
 
 def test_task_desc_fallback():
     task = make_task(description=None)
     ctx = build_task_context(task)
     assert "No description" in ctx
 
-
 def test_task_no_notes_fallback():
     task = make_task(notes=None)
     ctx = build_task_context(task)
     assert "No notes yet" in ctx
-
 
 def test_task_notes_present():
     task = make_task(notes="Draft completed yesterday")
     ctx = build_task_context(task)
     assert "Draft completed yesterday" in ctx
 
-
 def test_prompt_goal_no_task():
     prompt = build_system_prompt(has_task_focus=False)
     assert "productivity coach" in prompt
     assert "SPECIFIC TASK" not in prompt
 
-
 def test_prompt_task_has_focus():
     prompt = build_system_prompt(has_task_focus=True)
     assert "SPECIFIC TASK" in prompt
-
 
 def test_prompt_word_limit():
     prompt = build_system_prompt(has_task_focus=False)
     assert "400 words" in prompt
 
-
 # ═══════════════════════════════════════════════════════
 # Rate Limiting
 # ═══════════════════════════════════════════════════════
-
 
 def test_rate_allows_under():
     db = MagicMock()
     _set_rate_limit_count(db, RATE_LIMIT_BELOW)
     assert check_rate_limit(db, user_id=DEFAULT_USER_ID) is True
 
-
 def test_rate_blocks_when_at_limit():
     db = MagicMock()
     _set_rate_limit_count(db, RATE_LIMIT_AT)
     assert check_rate_limit(db, user_id=DEFAULT_USER_ID) is False
-
 
 def test_rate_blocks_over():
     db = MagicMock()
     _set_rate_limit_count(db, RATE_LIMIT_OVER)
     assert check_rate_limit(db, user_id=DEFAULT_USER_ID) is False
 
-
 # ═══════════════════════════════════════════════════════
 # LLM Call
 # ═══════════════════════════════════════════════════════
-
 
 @patch("chat.services.chat_service.requests.post")
 def test_llm_returns_content(mock_post):
@@ -294,14 +261,12 @@ def test_llm_returns_content(mock_post):
     result = call_chat_llm("system", "context", [], "Hello")
     assert result == "Here is my answer."
 
-
 @patch("chat.services.chat_service.requests.post")
 def test_llm_returns_fallback(mock_post):
     mock_post.side_effect = Exception("Connection error")
 
     result = call_chat_llm("system", "context", [], "Hello")
     assert "trouble generating" in result.lower()
-
 
 @patch("chat.services.chat_service.requests.post")
 def test_llm_sends_context(mock_post):
@@ -326,7 +291,6 @@ def test_llm_sends_context(mock_post):
     assert "Goal: test" in messages[1]["content"]
     assert messages[-1]["role"] == "user"
     assert messages[-1]["content"] == "Hi"
-
 
 @patch("chat.services.chat_service.requests.post")
 def test_llm_includes_history(mock_post):
@@ -353,7 +317,6 @@ def test_llm_includes_history(mock_post):
     assert roles.count("user") == HISTORY_USER_COUNT  # history Q1 + new Q2
     assert roles.count("assistant") == HISTORY_ASSISTANT_COUNT  # history A1
 
-
 @patch("chat.services.chat_service.requests.post")
 def test_llm_skips_empty_ctx(mock_post):
     response_payload = {
@@ -373,11 +336,9 @@ def test_llm_skips_empty_ctx(mock_post):
     messages = payload["messages"]
     assert len(messages) == MESSAGES_WITHOUT_CONTEXT_COUNT  # system + user, no context
 
-
 # ═══════════════════════════════════════════════════════
 # Create Chat Session
 # ═══════════════════════════════════════════════════════
-
 
 @patch("chat.services.chat_service.call_chat_llm", return_value="AI response here.")
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
@@ -411,7 +372,6 @@ def test_create_returns_session(mock_rate, mock_llm):
     assert result["user_message"]["content"] == "Hello"
     assert result["assistant_message"]["role"] == "assistant"
 
-
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
 def test_create_missing_goal(mock_rate):
     db = MagicMock()
@@ -426,7 +386,6 @@ def test_create_missing_goal(mock_rate):
             first_message="Hi",
         )
     assert exc_info.value.status_code == HTTP_NOT_FOUND
-
 
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
 def test_create_invalid_task(mock_rate):
@@ -444,7 +403,6 @@ def test_create_invalid_task(mock_rate):
         )
     assert exc_info.value.status_code == HTTP_NOT_FOUND
 
-
 @patch("chat.services.chat_service.check_rate_limit", return_value=False)
 def test_create_rate_limited(mock_rate):
     db = MagicMock()
@@ -458,7 +416,6 @@ def test_create_rate_limited(mock_rate):
             first_message="Hi",
         )
     assert exc_info.value.status_code == HTTP_RATE_LIMIT
-
 
 @patch("chat.services.chat_service.call_chat_llm", return_value="Response")
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
@@ -493,11 +450,9 @@ def test_create_calls_llm(mock_rate, mock_llm):
         "user_message", ""
     )
 
-
 # ═══════════════════════════════════════════════════════
 # Send Message
 # ═══════════════════════════════════════════════════════
-
 
 @patch("chat.services.chat_service.call_chat_llm", return_value="Follow-up response.")
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
@@ -530,7 +485,6 @@ def test_send_returns_both(mock_rate, mock_llm):
     assert result["user_message"]["content"] == "Tell me more"
     assert result["assistant_message"]["role"] == "assistant"
 
-
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
 def test_send_missing_session(mock_rate):
     db = MagicMock()
@@ -539,7 +493,6 @@ def test_send_missing_session(mock_rate):
     with pytest.raises(Exception) as exc_info:
         send_message(db, user_id=DEFAULT_USER_ID, session_id=999, message="Hi")
     assert exc_info.value.status_code == HTTP_NOT_FOUND
-
 
 @patch("chat.services.chat_service.check_rate_limit", return_value=True)
 def test_send_rejects_inactive(mock_rate):
@@ -553,7 +506,6 @@ def test_send_rejects_inactive(mock_rate):
         )
     assert exc_info.value.status_code == HTTP_BAD_REQUEST
 
-
 @patch("chat.services.chat_service.check_rate_limit", return_value=False)
 def test_send_rejects_rate_limited(mock_rate):
     db = MagicMock()
@@ -564,11 +516,9 @@ def test_send_rejects_rate_limited(mock_rate):
         )
     assert exc_info.value.status_code == HTTP_RATE_LIMIT
 
-
 # ═══════════════════════════════════════════════════════
 # Get History
 # ═══════════════════════════════════════════════════════
-
 
 def test_history_returns_session():
     db = MagicMock()
@@ -590,7 +540,6 @@ def test_history_returns_session():
     assert result["messages"][0]["role"] == "user"
     assert result["messages"][1]["role"] == "assistant"
 
-
 def test_history_missing_session():
     db = MagicMock()
     _set_first_result(db, None)
@@ -599,11 +548,9 @@ def test_history_missing_session():
         get_chat_history(db, user_id=DEFAULT_USER_ID, session_id=999)
     assert exc_info.value.status_code == HTTP_NOT_FOUND
 
-
 # ═══════════════════════════════════════════════════════
 # List Sessions
 # ═══════════════════════════════════════════════════════
-
 
 def test_list_returns_list():
     db = MagicMock()
@@ -624,7 +571,6 @@ def test_list_returns_list():
     assert result[0]["goal_id"] == ALT_GOAL_ID
     assert result[0]["title"] == "Chat about SOP"
 
-
 def test_list_empty_sessions():
     db = MagicMock()
     _set_task_query_results(db, [])
@@ -632,11 +578,9 @@ def test_list_empty_sessions():
     result = list_sessions_for_goal(db, user_id=DEFAULT_USER_ID, goal_id=ALT_GOAL_ID)
     assert result == []
 
-
 # ═══════════════════════════════════════════════════════
 # Explain Task
 # ═══════════════════════════════════════════════════════
-
 
 @patch(
     "chat.services.chat_service.call_chat_llm",
@@ -655,7 +599,6 @@ def test_explain_returns(mock_llm):
     assert isinstance(result, str)
     assert "SOP" in result
 
-
 def test_explain_missing_task():
     db = MagicMock()
     _set_first_result(db, None)
@@ -663,7 +606,6 @@ def test_explain_missing_task():
     with pytest.raises(Exception) as exc_info:
         explain_task(db, user_id=DEFAULT_USER_ID, task_id=999)
     assert exc_info.value.status_code == HTTP_NOT_FOUND
-
 
 @patch("chat.services.chat_service.call_chat_llm")
 def test_explain_other_user(mock_llm):
@@ -675,11 +617,9 @@ def test_explain_other_user(mock_llm):
         explain_task(db, user_id=OTHER_USER_ID, task_id=DEFAULT_TASK_ID)
     assert exc_info.value.status_code == HTTP_FORBIDDEN
 
-
 # ═══════════════════════════════════════════════════════
 # Suggestions
 # ═══════════════════════════════════════════════════════
-
 
 @patch("chat.services.chat_service.requests.post")
 def test_suggestions_returns3(mock_post):
@@ -694,7 +634,6 @@ def test_suggestions_returns3(mock_post):
     assert isinstance(result, list)
     assert len(result) == SUGGESTION_COUNT
 
-
 @patch("chat.services.chat_service.requests.post")
 def test_suggestions_fallback(mock_post):
     mock_post.side_effect = Exception("API down")
@@ -703,7 +642,6 @@ def test_suggestions_fallback(mock_post):
 
     assert isinstance(result, list)
     assert len(result) == SUGGESTION_COUNT
-
 
 @patch("chat.services.chat_service.requests.post")
 def test_suggestions_no_task(mock_post):
@@ -714,7 +652,6 @@ def test_suggestions_no_task(mock_post):
     assert isinstance(result, list)
     assert len(result) == SUGGESTION_COUNT
     assert any("focus" in s.lower() or "track" in s.lower() for s in result)
-
 
 @patch(
     "chat.services.chat_service.generate_suggestions",
@@ -732,7 +669,6 @@ def test_get_suggested_returns(mock_gen):
     )
     assert result == ["Q1", "Q2", "Q3"]
 
-
 def test_get_suggested_empty():
     db = MagicMock()
     _set_first_result(db, None)
@@ -744,11 +680,9 @@ def test_get_suggested_empty():
     )
     assert result == []
 
-
 # ═══════════════════════════════════════════════════════
 # Helpers
 # ═══════════════════════════════════════════════════════
-
 
 def test_msg_to_dict():
     msg = make_message(id=ALT_MESSAGE_ID_5, role="assistant", content="Hello there")

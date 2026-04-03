@@ -1,8 +1,5 @@
 """
 CYCLE 7 — build_progress_summary + format_summary_for_llm
-RED   → required keys, completion rate never divides by zero
-GREEN → counts correct, phase_summary groups by month, LLM text includes titles
-REFACTOR → capped at 20 missed tasks, output under token budget
 """
 
 from unittest.mock import MagicMock
@@ -34,7 +31,6 @@ SUMMARY_COMPLETED = 5
 SUMMARY_TOTAL = 105
 COMPLETION_RATE_SMALL = 5.0
 
-
 def make_task(id, goal_id, title, status, due_date):
     t = MagicMock()
     t.id = id
@@ -44,7 +40,6 @@ def make_task(id, goal_id, title, status, due_date):
     t.due_date = due_date
     return t
 
-
 def make_db(tasks):
     db = MagicMock()
     query = db.query.return_value
@@ -53,12 +48,8 @@ def make_db(tasks):
     ordered.all.return_value = tasks
     return db
 
-
-# ── RED ──────────────────────────────────────────────────────────────────────
-
-
 def test_red_summary_keys():
-    """RED: Summary must have: stats, missed_tasks, recent_completed, upcoming_preview, phase_summary."""
+    """Summary must have: stats, missed_tasks, recent_completed, upcoming_preview, phase_summary."""
     from goals.progress.summarizer import build_progress_summary
 
     result = build_progress_summary(
@@ -74,9 +65,8 @@ def test_red_summary_keys():
         "phase_summary",
     }.issubset(result.keys())
 
-
 def test_red_stats_fields():
-    """RED: stats must include total_tasks, completed, missed, remaining_future, completion_rate."""
+    """stats must include total_tasks, completed, missed, remaining_future, completion_rate."""
     from goals.progress.summarizer import build_progress_summary
 
     result = build_progress_summary(
@@ -92,9 +82,8 @@ def test_red_stats_fields():
         "completion_rate",
     }.issubset(result["stats"].keys())
 
-
 def test_red_completion_zero_empty():
-    """RED: 0 tasks must not cause ZeroDivisionError — return 0.0."""
+    """0 tasks must not cause ZeroDivisionError — return 0.0."""
     from goals.progress.summarizer import build_progress_summary
 
     result = build_progress_summary(
@@ -104,12 +93,8 @@ def test_red_completion_zero_empty():
     )
     assert result["stats"]["completion_rate"] == 0.0
 
-
-# ── GREEN ─────────────────────────────────────────────────────────────────────
-
-
 def test_green_counts_completed():
-    """GREEN: All tasks with status='completed' are counted."""
+    """All tasks with status='completed' are counted."""
     from goals.progress.summarizer import build_progress_summary
 
     today = date.today()
@@ -141,9 +126,8 @@ def test_green_counts_completed():
     )
     assert result["stats"]["completed"] == COMPLETED_COUNT
 
-
-def test_GREEN_counts_missed_tasks():
-    """GREEN: Pending tasks past due_date are counted as missed."""
+def test_counts_missed_tasks():
+    """Pending tasks past due_date are counted as missed."""
     from goals.progress.summarizer import build_progress_summary
 
     today = date.today()
@@ -175,9 +159,8 @@ def test_GREEN_counts_missed_tasks():
     )
     assert result["stats"]["missed"] == MISSED_COUNT
 
-
 def test_green_completion_mixed():
-    """GREEN: 2 completed + 2 missed = 50.0% completion rate."""
+    """2 completed + 2 missed = 50.0% completion rate."""
     from goals.progress.summarizer import build_progress_summary
 
     today = date.today()
@@ -216,9 +199,8 @@ def test_green_completion_mixed():
     )
     assert result["stats"]["completion_rate"] == COMPLETION_RATE_HALF
 
-
 def test_green_phase_keys_format():
-    """GREEN: Phase summary keys must match YYYY-MM format."""
+    """Phase summary keys must match YYYY-MM format."""
     from goals.progress.summarizer import build_progress_summary
 
     today = date.today()
@@ -237,9 +219,8 @@ def test_green_phase_keys_format():
     for key in result["phase_summary"].keys():
         assert re.match(r"^\d{4}-\d{2}$", key)
 
-
 def test_green_llm_missed_titles():
-    """GREEN: Missed task titles must appear in the LLM-formatted output."""
+    """Missed task titles must appear in the LLM-formatted output."""
     from goals.progress.summarizer import format_summary_for_llm
 
     summary = {
@@ -256,9 +237,8 @@ def test_green_llm_missed_titles():
     result = format_summary_for_llm(summary, "Study for Exam")
     assert "Study Chapter 5" in result
 
-
 def test_green_llm_progress_header():
-    """GREEN: LLM output must include === PROGRESS CONTEXT === header."""
+    """LLM output must include === PROGRESS CONTEXT === header."""
     from goals.progress.summarizer import format_summary_for_llm
 
     summary = {
@@ -274,12 +254,8 @@ def test_green_llm_progress_header():
     }
     assert "PROGRESS CONTEXT" in format_summary_for_llm(summary, "My Goal")
 
-
-# ── REFACTOR ──────────────────────────────────────────────────────────────────
-
-
 def test_refactor_missed_capped():
-    """REFACTOR: Even with 50 missed tasks, output shows max 20 + overflow note."""
+    """Even with 50 missed tasks, output shows max 20 + overflow note."""
     from goals.progress.summarizer import format_summary_for_llm
 
     missed = [
@@ -302,9 +278,8 @@ def test_refactor_missed_capped():
     assert shown <= MAX_MISSED_TASKS
     assert "more missed" in result.lower()
 
-
 def test_refactor_output_budget():
-    """REFACTOR: Formatted output stays under ~3000 chars (≈500 tokens)."""
+    """Formatted output stays under ~3000 chars (≈500 tokens)."""
     from goals.progress.summarizer import format_summary_for_llm
 
     missed = [

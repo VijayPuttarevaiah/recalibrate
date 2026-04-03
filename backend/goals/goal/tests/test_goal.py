@@ -7,7 +7,6 @@ from datetime import date
 from core.db_session import DBSession
 from goals.goal.service import create_goal_with_tasks
 
-
 def run():
     db = DBSession().SessionLocal()
 
@@ -22,7 +21,6 @@ def run():
     )
 
     print("Created goal:", goal.id)
-
 
 if __name__ == "__main__":
     run()

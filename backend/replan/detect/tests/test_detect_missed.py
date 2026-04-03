@@ -1,8 +1,5 @@
 """
 CYCLE 1 — detect_missed_tasks
-RED   → test_returns_only_pending_overdue_tasks, test_returns_empty_when_no_missed_tasks
-GREEN → test_orders_by_due_date, test_queries_correct_goal_id
-REFACTOR → test_default_threshold_is_three
 """
 
 from unittest.mock import MagicMock
@@ -18,7 +15,6 @@ OVERDUE_DAYS_LARGE = 5
 OVERDUE_DAYS_SMALL = 1
 OVERDUE_DAYS_MEDIUM = 2
 
-
 def make_task(id, goal_id, title, status, due_date):
     t = MagicMock()
     t.id = id
@@ -28,19 +24,14 @@ def make_task(id, goal_id, title, status, due_date):
     t.due_date = due_date
     return t
 
-
 def _set_missed_tasks(db, tasks):
     query = db.query.return_value
     filtered = query.filter.return_value
     ordered = filtered.order_by.return_value
     ordered.all.return_value = tasks
 
-
-# ── RED ──────────────────────────────────────────────────────────────────────
-
-
 def test_red_pending_overdue():
-    """RED: Should filter tasks that are pending AND past due_date."""
+    """Should filter tasks that are pending AND past due_date."""
     from replan.services.replan_service import detect_missed_tasks
 
     today = date.today()
@@ -57,9 +48,8 @@ def test_red_pending_overdue():
     assert len(result) == DEFAULT_TASK_ID
     assert result[0].title == "Overdue task"
 
-
 def test_red_no_missed():
-    """RED: Empty list when nothing is overdue."""
+    """Empty list when nothing is overdue."""
     from replan.services.replan_service import detect_missed_tasks
 
     db = MagicMock()
@@ -67,12 +57,8 @@ def test_red_no_missed():
     result = detect_missed_tasks(db, goal_id=ALT_GOAL_ID)
     assert result == []
 
-
-# ── GREEN ─────────────────────────────────────────────────────────────────────
-
-
 def test_green_orders_by_due():
-    """GREEN: Results should be chronologically ordered."""
+    """Results should be chronologically ordered."""
     from replan.services.replan_service import detect_missed_tasks
 
     today = date.today()
@@ -95,9 +81,8 @@ def test_green_orders_by_due():
     result = detect_missed_tasks(db, goal_id=DEFAULT_GOAL_ID)
     assert result[0].due_date < result[1].due_date
 
-
 def test_green_queries_goal_id():
-    """GREEN: DB query is scoped to the provided goal_id."""
+    """DB query is scoped to the provided goal_id."""
     from replan.services.replan_service import detect_missed_tasks
 
     db = MagicMock()
@@ -105,12 +90,8 @@ def test_green_queries_goal_id():
     detect_missed_tasks(db, goal_id=QUERY_GOAL_ID)
     db.query.assert_called_once()
 
-
-# ── REFACTOR ──────────────────────────────────────────────────────────────────
-
-
 def test_refactor_threshold():
-    """REFACTOR: Default threshold of 3 is a named param, not a magic number."""
+    """Default threshold of 3 is a named param, not a magic number."""
     import inspect
     from replan.services.replan_service import check_goal_needs_replan
 

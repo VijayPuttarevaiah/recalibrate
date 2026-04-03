@@ -1,13 +1,11 @@
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
-
 def test_task_notes_column_added(db_session: Session):
     """Test if the 'notes' column exists in the 'tasks' table."""
     inspector = inspect(db_session.get_bind())
     columns = [col["name"] for col in inspector.get_columns("tasks")]
     assert "notes" in columns, "The 'notes' column is missing in the 'tasks' table."
-
 
 def test_task_notes_nullable(db_session: Session):
     """Test if the 'notes' column is nullable."""

@@ -2,7 +2,6 @@
 import pytest
 from core.password import hash_password, verify_password
 
-
 def test_hash_and_verify_password():
     pw = "SuperSecret123!"
     hashed = hash_password(pw)

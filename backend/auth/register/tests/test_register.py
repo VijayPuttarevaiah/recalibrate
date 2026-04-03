@@ -8,7 +8,6 @@ HTTP_CREATED = HTTP_201_CREATED
 HTTP_BAD_REQUEST = HTTP_400_BAD_REQUEST
 HTTP_UNPROCESSABLE = HTTP_422_UNPROCESSABLE_ENTITY
 
-
 class TestRegister:
     """Test cases for the user registration endpoint (/register)."""
 

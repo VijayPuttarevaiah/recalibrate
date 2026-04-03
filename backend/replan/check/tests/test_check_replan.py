@@ -1,8 +1,5 @@
 """
 CYCLE 2 — check_goal_needs_replan
-RED   → response shape, needs_replan true/false
-GREEN → missed_count value, goal_id echoed
-REFACTOR → custom threshold changes result
 """
 
 from unittest.mock import MagicMock
@@ -17,7 +14,6 @@ MISSED_TASK_COUNT_LOW = 1
 MISSED_TASK_COUNT_HIGH = 5
 TASK_ID_START = 1
 
-
 def make_task(id, goal_id, title, status, due_date):
     t = MagicMock()
     t.id = id
@@ -27,25 +23,19 @@ def make_task(id, goal_id, title, status, due_date):
     t.due_date = due_date
     return t
 
-
 def _set_missed_tasks(db, tasks):
     query = db.query.return_value
     filtered = query.filter.return_value
     ordered = filtered.order_by.return_value
     ordered.all.return_value = tasks
 
-
 def _set_completed_count(db, count):
     query = db.query.return_value
     filtered = query.filter.return_value
     filtered.count.return_value = count
 
-
-# ── RED ──────────────────────────────────────────────────────────────────────
-
-
 def test_red_response_keys():
-    """RED: Response dict must have all 6 required keys."""
+    """Response dict must have all 6 required keys."""
     from replan.services.replan_service import check_goal_needs_replan
 
     db = MagicMock()
@@ -62,9 +52,8 @@ def test_red_response_keys():
     }
     assert required.issubset(result.keys())
 
-
 def test_red_needs_replan_true():
-    """RED: needs_replan=True when missed >= threshold."""
+    """needs_replan=True when missed >= threshold."""
     from replan.services.replan_service import check_goal_needs_replan
 
     today = date.today()
@@ -88,9 +77,8 @@ def test_red_needs_replan_true():
     )
     assert result["needs_replan"] is True
 
-
 def test_red_needs_replan_false():
-    """RED: needs_replan=False when missed < threshold."""
+    """needs_replan=False when missed < threshold."""
     from replan.services.replan_service import check_goal_needs_replan
 
     today = date.today()
@@ -113,12 +101,8 @@ def test_red_needs_replan_false():
     )
     assert result["needs_replan"] is False
 
-
-# ── GREEN ─────────────────────────────────────────────────────────────────────
-
-
 def test_green_missed_count():
-    """GREEN: missed_count equals number of overdue pending tasks."""
+    """missed_count equals number of overdue pending tasks."""
     from replan.services.replan_service import check_goal_needs_replan
 
     today = date.today()
@@ -138,9 +122,8 @@ def test_green_missed_count():
     result = check_goal_needs_replan(db, goal_id=DEFAULT_GOAL_ID)
     assert result["missed_count"] == MISSED_TASK_COUNT_HIGH
 
-
 def test_green_goal_id_echoed():
-    """GREEN: goal_id in response must match input."""
+    """goal_id in response must match input."""
     from replan.services.replan_service import check_goal_needs_replan
 
     db = MagicMock()
@@ -149,12 +132,8 @@ def test_green_goal_id_echoed():
     result = check_goal_needs_replan(db, goal_id=ALT_GOAL_ID)
     assert result["goal_id"] == ALT_GOAL_ID
 
-
-# ── REFACTOR ──────────────────────────────────────────────────────────────────
-
-
 def test_refactor_threshold_config():
-    """REFACTOR: threshold=1 flags 1 missed task; threshold=5 does not."""
+    """threshold=1 flags 1 missed task; threshold=5 does not."""
     from replan.services.replan_service import check_goal_needs_replan
 
     today = date.today()

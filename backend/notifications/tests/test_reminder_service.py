@@ -23,9 +23,7 @@ from notifications.services.reminder_service import (
     COMPLETED_STATUS,
 )
 
-
 # -- Helpers -------------------------------------------------------------------
-
 
 def make_task(task_id, user_id, title, **overrides):
     task = MagicMock()
@@ -39,68 +37,53 @@ def make_task(task_id, user_id, title, **overrides):
     task.goal.user_id = user_id
     return task
 
-
 def make_user(user_id, email):
     user = MagicMock()
     user.id = user_id
     user.email = email
     return user
 
-
 def _set_task_query_effects(mock_db, effects):
     query = mock_db.query.return_value
     filtered = query.filter.return_value
     filtered.all.side_effect = effects
-
 
 def _set_user_lookup(mock_db, user):
     query = mock_db.query.return_value
     filtered = query.filter.return_value
     filtered.first.return_value = user
 
-
 # -- Message builders ----------------------------------------------------------
-
 
 def test_reminder_has_title():
     assert "Write report" in build_reminder_message("Write report")
 
-
 def test_reminder_returns_string():
     assert isinstance(build_reminder_message("Task"), str)
-
 
 def test_reminder_mentions_24h():
     assert "24 hours" in build_reminder_message("Task")
 
-
 def test_overdue_has_title():
     assert "Submit form" in build_overdue_message("Submit form")
-
 
 def test_overdue_returns_string():
     assert isinstance(build_overdue_message("Task"), str)
 
-
 def test_overdue_mentions_overdue():
     assert "overdue" in build_overdue_message("Task").lower()
-
 
 def test_completed_has_title():
     assert "Final exam" in build_completed_message("Final exam")
 
-
 def test_completed_returns_string():
     assert isinstance(build_completed_message("Task"), str)
-
 
 def test_completed_mentions_done():
     msg = build_completed_message("Task").lower()
     assert "completed" in msg or "congratulations" in msg
 
-
 # -- Upcoming deadline notifications -------------------------------------------
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -112,7 +95,6 @@ def test_upcoming_creates(mock_session, mock_create):
     _set_user_lookup(mock_db, make_user(1, "u@e.com"))
     check_upcoming_deadlines()
     assert mock_create.call_count == 1
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -126,7 +108,6 @@ def test_upcoming_title(mock_session, mock_create):
     params = kwargs["params"]
     assert params.title == REMINDER_TITLE
 
-
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
 def test_upcoming_send_mail_true(mock_session, mock_create):
@@ -139,7 +120,6 @@ def test_upcoming_send_mail_true(mock_session, mock_create):
     params = kwargs["params"]
     assert params.send_mail is True
 
-
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
 def test_upcoming_no_tasks(mock_session, mock_create):
@@ -148,7 +128,6 @@ def test_upcoming_no_tasks(mock_session, mock_create):
     _set_task_query_effects(mock_db, [[], [], []])
     check_upcoming_deadlines()
     mock_create.assert_not_called()
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -160,9 +139,7 @@ def test_upcoming_skips_no_user(mock_session, mock_create):
     check_upcoming_deadlines()
     mock_create.assert_not_called()
 
-
 # -- Overdue notifications -----------------------------------------------------
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -174,7 +151,6 @@ def test_overdue_creates(mock_session, mock_create):
     _set_user_lookup(mock_db, make_user(1, "u@e.com"))
     check_upcoming_deadlines()
     assert mock_create.call_count == 1
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -194,7 +170,6 @@ def test_overdue_title(mock_session, mock_create):
     _, kwargs = mock_create.call_args
     params = kwargs["params"]
     assert params.title == OVERDUE_TITLE
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -222,7 +197,6 @@ def test_overdue_message_has_title(mock_session, mock_create):
     params = kwargs["params"]
     assert "Submit invoice" in params.message
 
-
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
 def test_overdue_skips_no_user(mock_session, mock_create):
@@ -247,9 +221,7 @@ def test_overdue_skips_no_user(mock_session, mock_create):
     check_upcoming_deadlines()
     mock_create.assert_not_called()
 
-
 # -- Completed task notifications ----------------------------------------------
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -261,7 +233,6 @@ def test_completed_creates(mock_session, mock_create):
     _set_user_lookup(mock_db, make_user(1, "u@e.com"))
     check_upcoming_deadlines()
     assert mock_create.call_count == 1
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -282,7 +253,6 @@ def test_completed_title(mock_session, mock_create):
     params = kwargs["params"]
     assert params.title == COMPLETED_TITLE
 
-
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
 def test_completed_message_title(mock_session, mock_create):
@@ -302,7 +272,6 @@ def test_completed_message_title(mock_session, mock_create):
     params = kwargs["params"]
     assert "Write thesis" in params.message
 
-
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
 def test_completed_skips_no_user(mock_session, mock_create):
@@ -320,9 +289,7 @@ def test_completed_skips_no_user(mock_session, mock_create):
     check_upcoming_deadlines()
     mock_create.assert_not_called()
 
-
 # -- DB lifecycle --------------------------------------------------------------
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")
@@ -332,7 +299,6 @@ def test_db_closed_after_success(mock_session, mock_create):
     _set_task_query_effects(mock_db, [[], [], []])
     check_upcoming_deadlines()
     mock_db.close.assert_called_once()
-
 
 @patch("notifications.services.reminder_service.create_notification")
 @patch("notifications.services.reminder_service._create_db_session")

@@ -1,8 +1,5 @@
 """
 CYCLE — pause_goal + resume_goal with LLM-based task regeneration
-RED   → pause sets status, records timestamp; resume regenerates via LLM
-GREEN → service functions implemented with proper validation
-REFACTOR → extract _get_user_goal helper, shared across pause/resume
 """
 
 import pytest
@@ -20,7 +17,6 @@ PAUSED_AT = datetime(2026, 3, 20, 10, 0, 0)
 
 PAUSABLE_STATUSES = {"pending", "in_progress"}
 
-
 def make_goal(id=DEFAULT_GOAL_ID, user_id=DEFAULT_USER_ID, status="in_progress",
               paused_at=None, start_date=None, end_date=None):
     g = MagicMock()
@@ -35,7 +31,6 @@ def make_goal(id=DEFAULT_GOAL_ID, user_id=DEFAULT_USER_ID, status="in_progress",
     g.notes = "Focus on advanced topics"
     return g
 
-
 def make_task(id=1, goal_id=DEFAULT_GOAL_ID, status="pending", due_date=None):
     t = MagicMock()
     t.id = id
@@ -44,20 +39,16 @@ def make_task(id=1, goal_id=DEFAULT_GOAL_ID, status="pending", due_date=None):
     t.due_date = due_date or date(2026, 4, 15)
     return t
 
-
 # ══════════════════════════════════════════════════════════════════════
-# RED — pause_goal
 # ══════════════════════════════════════════════════════════════════════
-
 
 def test_red_pausable_statuses_defined():
-    """RED: PAUSABLE_STATUSES must be defined as pending + in_progress."""
+    """PAUSABLE_STATUSES must be defined as pending + in_progress."""
     from goals.goal.service import PAUSABLE_STATUSES
     assert PAUSABLE_STATUSES == {"pending", "in_progress"}
 
-
 def test_red_pause_sets_status_to_paused():
-    """RED: pause_goal must change goal.status to 'paused'."""
+    """pause_goal must change goal.status to 'paused'."""
     from goals.goal.service import pause_goal
 
     goal = make_goal(status="in_progress")
@@ -67,9 +58,8 @@ def test_red_pause_sets_status_to_paused():
     pause_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert goal.status == "paused"
 
-
 def test_red_pause_sets_paused_at_timestamp():
-    """RED: pause_goal must record paused_at datetime."""
+    """pause_goal must record paused_at datetime."""
     from goals.goal.service import pause_goal
 
     goal = make_goal(status="in_progress", paused_at=None)
@@ -79,9 +69,8 @@ def test_red_pause_sets_paused_at_timestamp():
     pause_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert goal.paused_at is not None
 
-
 def test_red_pause_commits_to_db():
-    """RED: pause_goal must call db.commit()."""
+    """pause_goal must call db.commit()."""
     from goals.goal.service import pause_goal
 
     goal = make_goal(status="pending")
@@ -91,9 +80,8 @@ def test_red_pause_commits_to_db():
     pause_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
     db.commit.assert_called_once()
 
-
 def test_red_pause_returns_confirmation():
-    """RED: pause_goal returns dict with goal_id and status='paused'."""
+    """pause_goal returns dict with goal_id and status='paused'."""
     from goals.goal.service import pause_goal
 
     goal = make_goal(status="pending")
@@ -104,9 +92,8 @@ def test_red_pause_returns_confirmation():
     assert result["goal_id"] == DEFAULT_GOAL_ID
     assert result["status"] == "paused"
 
-
 def test_red_pause_completed_goal_raises_400():
-    """RED: Cannot pause a completed goal."""
+    """Cannot pause a completed goal."""
     from goals.goal.service import pause_goal
 
     goal = make_goal(status="completed")
@@ -117,9 +104,8 @@ def test_red_pause_completed_goal_raises_400():
         pause_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert exc.value.status_code == HTTP_BAD_REQUEST
 
-
 def test_red_pause_already_paused_raises_400():
-    """RED: Cannot pause an already paused goal."""
+    """Cannot pause an already paused goal."""
     from goals.goal.service import pause_goal
 
     goal = make_goal(status="paused", paused_at=PAUSED_AT)
@@ -130,9 +116,8 @@ def test_red_pause_already_paused_raises_400():
         pause_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert exc.value.status_code == HTTP_BAD_REQUEST
 
-
 def test_red_pause_nonexistent_goal_raises_404():
-    """RED: Pausing a goal that doesn't exist raises 404."""
+    """Pausing a goal that doesn't exist raises 404."""
     from goals.goal.service import pause_goal
 
     db = MagicMock()
@@ -142,18 +127,15 @@ def test_red_pause_nonexistent_goal_raises_404():
         pause_goal(db, user_id=DEFAULT_USER_ID, goal_id=999)
     assert exc.value.status_code == HTTP_NOT_FOUND
 
-
 # ══════════════════════════════════════════════════════════════════════
-# RED — resume_goal with LLM regeneration
 # ══════════════════════════════════════════════════════════════════════
-
 
 @patch("goals.goal.service.generate_resume_tasks")
 @patch("goals.goal.service.gather_research")
 @patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
 @patch("goals.goal.service.build_progress_summary")
 def test_red_resume_keep_original_sets_status(mock_summary, mock_fmt, mock_research, mock_gen):
-    """RED: resume with keep_original sets status to in_progress."""
+    """resume with keep_original sets status to in_progress."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -170,13 +152,12 @@ def test_red_resume_keep_original_sets_status(mock_summary, mock_fmt, mock_resea
     resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
     assert goal.status == "in_progress"
 
-
 @patch("goals.goal.service.generate_resume_tasks")
 @patch("goals.goal.service.gather_research")
 @patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
 @patch("goals.goal.service.build_progress_summary")
 def test_red_resume_clears_paused_at(mock_summary, mock_fmt, mock_research, mock_gen):
-    """RED: resume must clear paused_at."""
+    """resume must clear paused_at."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -193,13 +174,12 @@ def test_red_resume_clears_paused_at(mock_summary, mock_fmt, mock_research, mock
     resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
     assert goal.paused_at is None
 
-
 @patch("goals.goal.service.generate_resume_tasks")
 @patch("goals.goal.service.gather_research")
 @patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
 @patch("goals.goal.service.build_progress_summary")
 def test_red_resume_keep_original_preserves_end_date(mock_summary, mock_fmt, mock_research, mock_gen):
-    """RED: keep_original mode must NOT change goal.end_date."""
+    """keep_original mode must NOT change goal.end_date."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -216,13 +196,12 @@ def test_red_resume_keep_original_preserves_end_date(mock_summary, mock_fmt, moc
     resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
     assert goal.end_date == date(2026, 6, 30)
 
-
 @patch("goals.goal.service.generate_resume_tasks")
 @patch("goals.goal.service.gather_research")
 @patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
 @patch("goals.goal.service.build_progress_summary")
 def test_red_resume_deletes_pending_tasks(mock_summary, mock_fmt, mock_research, mock_gen):
-    """RED: resume must delete all pending tasks before inserting new ones."""
+    """resume must delete all pending tasks before inserting new ones."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -241,13 +220,12 @@ def test_red_resume_deletes_pending_tasks(mock_summary, mock_fmt, mock_research,
     resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
     assert db.delete.call_count == 2
 
-
 @patch("goals.goal.service.generate_resume_tasks")
 @patch("goals.goal.service.gather_research")
 @patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
 @patch("goals.goal.service.build_progress_summary")
 def test_red_resume_new_end_date_updates_goal(mock_summary, mock_fmt, mock_research, mock_gen):
-    """RED: new_end_date mode must update goal.end_date."""
+    """new_end_date mode must update goal.end_date."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -264,9 +242,8 @@ def test_red_resume_new_end_date_updates_goal(mock_summary, mock_fmt, mock_resea
     resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
     assert goal.end_date == date(2026, 8, 31)
 
-
 def test_red_resume_new_end_date_before_original_raises():
-    """RED: new_end_date before original end_date must raise validation error."""
+    """new_end_date before original end_date must raise validation error."""
     from goals.goal.schemas import GoalResumeRequest
 
     with pytest.raises(Exception):
@@ -276,21 +253,19 @@ def test_red_resume_new_end_date_before_original_raises():
             original_end_date=date(2026, 6, 30),
         )
 
-
 def test_red_resume_new_end_date_requires_date():
-    """RED: mode=new_end_date without new_end_date must raise validation error."""
+    """mode=new_end_date without new_end_date must raise validation error."""
     from goals.goal.schemas import GoalResumeRequest
 
     with pytest.raises(Exception):
         GoalResumeRequest(mode="new_end_date", new_end_date=None)
-
 
 @patch("goals.goal.service.generate_resume_tasks")
 @patch("goals.goal.service.gather_research")
 @patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
 @patch("goals.goal.service.build_progress_summary")
 def test_red_resume_returns_adjusted_true(mock_summary, mock_fmt, mock_research, mock_gen):
-    """RED: resume must return adjusted=True with regeneration stats."""
+    """resume must return adjusted=True with regeneration stats."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -309,13 +284,12 @@ def test_red_resume_returns_adjusted_true(mock_summary, mock_fmt, mock_research,
     assert result["status"] == "in_progress"
     assert result["stats"]["new_tasks_generated"] >= 2
 
-
 @patch("goals.goal.service.generate_resume_tasks")
 @patch("goals.goal.service.gather_research")
 @patch("goals.goal.service.format_summary_for_llm", return_value="progress text")
 @patch("goals.goal.service.build_progress_summary")
 def test_red_resume_llm_failure_raises_502(mock_summary, mock_fmt, mock_research, mock_gen):
-    """RED: if LLM returns empty tasks, raise 502 without modifying DB."""
+    """if LLM returns empty tasks, raise 502 without modifying DB."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -333,9 +307,8 @@ def test_red_resume_llm_failure_raises_502(mock_summary, mock_fmt, mock_research
     assert exc.value.status_code == HTTP_BAD_GATEWAY
     assert goal.status == "paused"
 
-
 def test_red_resume_non_paused_raises_400():
-    """RED: Cannot resume a goal that is not paused."""
+    """Cannot resume a goal that is not paused."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -348,9 +321,8 @@ def test_red_resume_non_paused_raises_400():
         resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID, body=body)
     assert exc.value.status_code == HTTP_BAD_REQUEST
 
-
 def test_red_resume_nonexistent_raises_404():
-    """RED: Resuming a nonexistent goal raises 404."""
+    """Resuming a nonexistent goal raises 404."""
     from goals.goal.service import resume_goal
     from goals.goal.schemas import GoalResumeRequest
 
@@ -362,14 +334,11 @@ def test_red_resume_nonexistent_raises_404():
         resume_goal(db, user_id=DEFAULT_USER_ID, goal_id=999, body=body)
     assert exc.value.status_code == HTTP_NOT_FOUND
 
-
 # ══════════════════════════════════════════════════════════════════════
-# RED — replan must skip paused goals
 # ══════════════════════════════════════════════════════════════════════
-
 
 def test_red_check_replan_returns_false_for_paused():
-    """RED: check_goal_needs_replan must return needs_replan=False for paused goals."""
+    """check_goal_needs_replan must return needs_replan=False for paused goals."""
     from replan.check.service import check_goal_needs_replan
 
     goal = make_goal(status="paused", paused_at=PAUSED_AT)
@@ -383,9 +352,8 @@ def test_red_check_replan_returns_false_for_paused():
     result = check_goal_needs_replan(db, goal_id=DEFAULT_GOAL_ID)
     assert result["needs_replan"] is False
 
-
 def test_red_replan_raises_400_for_paused():
-    """RED: replan_goal must reject paused goals with 400."""
+    """replan_goal must reject paused goals with 400."""
     from replan.goal.service import replan_goal
 
     goal = make_goal(status="paused", paused_at=PAUSED_AT)
