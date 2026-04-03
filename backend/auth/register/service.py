@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from auth.repositories.user_repository import UserRepository
 from auth.register.schemas import UserCreate
-from core.password import hash_password
+from auth.utils.password import hash_password
 from sqlalchemy.exc import IntegrityError
 from core.logging_config import LogManager
 

@@ -1,6 +1,6 @@
 from domain.goal_category import GoalCategory
 from goals.category.schemas import GoalCategoryDetectResponse
-from core.llm_client import LLMClient
+from clients.llm_client import LLMClient
 from core.logging_config import LogManager
 
 logger = LogManager.get_logger()

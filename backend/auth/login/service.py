@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from auth.repositories.user_repository import UserRepository
-from core.password import verify_password
+from auth.utils.password import verify_password
 from jose import jwt
 from datetime import datetime, timedelta, timezone
 from config.config import Config
