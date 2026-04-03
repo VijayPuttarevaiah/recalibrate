@@ -1,7 +1,3 @@
-"""
-CYCLE 4 — update_task_status + _get_user_task helper
-"""
-
 import pytest
 from unittest.mock import MagicMock
 from fastapi import HTTPException

@@ -1,7 +1,3 @@
-"""
-CYCLE — pause_goal + resume_goal with LLM-based task regeneration
-"""
-
 import pytest
 from datetime import date, datetime
 from unittest.mock import MagicMock, patch
