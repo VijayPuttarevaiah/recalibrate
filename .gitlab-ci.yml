@@ -75,12 +75,10 @@ test-coverage:
     - |
       {
         echo "=== Python Syntax Check ==="
-        python -m py_compile app.py || echo "SKIP: app.py not found"
-        python -m py_compile wsgi.py || echo "SKIP: wsgi.py not found"
-        python -m compileall src/ || echo "SKIP: src/ compile issues"
+        python -m compileall . || echo "SKIP: compile issues"
         echo "=== Running Pytest with Coverage ==="
-        pytest tests/ -v --tb=short \
-          --cov=src \
+        uv run pytest -v --tb=short \
+          --cov=. \
           --cov-config=.coveragerc \
           --cov-report=term-missing \
           --cov-report=html:coverage_html \
