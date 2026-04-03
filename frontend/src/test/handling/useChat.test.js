@@ -6,9 +6,9 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import useChat from "../hooks/useChat.js";
+import useChat from "../../hooks/useChat.js";
 
-vi.mock("../services/chatApi.js", () => ({
+vi.mock("../../services/Chatapi.js", () => ({
   createChatSession: vi.fn(),
   sendMessage: vi.fn(),
   streamMessage: vi.fn(),
@@ -21,7 +21,7 @@ import {
   sendMessage,
   getChatHistory,
   getSuggestedQuestions,
-} from "../services/chatApi.js";
+} from "../../services/Chatapi.js";
 
 
 describe("useChat", () => {
