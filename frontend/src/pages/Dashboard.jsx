@@ -26,12 +26,7 @@ function StatusBadge({ status }) {
 
 function StatCard({ label, value, color, icon }) {
   return (
-    <div style={{
-      textAlign: "center", padding: "18px 12px",
-      background: `linear-gradient(135deg, ${color}08, ${color}14)`,
-      border: `1px solid ${color}20`,
-      borderRadius: 16,
-    }}>
+    <div className="Panel" style={{ textAlign: "center", padding: "18px 12px" }}>
       <div style={{ fontSize: 22, marginBottom: 4 }}>{icon}</div>
       <div style={{ fontSize: 32, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
       <div style={{
@@ -93,11 +88,10 @@ function GoalCard({ goal, replanInfo, onClick }) {
         position: "relative", overflow: "hidden",
       }}
     >
+      {/* Top color stripe */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, height: 4,
-        background: needsReplan
-          ? "linear-gradient(90deg, #F59E0B, #FBBF24)"
-          : `linear-gradient(90deg, ${accent}, ${accent}99)`,
+        background: needsReplan ? "#F59E0B" : accent,
         borderRadius: "20px 20px 0 0",
       }} />
 
@@ -141,11 +135,10 @@ function GoalCard({ goal, replanInfo, onClick }) {
           <span style={{ fontWeight: 600 }}>Progress</span>
           <span style={{ fontWeight: 700, color: accent }}>{progress}%</span>
         </div>
-        <div style={{ height: 6, borderRadius: 99, background: "rgba(99,102,241,0.08)", overflow: "hidden" }}>
+        <div style={{ height: 5, borderRadius: 99, background: "var(--Border)", overflow: "hidden" }}>
           <div style={{
             height: "100%", width: `${progress}%`, borderRadius: 99,
-            background: `linear-gradient(90deg, ${accent}, ${accent}BB)`,
-            transition: "width 0.5s ease",
+            background: accent, transition: "width 0.5s ease",
           }} />
         </div>
       </div>
@@ -245,11 +238,7 @@ export default function Dashboard() {
   return (
     <section style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px", minHeight: "calc(100vh - 64px)" }}>
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{
-          margin: "0 0 4px", fontSize: 28, fontWeight: 800, letterSpacing: "-0.5px",
-          background: "linear-gradient(135deg, #6366F1, #8B5CF6)", WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-        }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: 28, fontWeight: 800, color: "var(--Text)", letterSpacing: "-0.5px" }}>
           My Goals
         </h2>
         <p style={{ margin: 0, color: "var(--Muted)", fontSize: 14, lineHeight: 1.6 }}>

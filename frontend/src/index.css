@@ -5,19 +5,16 @@
  */
 
 :root {
-  --Bg: #F4F2FF;
-  --Card: rgba(255, 255, 255, 0.97);
+  --Bg: #F0F2F7;
+  --Card: rgba(255, 255, 255, 0.95);
   --Card2: rgba(255, 255, 255, 0.85);
-  --Text: #1E1B4B;
-  --Muted: #64748B;
-  --Border: #E2E0F0;
+  --Text: #111827;
+  --Muted: #6B7280;
+  --Border: #E5E7EB;
   --Primary: #6366F1;
   --PrimaryHover: #4F46E5;
   --Accent: #F59E0B;
   --Shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.15);
-  --Success: #059669;
-  --Danger: #DC2626;
-  --Warning: #F59E0B;
 }
 
 /* Reset */
@@ -30,8 +27,9 @@ html {
 body {
   min-height: 100%;
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  background: linear-gradient(135deg, #F4F2FF 0%, #EDE9FE 30%, #F0F9FF 70%, #F4F2FF 100%);
-  background-attachment: fixed;
+  /* ONE solid color — no gradients, no radials, no amber */
+  background-color: var(--Bg);
+  background-image: none;
   color: var(--Text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -39,6 +37,8 @@ body {
 
 #root {
   min-height: 100vh;
+  background-color: var(--Bg);
+  background-image: none;
 }
 
 /* Typography and Links */
@@ -97,19 +97,19 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   padding: 12px 20px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  background: var(--Primary);
   color: white;
   font-weight: 600;
   font-size: 15px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px -3px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.25);
 }
 
 .Button:hover {
-  background: linear-gradient(135deg, #4F46E5, #7C3AED);
+  background: var(--PrimaryHover);
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.35);
 }
 .Button:active { transform: translateY(0); }
 .Button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -175,9 +175,9 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
 .Navbar {
   position: sticky;
   top: 0;
-  background: rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.08);
-  backdrop-filter: blur(20px);
+  background: rgba(240, 242, 247, 0.92);
+  border-bottom: 1px solid var(--Border);
+  backdrop-filter: blur(16px);
   z-index: 1000;
 }
 
@@ -268,8 +268,7 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   background: #FFFFFF;
   border-radius: 20px;
   padding: 24px;
-  border: 1px solid var(--Border);
-  box-shadow: 0 4px 12px -2px rgba(99, 102, 241, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .ResendRow {
