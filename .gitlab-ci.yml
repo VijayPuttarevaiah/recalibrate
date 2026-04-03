@@ -1,6 +1,6 @@
 # This file is a template-style CI/CD pipeline adapted for this project.
 # Stages run in order; jobs in same stage can run in parallel.
-# Pipeline only runs on: develop and main branches.
+# First 4 stages run on all branches; publish and deploy only on develop/main.
 
 stages:
   - build
@@ -14,12 +14,6 @@ variables:
   DOCKER_REPO: "docker.io/vijayputtarevaiah/projectgroup2"
   DOCKER_BACKEND_IMAGE: "$DOCKER_REPO:backend-$CI_COMMIT_SHORT_SHA"
   DOCKER_FRONTEND_IMAGE: "$DOCKER_REPO:frontend-$CI_COMMIT_SHORT_SHA"
-
-# ── Reusable rule anchor ──────────────────────────────────────────────────────
-.only_main_develop: &only_main_develop
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-    - if: '$CI_COMMIT_BRANCH == "main"'
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 
@@ -36,7 +30,10 @@ build:
     - uv sync --frozen
     - uv run python -m compileall -q .
     - echo "Dependencies installed successfully"
-  <<: *only_main_develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - backend/**/*
 
 frontend_build:
   stage: build
@@ -45,7 +42,10 @@ frontend_build:
     - cd frontend
     - npm install
     - npm run build
-  <<: *only_main_develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - frontend/**/*
 
 # ── Test ──────────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,10 @@ test:
     - pip install uv
     - uv sync --frozen
     - uv run pytest
-  <<: *only_main_develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - backend/**/*
 
 test-coverage:
   stage: test
@@ -101,7 +104,10 @@ test-coverage:
     expire_in: 1 week
     when: always
   allow_failure: true
-  
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - backend/**/*
 
 # ── Designite ─────────────────────────────────────────────────────────────────
 
@@ -124,7 +130,8 @@ run-dpy-job:
     paths:
       - smells/
     expire_in: 4 weeks
-  <<: *only_main_develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
 
 submit-dcode-job:
   stage: submit-dcode
@@ -136,7 +143,8 @@ submit-dcode-job:
   script:
     - pip3 install -r $CI_PROJECT_DIR/.quality/requirements.txt
     - python3 $CI_PROJECT_DIR/.quality/push_to_dcode.py $DCODE_PROJECT_ID $DCODE_API_KEY $CI_PROJECT_DIR/smells/ $CI_COMMIT_SHA
-  <<: *only_main_develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
 
 # ── Publish ───────────────────────────────────────────────────────────────────
 

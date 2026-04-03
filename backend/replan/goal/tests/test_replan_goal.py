@@ -1,8 +1,5 @@
 """
 CYCLE 3 — replan_goal (ownership, ended goal, no missed, LLM failure)
-RED   → 404 for bad goal, 400 for ended goal
-GREEN → adjusted=False when no missed tasks
-REFACTOR → 502 + no data loss when LLM returns nothing
 """
 
 import pytest
@@ -25,7 +22,6 @@ COMPLETED_COUNT = 2
 COMPLETED_COUNT_NO_MISSED = 5
 TOTAL_TASKS = 10
 
-
 def make_goal(goal_id, user_id, title, end_date, **overrides):
     g = MagicMock()
     g.id = goal_id
@@ -36,18 +32,13 @@ def make_goal(goal_id, user_id, title, end_date, **overrides):
     g.notes = overrides.get("notes")
     return g
 
-
 def _set_goal_lookup(db, goal):
     query = db.query.return_value
     filtered = query.filter.return_value
     filtered.first.return_value = goal
 
-
-# ── RED ──────────────────────────────────────────────────────────────────────
-
-
 def test_red_404_no_goal():
-    """RED: Goal not found → HTTP 404."""
+    """Goal not found → HTTP 404."""
     from replan.goal.service import replan_goal
 
     db = MagicMock()
@@ -56,9 +47,8 @@ def test_red_404_no_goal():
         replan_goal(db, user_id=DEFAULT_USER_ID, goal_id=999)
     assert exc.value.status_code == HTTP_NOT_FOUND
 
-
 def test_red_404_wrong_user():
-    """RED: Goal belongs to different user → HTTP 404."""
+    """Goal belongs to different user → HTTP 404."""
     from replan.goal.service import replan_goal
 
     db = MagicMock()
@@ -67,9 +57,8 @@ def test_red_404_wrong_user():
         replan_goal(db, user_id=OTHER_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert exc.value.status_code == HTTP_NOT_FOUND
 
-
 def test_red_400_goal_ended():
-    """RED: end_date in the past → HTTP 400."""
+    """end_date in the past → HTTP 400."""
     from replan.goal.service import replan_goal
 
     past_goal = make_goal(
@@ -85,14 +74,10 @@ def test_red_400_goal_ended():
     assert exc.value.status_code == HTTP_BAD_REQUEST
     assert "ended" in exc.value.detail.lower()
 
-
-# ── GREEN ─────────────────────────────────────────────────────────────────────
-
-
 @patch("replan.goal.service.build_progress_summary")
 @patch("replan.goal.service.format_summary_for_llm")
 def test_green_not_adjusted(mock_format, mock_summary):
-    """GREEN: 0 missed tasks → adjusted=False, no DB writes."""
+    """0 missed tasks → adjusted=False, no DB writes."""
     from replan.goal.service import replan_goal
 
     future_goal = make_goal(
@@ -116,16 +101,12 @@ def test_green_not_adjusted(mock_format, mock_summary):
     assert "on track" in result["message"].lower()
     db.commit.assert_not_called()
 
-
-# ── REFACTOR ──────────────────────────────────────────────────────────────────
-
-
 @patch("replan.goal.service.gather_research", return_value="")
 @patch("replan.goal.service._generate_replan_tasks", return_value=[])
 @patch("replan.goal.service.format_summary_for_llm", return_value="ctx")
 @patch("replan.goal.service.build_progress_summary")
 def test_refactor_502_no_data_loss(mock_summary, *_):
-    """REFACTOR: Empty LLM output → 502, existing tasks must NOT be deleted."""
+    """Empty LLM output → 502, existing tasks must NOT be deleted."""
     from replan.goal.service import replan_goal
 
     future_goal = make_goal(

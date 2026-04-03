@@ -1,6 +1,6 @@
 # backend/tests/routers/test_chat_router.py
 """
-RED: Unit tests for chat API endpoints.
+Unit tests for chat API endpoints.
 Service layer is fully mocked — tests only verify HTTP behavior:
 status codes, response shapes, validation errors.
 """
@@ -21,11 +21,7 @@ EXPECTED_MESSAGE_COUNT = 2
 EXPECTED_SUGGESTIONS_COUNT = 3
 EXPECTED_LIST_COUNT = 1
 
-
-# ═══════════════════════════════════════════════════════
 # POST /chat/sessions
-# ═══════════════════════════════════════════════════════
-
 
 @patch("chat.routers.chat_router.create_chat_session")
 def test_start_200_on_success(mock_create, auth_client):
@@ -56,7 +52,6 @@ def test_start_200_on_success(mock_create, auth_client):
     assert data["user_message"]["role"] == "user"
     assert data["assistant_message"]["role"] == "assistant"
 
-
 @patch("chat.routers.chat_router.create_chat_session")
 def test_start_200_with_task_id(mock_create, auth_client):
     mock_create.return_value = {
@@ -85,11 +80,9 @@ def test_start_200_with_task_id(mock_create, auth_client):
     )
     assert res.status_code == HTTP_OK
 
-
 def test_start_422_missing_message(auth_client):
     res = auth_client.post("/chat/sessions", json={"goal_id": GOAL_ID})
     assert res.status_code == HTTP_UNPROCESSABLE
-
 
 def test_start_422_empty_message(auth_client):
     res = auth_client.post(
@@ -98,16 +91,11 @@ def test_start_422_empty_message(auth_client):
     )
     assert res.status_code == HTTP_UNPROCESSABLE
 
-
 def test_start_422_missing_goal_id(auth_client):
     res = auth_client.post("/chat/sessions", json={"message": "Hello"})
     assert res.status_code == HTTP_UNPROCESSABLE
 
-
-# ═══════════════════════════════════════════════════════
 # POST /chat/sessions/{id}/messages
-# ═══════════════════════════════════════════════════════
-
 
 @patch("chat.routers.chat_router.send_message")
 def test_send_200_follow_up(mock_send, auth_client):
@@ -135,7 +123,6 @@ def test_send_200_follow_up(mock_send, auth_client):
     assert res.status_code == HTTP_OK
     assert res.json()["session_id"] == SESSION_ID
 
-
 def test_send_422_empty_message(auth_client):
     res = auth_client.post(
         f"/chat/sessions/{SESSION_ID}/messages",
@@ -143,11 +130,7 @@ def test_send_422_empty_message(auth_client):
     )
     assert res.status_code == HTTP_UNPROCESSABLE
 
-
-# ═══════════════════════════════════════════════════════
 # POST /chat/sessions/{id}/messages/stream
-# ═══════════════════════════════════════════════════════
-
 
 @patch("chat.routers.chat_router.stream_message")
 def test_stream_returns_sse(mock_stream, auth_client):
@@ -170,11 +153,7 @@ def test_stream_returns_sse(mock_stream, auth_client):
     assert res.status_code == HTTP_OK
     assert "text/event-stream" in res.headers.get("content-type", "")
 
-
-# ═══════════════════════════════════════════════════════
 # GET /chat/sessions/{id}
-# ═══════════════════════════════════════════════════════
-
 
 @patch("chat.routers.chat_router.get_chat_history")
 def test_history_returns_msgs(mock_history, auth_client):
@@ -206,11 +185,7 @@ def test_history_returns_msgs(mock_history, auth_client):
     assert data["session_id"] == SESSION_ID
     assert len(data["messages"]) == EXPECTED_MESSAGE_COUNT
 
-
-# ═══════════════════════════════════════════════════════
 # GET /chat/sessions?goal_id=X
-# ═══════════════════════════════════════════════════════
-
 
 @patch("chat.routers.chat_router.list_sessions_for_goal")
 def test_list_200_returns_list(mock_list, auth_client):
@@ -232,16 +207,11 @@ def test_list_200_returns_list(mock_list, auth_client):
     assert res.status_code == HTTP_OK
     assert len(res.json()) == EXPECTED_LIST_COUNT
 
-
 def test_list_422_missing_goal_id(auth_client):
     res = auth_client.get("/chat/sessions")
     assert res.status_code == HTTP_UNPROCESSABLE
 
-
-# ═══════════════════════════════════════════════════════
 # POST /chat/explain/task/{id}
-# ═══════════════════════════════════════════════════════
-
 
 @patch("chat.routers.chat_router.explain_task")
 def test_explain_returns(mock_explain, auth_client):
@@ -254,11 +224,7 @@ def test_explain_returns(mock_explain, auth_client):
     assert data["task_id"] == TASK_ID
     assert "explanation" in data
 
-
-# ═══════════════════════════════════════════════════════
 # GET /chat/suggestions
-# ═══════════════════════════════════════════════════════
-
 
 @patch("chat.routers.chat_router.get_suggested_questions")
 def test_suggestions_returns(mock_suggest, auth_client):
@@ -269,14 +235,12 @@ def test_suggestions_returns(mock_suggest, auth_client):
     assert res.status_code == HTTP_OK
     assert len(res.json()["suggestions"]) == EXPECTED_SUGGESTIONS_COUNT
 
-
 @patch("chat.routers.chat_router.get_suggested_questions")
 def test_suggestions_with_task_id(mock_suggest, auth_client):
     mock_suggest.return_value = ["Q1?", "Q2?", "Q3?"]
 
     res = auth_client.get(f"/chat/suggestions?goal_id={GOAL_ID}&task_id={TASK_ID}")
     assert res.status_code == HTTP_OK
-
 
 def test_suggestions_missing_goal(auth_client):
     res = auth_client.get("/chat/suggestions")

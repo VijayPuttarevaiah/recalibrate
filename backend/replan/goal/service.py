@@ -25,6 +25,7 @@ from goals.models.task_models import Task
 from goals.models.goal_adjustment_models import GoalAdjustment
 from goals.progress.summarizer import build_progress_summary, format_summary_for_llm
 from goals.integrations.web_search_service import gather_research
+from goals.ai.llm_service import _strip_code_fences, extract_json, _validate_task_list
 from replan.detect.service import detect_missed_tasks
 
 
@@ -34,6 +35,7 @@ MODEL = "openai/gpt-4o-mini"
 MAX_MISSED_TITLES_FOR_PROMPT = 10
 EXPLANATION_TEMPERATURE = 0.3
 TASK_GENERATION_TEMPERATURE = 0.2
+CHUNK_DAYS = 29  # ~30-day windows to keep prompts within token limits
 
 
 def _get_goal_or_404(db: Session, user_id: int, goal_id: int) -> Goal:
@@ -65,7 +67,7 @@ def _generate_all_new_tasks(
 
     while current_start <= goal.end_date:
         current_end = min(
-            current_start + timedelta(days=29),
+            current_start + timedelta(days=CHUNK_DAYS),
             goal.end_date,
         )
 
@@ -136,6 +138,12 @@ def replan_goal(db: Session, user_id: int, goal_id: int) -> dict:
 
     # 1. Validate ownership
     goal = _get_goal_or_404(db, user_id, goal_id)
+
+    if goal.status == "paused":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot replan a paused goal. Resume it first.",
+        )
 
     today = date.today()
 
@@ -363,25 +371,6 @@ def _generate_explanation(
         )
 
 
-def _strip_code_fences(content: str) -> str:
-    if not content.startswith("```"):
-        return content
-    return content.replace("```json", "").replace("```", "").strip()
-
-
-def _extract_json_array(content: str) -> str:
-    match = re.search(r"\[.*\]", content, re.DOTALL)
-    if not match:
-        raise ValueError("No JSON array found in LLM response")
-    return match.group(0)
-
-
-def _validate_task_list(tasks: list) -> None:
-    if not isinstance(tasks, list):
-        raise ValueError("LLM did not return a list")
-    for task in tasks:
-        if "title" not in task or "date" not in task:
-            raise ValueError("Invalid task structure")
 
 
 def _call_llm_for_tasks(prompt: str) -> list[dict]:
@@ -421,7 +410,9 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
         content = data["choices"][0]["message"]["content"].strip()
         content = _strip_code_fences(content)
 
-        json_array = _extract_json_array(content)
+        json_array = extract_json(content)
+        if not json_array:
+            raise ValueError("No JSON array found in response")
         tasks = json.loads(json_array)
         _validate_task_list(tasks)
 
@@ -430,3 +421,49 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
     except Exception as e:
         print(f"Replan LLM error: {e}")
         return []
+
+
+def generate_resume_tasks(
+    goal_title, category, start_date, end_date, goal_end_date,
+    notes, progress_context, research_context,
+):
+    """Generate tasks for a resumed goal. Public API used by resume_goal."""
+
+    prompt = f"""
+You are creating a plan for a goal that was paused and is now being resumed.
+
+Goal: {goal_title}
+Category: {category}
+This chunk: {start_date} → {end_date}
+Goal final deadline: {goal_end_date}
+Notes: {notes or "None"}
+
+{progress_context}
+
+{research_context}
+
+=== RESUME INSTRUCTIONS ===
+
+The user paused this goal and is resuming. Create a REALISTIC adjusted plan:
+
+1. CONTINUE from where the user left off — use completed tasks as context
+2. COMPRESS remaining work into the available time
+3. PRIORITIZE the most important remaining items
+4. COMBINE or MERGE related tasks if time is tight
+5. DROP nice-to-have tasks if essential ones need more time
+6. Maintain proper sequencing — prerequisites before advanced tasks
+
+Rules:
+- One task per day (every day from {start_date} to {end_date})
+- Tasks must build on the user's completed progress (see completed tasks)
+- Tasks must pick up where the user left off, not restart from scratch
+- Be specific and actionable
+- Return ONLY valid JSON array
+
+Format:
+[
+  {{"title": "Specific actionable task", "date": "YYYY-MM-DD"}}
+]
+"""
+
+    return _call_llm_for_tasks(prompt)

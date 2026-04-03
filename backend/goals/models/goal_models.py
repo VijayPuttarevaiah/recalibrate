@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from core.base import Base
 
@@ -15,6 +15,7 @@ class Goal(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     status = Column(String(50), default="pending")
+    paused_at = Column(DateTime, nullable=True)
 
     tasks = relationship("Task", back_populates="goal")
 
@@ -28,6 +29,7 @@ class Goal(Base):
             "start_date": self.start_date,
             "end_date": self.end_date,
             "status": self.status,
+            "paused_at": self.paused_at,
         }
 
     def __repr__(self) -> str:

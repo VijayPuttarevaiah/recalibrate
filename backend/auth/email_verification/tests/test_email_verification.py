@@ -8,7 +8,6 @@ HTTP_OK = HTTP_200_OK
 HTTP_BAD_REQUEST = HTTP_400_BAD_REQUEST
 HTTP_NOT_FOUND = HTTP_404_NOT_FOUND
 
-
 class TestEmailVerification:
     """Test cases for email verification endpoints (/send-code and /verify)."""
 

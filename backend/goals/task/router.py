@@ -11,7 +11,7 @@ from auth.utils.auth import get_current_user
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
-VALID_STATUSES = {"pending", "completed", "missed", "skipped"}
+from domain.goal_status import TASK_STATUSES as VALID_STATUSES
 
 
 class TaskStatusUpdate(BaseModel):

@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from auth.repositories.user_repository import UserRepository
 from auth.utils.email_sender import send_email
-from core.password import hash_password
+from auth.utils.password import hash_password
 from core.logging_config import LogManager
 import random
 import string

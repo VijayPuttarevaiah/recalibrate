@@ -2,6 +2,7 @@
 
 from datetime import date
 from sqlalchemy.orm import Session
+from goals.models.goal_models import Goal
 from goals.models.task_models import Task
 from replan.detect.service import detect_missed_tasks
 
@@ -17,6 +18,17 @@ def check_goal_needs_replan(
 
     threshold: minimum missed tasks before suggesting a replan (default 3)
     """
+    goal = db.query(Goal).filter(Goal.id == goal_id).first()
+    if goal and goal.status == "paused":
+        return {
+            "goal_id": goal_id,
+            "missed_count": 0,
+            "completed_count": 0,
+            "total_past_tasks": 0,
+            "threshold": threshold,
+            "needs_replan": False,
+        }
+
     missed = detect_missed_tasks(db, goal_id)
     total_past = (
         db.query(Task)

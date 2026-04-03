@@ -11,7 +11,6 @@ DEFAULT_GOAL_ID = 1
 CHUNK_INDEX_START = 0
 CHUNK_INDEX_NEXT = 1
 
-
 def test_minimal_gather_research():
     """Test that the gather_research node initializes correctly."""
     db = MagicMock()
@@ -34,7 +33,6 @@ def test_minimal_gather_research():
     ):
         result = graph.invoke(state)
     assert "research_context" in result, "Research context should be in the result."
-
 
 def test_minimal_generate_tasks():
     """Test that the generate_tasks node initializes correctly."""
@@ -61,7 +59,6 @@ def test_minimal_generate_tasks():
     ):
         result = graph.invoke(state)
     assert "generated_tasks" in result, "Generated tasks should be in the result."
-
 
 def test_minimal_workflow_exec():
     """Test that the replan workflow executes minimally."""
@@ -93,9 +90,8 @@ def test_minimal_workflow_exec():
         result = graph.invoke(state)
     assert "result" in result, "Result should be in the final state."
 
-
 def test_gather_research_calls():
-    """RED: gather_research node should call web search service."""
+    """gather_research node should call web search service."""
     state = {
         "goal_title": "Test Goal",
         "category": "Health",
@@ -111,9 +107,8 @@ def test_gather_research_calls():
     mock_research.assert_called_once_with("Test Goal", "Health", "Test Notes")
     assert result["research_context"] == "Research Context"
 
-
 def test_generate_tasks_calls_llm():
-    """RED: generate_tasks should call LLM and increment chunk index."""
+    """generate_tasks should call LLM and increment chunk index."""
     state = {
         "goal_title": "Test Goal",
         "category": "Health",

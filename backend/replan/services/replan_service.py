@@ -13,8 +13,6 @@ from replan.goal.service import (
     _insert_new_tasks,
     _generate_replan_tasks,
     _generate_explanation,
-    _strip_code_fences,
-    _extract_json_array,
-    _validate_task_list,
     _call_llm_for_tasks,
 )
+from goals.ai.llm_service import _strip_code_fences, extract_json, _validate_task_list

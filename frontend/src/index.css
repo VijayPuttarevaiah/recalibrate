@@ -135,6 +135,41 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   color: #B91C1C;
   font-size: 14px;
 }
+.AlertError {
+  border-color: #FECACA;
+  background: #FEF2F2;
+  color: #B91C1C;
+}
+
+/* ===== HELPERS ===== */
+.Muted {
+  color: var(--Muted);
+  font-size: 14px;
+}
+.Row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.Hint {
+  font-size: 13px;
+  margin-top: 6px;
+  color: var(--Muted);
+}
+.HintError {
+  color: #B91C1C;
+}
+
+/* ===== BUTTON SIZES ===== */
+.Button--sm {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+.Button--lg {
+  padding: 16px 24px;
+  font-size: 16px;
+}
 
 /* ===== NAVBAR ===== */
 .Navbar {
@@ -572,7 +607,7 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
 .OnboardLevel--active {
   border-color: var(--Primary);
   background: linear-gradient(135deg, #EEF2FF, #F5F3FF);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
   transform: translateX(4px);
 }
 
@@ -638,7 +673,7 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
 
 .OnboardTextarea:focus {
   border-color: var(--Primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 /* ── Navigation row ── */
@@ -724,7 +759,7 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
   background: linear-gradient(135deg, #FEF2F2, #FFF1F2);
   border: 1px solid #FECACA;
   border-radius: 14px;
-  color: #DC2626;
+  color: #B91C1C;
   font-size: 14px;
   font-weight: 500;
   display: flex;

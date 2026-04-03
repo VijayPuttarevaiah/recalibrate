@@ -1,10 +1,3 @@
-"""
-CYCLE 5 — update_task_notes + batch_update_tasks
-RED   → notes are stripped, batch rejects invalid status
-GREEN → db committed + refreshed, batch updates and skips unauthorized
-REFACTOR → single commit for entire batch
-"""
-
 import pytest
 from unittest.mock import MagicMock
 from fastapi import HTTPException
@@ -14,7 +7,6 @@ DEFAULT_TASK_ID = 1
 SECOND_TASK_ID = 2
 DEFAULT_GOAL_ID = 1
 DEFAULT_USER_ID = 1
-
 
 def make_task(
     id=DEFAULT_TASK_ID, goal_id=DEFAULT_GOAL_ID, status="pending", notes=None
@@ -26,19 +18,14 @@ def make_task(
     t.notes = notes
     return t
 
-
 def make_goal(id=DEFAULT_GOAL_ID, user_id=DEFAULT_USER_ID):
     g = MagicMock()
     g.id = id
     g.user_id = user_id
     return g
 
-
-# ── RED ──────────────────────────────────────────────────────────────────────
-
-
 def test_red_notes_strip_ws():
-    """RED: Leading/trailing whitespace in notes must be stripped on save."""
+    """Leading/trailing whitespace in notes must be stripped on save."""
     from goals.routers.task_routes import update_task_notes, TaskNotesUpdate
 
     task = make_task(id=DEFAULT_TASK_ID)
@@ -55,9 +42,8 @@ def test_red_notes_strip_ws():
     )
     assert task.notes == "my notes"
 
-
 def test_red_batch_status_400():
-    """RED: Batch update with unknown status → 400."""
+    """Batch update with unknown status → 400."""
     from goals.routers.task_routes import batch_update_tasks, TaskBatchUpdate
 
     db = MagicMock()
@@ -69,12 +55,8 @@ def test_red_batch_status_400():
         )
     assert exc.value.status_code == HTTP_BAD_REQUEST
 
-
-# ── GREEN ─────────────────────────────────────────────────────────────────────
-
-
 def test_green_notes_commit():
-    """GREEN: Must commit and refresh task after updating notes."""
+    """Must commit and refresh task after updating notes."""
     from goals.routers.task_routes import update_task_notes, TaskNotesUpdate
 
     task = make_task(id=DEFAULT_TASK_ID)
@@ -93,9 +75,8 @@ def test_green_notes_commit():
     db.commit.assert_called_once()
     db.refresh.assert_called_once_with(task)
 
-
 def test_green_batch_ids_status():
-    """GREEN: Batch response lists updated task_ids and the new status."""
+    """Batch response lists updated task_ids and the new status."""
     from goals.routers.task_routes import batch_update_tasks, TaskBatchUpdate
 
     task1 = make_task(id=DEFAULT_TASK_ID)
@@ -115,9 +96,8 @@ def test_green_batch_ids_status():
     assert set(result["updated_task_ids"]) == {DEFAULT_TASK_ID, SECOND_TASK_ID}
     assert result["new_status"] == "completed"
 
-
 def test_green_batch_skips_unauth():
-    """GREEN: Tasks user doesn't own are silently skipped (no crash)."""
+    """Tasks user doesn't own are silently skipped (no crash)."""
     from goals.routers.task_routes import batch_update_tasks, TaskBatchUpdate
 
     task1 = make_task(id=DEFAULT_TASK_ID)
@@ -136,12 +116,8 @@ def test_green_batch_skips_unauth():
     assert DEFAULT_TASK_ID in result["updated_task_ids"]
     assert SECOND_TASK_ID not in result["updated_task_ids"]
 
-
-# ── REFACTOR ──────────────────────────────────────────────────────────────────
-
-
 def test_refactor_batch_commit():
-    """REFACTOR: db.commit() must be called exactly once per batch, not per task."""
+    """db.commit() must be called exactly once per batch, not per task."""
     from goals.routers.task_routes import batch_update_tasks, TaskBatchUpdate
 
     task1 = make_task(id=DEFAULT_TASK_ID)

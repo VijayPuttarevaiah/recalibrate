@@ -3,7 +3,6 @@ from auth.models.token_models import BlacklistedToken
 HTTP_UNAUTHORIZED = 401
 HTTP_OK = 200
 
-
 class TestLogout:
     """Test cases for /logout endpoint."""
 
