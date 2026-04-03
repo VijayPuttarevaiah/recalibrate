@@ -133,9 +133,10 @@ run-dpy-job:
     - curl -L https://www.designite-tools.com/assets/DPy-linux.zip -o DPy-linux.zip
     - mkdir DPy && unzip DPy-linux.zip -d DPy/
     - chmod +x DPy/DPy
+    - if [ -n "$D_KEY" ]; then echo "Registering license"; DPy/DPy register "$D_KEY"; fi
     - echo "Running DPy"
     - mkdir smells/
-    - DPy/DPy analyze -i $CI_PROJECT_DIR -o $CI_PROJECT_DIR/smells/ -f csv
+    - DPy/DPy analyze -i $CI_PROJECT_DIR/backend -o $CI_PROJECT_DIR/smells/ -f csv
   artifacts:
     name: "designite-smells-$CI_COMMIT_SHORT_SHA"
     expose_as: "DPy Smell Reports"
