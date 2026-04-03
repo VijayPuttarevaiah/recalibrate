@@ -17,7 +17,7 @@ variables:
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 
-build:
+backend-build:
   stage: build
   image: python:3.11
   before_script:
@@ -35,7 +35,7 @@ build:
       changes:
         - backend/**/*
 
-frontend_build:
+frontend-build:
   stage: build
   image: node:20-alpine
   script:
@@ -49,7 +49,7 @@ frontend_build:
 
 # ── Test ──────────────────────────────────────────────────────────────────────
 
-test:
+backend-test:
   stage: test
   image: python:3.11
   before_script:
@@ -65,7 +65,7 @@ test:
       changes:
         - backend/**/*
 
-test-coverage:
+backend-test-coverage:
   stage: test
   image: python:3.11
   before_script:
@@ -109,6 +109,18 @@ test-coverage:
       changes:
         - backend/**/*
 
+frontend-test:
+  stage: test
+  image: node:20-alpine
+  script:
+    - cd frontend
+    - npm install
+    - npm run test -- --run
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - frontend/**/*
+
 # ── Designite ─────────────────────────────────────────────────────────────────
 
 run-dpy-job:
@@ -132,6 +144,8 @@ run-dpy-job:
     expire_in: 4 weeks
   rules:
     - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - backend/**/*
 
 submit-dcode-job:
   stage: submit-dcode
@@ -145,6 +159,8 @@ submit-dcode-job:
     - python3 $CI_PROJECT_DIR/.quality/push_to_dcode.py $DCODE_PROJECT_ID $DCODE_API_KEY $CI_PROJECT_DIR/smells/ $CI_COMMIT_SHA
   rules:
     - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - backend/**/*
 
 # ── Publish ───────────────────────────────────────────────────────────────────
 
