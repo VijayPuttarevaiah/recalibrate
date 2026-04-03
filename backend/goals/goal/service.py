@@ -1,4 +1,3 @@
-# services/goal_service.py
 from datetime import date, datetime, timedelta
 from goals.models.goal_models import Goal
 from goals.models.task_models import Task
@@ -8,6 +7,12 @@ from goals.progress.summarizer import build_progress_summary, format_summary_for
 from replan.goal.service import generate_resume_tasks
 from fastapi import HTTPException, status
 from domain.goal_status import PAUSABLE_GOAL_STATUSES as PAUSABLE_STATUSES
+from core.logging_config import LogManager
+
+logger = LogManager.get_logger()
+
+# Each chunk spans ~30 days to keep prompts focused and within token limits
+CHUNK_DAYS = 29
 
 
 def _goal_dict(goal: Goal, task_count: int | None = None) -> dict:
@@ -63,15 +68,15 @@ def get_goal_tasks(db, user_id: int, goal_id: int):
         **_goal_dict(goal, task_count=len(tasks)),
         "tasks": [
             {
-                "id": t.id,
-                "goal_id": t.goal_id,
-                "title": t.title,
-                "description": t.description,
-                "due_date": t.due_date,
-                "status": t.status,
-                "notes": t.notes,
+                "id": task.id,
+                "goal_id": task.goal_id,
+                "title": task.title,
+                "description": task.description,
+                "due_date": task.due_date,
+                "status": task.status,
+                "notes": task.notes,
             }
-            for t in tasks
+            for task in tasks
         ],
     }
 
@@ -95,21 +100,21 @@ def create_goal_with_tasks(db, goal_data):
     db.commit()
     db.refresh(goal)
 
-    # --- Do web research ONCE for the entire goal ---
-    print(f"\n Researching: {goal_data.goal} [{goal_data.category}]")
+    # Single research pass avoids redundant API calls across chunks
+    logger.info(f"Researching: {goal_data.goal} [{goal_data.category}]")
     research_context = gather_research(
         goal_data.goal,
         goal_data.category,
         goal_data.notes,
     )
-    print(f"\n Research gathered ({len(research_context)} chars)")
+    logger.info(f"Research gathered ({len(research_context)} chars)")
 
-    # --- Batch LLM calls in 30-day chunks, reusing research ---
+    # Chunking keeps each prompt within token limits for longer goals
     current_start = goal_data.start_date
 
     while current_start <= goal_data.end_date:
         current_end = min(
-            current_start + timedelta(days=29),
+            current_start + timedelta(days=CHUNK_DAYS),
             goal_data.end_date,
         )
 
@@ -123,15 +128,14 @@ def create_goal_with_tasks(db, goal_data):
         )
         tasks = generate_tasks_llm(task_context)
 
-        print(f"\n Generated {len(tasks)} tasks for {current_start} → {current_end}")
+        logger.info(f"Generated {len(tasks)} tasks for {current_start} → {current_end}")
 
-        for t in tasks:
-            task = Task(
+        for task_data in tasks:
+            db.add(Task(
                 goal_id=goal.id,
-                title=t["title"],
-                due_date=t["date"],
-            )
-            db.add(task)
+                title=task_data["title"],
+                due_date=task_data["date"],
+            ))
 
         db.commit()
         current_start = current_end + timedelta(days=1)
@@ -220,7 +224,7 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
     all_new_tasks = []
     current_start = today
     while current_start <= effective_end_date:
-        current_end = min(current_start + timedelta(days=29), effective_end_date)
+        current_end = min(current_start + timedelta(days=CHUNK_DAYS), effective_end_date)
         new_tasks = generate_resume_tasks(
             goal_title=goal.title,
             category=goal.category,
@@ -251,8 +255,8 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
         db.delete(task)
     db.flush()
 
-    for t in all_new_tasks:
-        db.add(Task(goal_id=goal.id, title=t["title"], due_date=t["date"], status="pending"))
+    for task_data in all_new_tasks:
+        db.add(Task(goal_id=goal.id, title=task_data["title"], due_date=task_data["date"], status="pending"))
     db.flush()
 
     goal.end_date = effective_end_date

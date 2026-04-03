@@ -202,16 +202,16 @@ export default function Dashboard() {
       // Check replan status for each active (non-completed) goal
       const statuses = {};
       const activeGoals = data.filter(
-        (g) => g.status !== "completed" && g.status !== "paused"
+        (goal) => goal.status !== "completed" && goal.status !== "paused"
       );
       await Promise.allSettled(
-        activeGoals.map(async (g) => {
+        activeGoals.map(async (goal) => {
           try {
             const check = await apiFetch(
-              `/goals/${g.id}/replan/check?threshold=3`,
+              `/goals/${goal.id}/replan/check?threshold=3`,
               token
             );
-            statuses[g.id] = check;
+            statuses[goal.id] = check;
           } catch {
             // silently skip — replan check is non-critical
           }
@@ -228,9 +228,9 @@ export default function Dashboard() {
     navigate(`/goals/${goal.id}/tasks`, { state: { goal } });
 
   const totalGoals     = goals.length;
-  const completedGoals = goals.filter((g) => g.status === "completed").length;
-  const pausedGoals    = goals.filter((g) => g.status === "paused").length;
-  const totalTasks     = goals.reduce((sum, g) => sum + (g.task_count || 0), 0);
+  const completedGoals = goals.filter((goal) => goal.status === "completed").length;
+  const pausedGoals    = goals.filter((goal) => goal.status === "paused").length;
+  const totalTasks     = goals.reduce((sum, goal) => sum + (goal.task_count || 0), 0);
   const goalsBehind    = Object.values(replanStatuses).filter(
     (r) => r?.needs_replan
   ).length;

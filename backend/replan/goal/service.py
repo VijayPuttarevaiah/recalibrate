@@ -35,6 +35,7 @@ MODEL = "openai/gpt-4o-mini"
 MAX_MISSED_TITLES_FOR_PROMPT = 10
 EXPLANATION_TEMPERATURE = 0.3
 TASK_GENERATION_TEMPERATURE = 0.2
+CHUNK_DAYS = 29  # ~30-day windows to keep prompts within token limits
 
 
 def _get_goal_or_404(db: Session, user_id: int, goal_id: int) -> Goal:
@@ -66,7 +67,7 @@ def _generate_all_new_tasks(
 
     while current_start <= goal.end_date:
         current_end = min(
-            current_start + timedelta(days=29),
+            current_start + timedelta(days=CHUNK_DAYS),
             goal.end_date,
         )
 
