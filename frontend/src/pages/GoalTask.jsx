@@ -656,13 +656,17 @@ function TaskExplanation({ text, onDismiss }) {
 
 function ResumeModal({ goal, onConfirm, onClose, loading }) {
   const today = new Date().toISOString().split("T")[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
   const deadlinePassed = goal?.end_date && goal.end_date <= today;
+
+  const remainingDays = goal?.end_date
+    ? Math.ceil((new Date(goal.end_date) - new Date(today)) / 86400000)
+    : 0;
+  const timeTight = !deadlinePassed && remainingDays > 0 && remainingDays <= 5;
+
   const [mode, setMode] = useState(deadlinePassed ? "new_end_date" : "keep_original");
   const [newEndDate, setNewEndDate] = useState("");
   const modalRef = useRef(null);
-  const minDate = goal?.end_date
-    ? new Date(new Date(goal.end_date).getTime() + 86400000).toISOString().split("T")[0]
-    : "";
 
   useEffect(() => {
     const handleKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -671,12 +675,12 @@ function ResumeModal({ goal, onConfirm, onClose, loading }) {
   }, [onClose]);
 
   const handleSubmit = () => {
-    const body = { mode, original_end_date: goal?.end_date };
+    const body = { mode };
     if (mode === "new_end_date") body.new_end_date = newEndDate;
     onConfirm(body);
   };
 
-  const canSubmit = (!deadlinePassed && mode === "keep_original") || (mode === "new_end_date" && newEndDate > minDate);
+  const canSubmit = (!deadlinePassed && mode === "keep_original") || (mode === "new_end_date" && newEndDate >= tomorrow);
 
   return (
     <div onClick={(e) => { if (modalRef.current && !modalRef.current.contains(e.target)) onClose(); }}
@@ -709,12 +713,21 @@ function ResumeModal({ goal, onConfirm, onClose, loading }) {
                 width: 18, height: 18, borderRadius: "50%",
                 border: mode === "keep_original" && !deadlinePassed ? "5px solid #059669" : "2px solid var(--Border)",
               }} />
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--Text)" }}>Keep original deadline</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: "var(--Text)" }}>Keep original deadline</span>
+                  {timeTight && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99,
+                      color: "#DC2626", background: "rgba(220,38,38,0.08)",
+                      border: "1px solid rgba(220,38,38,0.2)",
+                    }}>Only {remainingDays} day{remainingDays !== 1 ? "s" : ""} left</span>
+                  )}
+                </div>
                 <div style={{ fontSize: 12, color: deadlinePassed ? "#DC2626" : "var(--Muted)", marginTop: 2 }}>
                   {deadlinePassed
                     ? `Deadline has already passed (${formatDate(goal?.end_date)}). Please set a new end date.`
-                    : `Compress remaining tasks into the time left (ends ${formatDate(goal?.end_date)})`
+                    : `${remainingDays} days remaining — AI will compress tasks to fit (ends ${formatDate(goal?.end_date)})`
                   }
                 </div>
               </div>
@@ -734,12 +747,12 @@ function ResumeModal({ goal, onConfirm, onClose, loading }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--Text)" }}>Set a new end date</div>
                 <div style={{ fontSize: 12, color: "var(--Muted)", marginTop: 2 }}>
-                  Must be after original deadline ({formatDate(goal?.end_date)}). AI will regenerate tasks.
+                  Pick any future date — shorten or extend. AI will regenerate tasks.
                 </div>
               </div>
             </div>
             {mode === "new_end_date" && (
-              <input type="date" value={newEndDate} min={minDate}
+              <input type="date" value={newEndDate} min={tomorrow}
                 onChange={(e) => setNewEndDate(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
                 style={{
