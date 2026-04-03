@@ -1,3 +1,4 @@
+"""Tests for pause and resume goal functionality."""
 import pytest
 from datetime import date, datetime
 from unittest.mock import MagicMock, patch
