@@ -45,6 +45,37 @@ A full-stack goal planning application that helps users create, track, pause, an
 | **CI/CD** | GitLab CI | - |
 | **Testing** | pytest, pytest-cov, Vitest | - |
 
+### Backend Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| fastapi | Web framework for REST API |
+| uvicorn | ASGI server |
+| sqlalchemy | ORM for database access |
+| alembic | Database migrations |
+| pydantic | Request/response validation |
+| pyjwt / python-jose | JWT authentication |
+| bcrypt / passlib | Password hashing |
+| pymysql | MySQL database driver |
+| httpx | HTTP client for external API calls |
+| loguru | Structured logging |
+| pytest / pytest-cov | Testing and code coverage |
+| python-dotenv | Environment variable loading |
+| openai | API client for task generation |
+| google-genai | Alternative provider client |
+
+### Frontend Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| react / react-dom | UI framework |
+| react-router-dom | Client-side routing |
+| vite | Build tool and dev server |
+| axios | HTTP client |
+| vitest | Test runner |
+| @testing-library/react | Component testing utilities |
+| jsdom | Browser environment for tests |
+
 ---
 
 ## Prerequisites
@@ -154,7 +185,14 @@ npm install
 npm run dev
 ```
 
-Frontend runs at http://localhost:5173
+Frontend runs at http://localhost:5173 (development mode with hot reload).
+
+To build for production:
+
+```bash
+npm run build
+# Output in frontend/dist/ — can be served with any static file server or Nginx
+```
 
 ---
 
@@ -285,7 +323,14 @@ Create `backend/.env` with the following variables:
 4. User can ask follow-up questions; suggested questions provided
 5. Full chat page available at `/goals/{id}/chat` with session history
 
-### 6. Notifications
+### 6. Onboarding and Personalized Roadmap
+
+1. After first login, user is guided through the onboarding flow
+2. User selects experience level, preferred hours per week, and focus areas
+3. System generates a personalized multi-phase roadmap
+4. Roadmap is saved and accessible from the dashboard
+
+### 7. Notifications
 
 1. System checks for upcoming deadlines, overdue tasks, and completed milestones
 2. Email notifications sent for important events
