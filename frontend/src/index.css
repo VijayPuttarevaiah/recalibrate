@@ -303,3 +303,721 @@ a:hover { text-decoration: underline; color: var(--PrimaryHover); }
     border-radius: 16px;
   }
 }
+
+/* ===== ONBOARDING ===== */
+
+/* Keyframes */
+@keyframes onboardFadeSlideIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes onboardPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+@keyframes onboardShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Shell — full-viewport centered layout */
+.OnboardShell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: linear-gradient(135deg, #F0F2F7 0%, #E8EAFF 50%, #F0F2F7 100%);
+  background-size: 200% 200%;
+  animation: onboardShimmer 12s ease infinite;
+}
+
+/* Card — glassmorphism container */
+.OnboardCard {
+  width: 100%;
+  max-width: 560px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 28px;
+  box-shadow:
+    0 20px 60px -15px rgba(99, 102, 241, 0.18),
+    0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  padding: 40px 36px 36px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative top accent stripe */
+.OnboardCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #A78BFA 100%);
+}
+
+/* Badge pill */
+.OnboardBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+  color: var(--Primary);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+/* ── Progress indicator ── */
+.OnboardProgress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 36px;
+}
+
+.OnboardProgressStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+  min-width: 72px;
+}
+
+.OnboardProgressDot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid var(--Border);
+  background: white;
+  color: var(--Muted);
+  position: relative;
+}
+
+.OnboardProgressDot--active {
+  border-color: var(--Primary);
+  background: var(--Primary);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
+  animation: onboardPulse 2s ease infinite;
+}
+
+.OnboardProgressDot--done {
+  border-color: #10B981;
+  background: #10B981;
+  color: white;
+}
+
+.OnboardProgressLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--Muted);
+  white-space: nowrap;
+  transition: color 0.3s;
+}
+
+.OnboardProgressLabel--active {
+  color: var(--Primary);
+}
+
+.OnboardProgressLabel--done {
+  color: #10B981;
+}
+
+/* Connector line between dots */
+.OnboardProgressConnector {
+  flex: 1;
+  height: 2px;
+  min-width: 32px;
+  background: var(--Border);
+  margin: 0 -4px;
+  margin-bottom: 24px;
+  transition: background 0.4s;
+}
+
+.OnboardProgressConnector--done {
+  background: linear-gradient(90deg, #10B981, #6366F1);
+}
+
+/* ── Step content area ── */
+.OnboardStepContent {
+  animation: onboardFadeSlideIn 0.4s ease-out;
+}
+
+.OnboardStepEmoji {
+  font-size: 40px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.OnboardTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--Text);
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+  line-height: 1.3;
+}
+
+.OnboardSubtitle {
+  font-size: 15px;
+  color: var(--Muted);
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+
+/* ── Option cards (interest & hours) ── */
+.OnboardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.OnboardOption {
+  position: relative;
+  padding: 20px 16px;
+  border-radius: 16px;
+  border: 2px solid var(--Border);
+  background: white;
+  color: var(--Text);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.OnboardOption:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.12);
+}
+
+.OnboardOption--active {
+  border-color: var(--Primary);
+  background: linear-gradient(135deg, #EEF2FF, #F5F3FF);
+  color: var(--Primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12), 0 8px 20px -4px rgba(99, 102, 241, 0.15);
+  transform: translateY(-2px);
+}
+
+.OnboardOptionIcon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.OnboardOptionLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Hours variant — bigger number */
+.OnboardOption--hours .OnboardOptionIcon {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: 'Inter', system-ui;
+  color: inherit;
+}
+
+/* ── Level selector rows ── */
+.OnboardLevels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.OnboardLevel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-radius: 16px;
+  border: 2px solid var(--Border);
+  background: white;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.OnboardLevel:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px -2px rgba(99, 102, 241, 0.1);
+}
+
+.OnboardLevel--active {
+  border-color: var(--Primary);
+  background: linear-gradient(135deg, #EEF2FF, #F5F3FF);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  transform: translateX(4px);
+}
+
+.OnboardLevelName {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--Text);
+  transition: color 0.2s;
+}
+
+.OnboardLevel--active .OnboardLevelName {
+  color: var(--Primary);
+}
+
+.OnboardLevelDesc {
+  font-size: 13px;
+  color: var(--Muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.OnboardLevelCheck {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--Border);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  transition: all 0.25s;
+  flex-shrink: 0;
+}
+
+.OnboardLevel--active .OnboardLevelCheck {
+  border-color: var(--Primary);
+  background: var(--Primary);
+  color: white;
+}
+
+/* ── Textarea ── */
+.OnboardTextarea {
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 2px solid var(--Border);
+  background: white;
+  font-size: 15px;
+  font-family: 'Inter', ui-sans-serif, system-ui;
+  color: var(--Text);
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  min-height: 120px;
+  line-height: 1.6;
+}
+
+.OnboardTextarea::placeholder {
+  color: #9CA3AF;
+}
+
+.OnboardTextarea:focus {
+  border-color: var(--Primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+/* ── Navigation row ── */
+.OnboardNav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 36px;
+  gap: 14px;
+}
+
+.OnboardBtnPrimary {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #6366F1, #7C3AED);
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px -3px rgba(99, 102, 241, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.OnboardBtnPrimary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(99, 102, 241, 0.5);
+}
+
+.OnboardBtnPrimary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.OnboardBtnPrimary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  background: #D1D5DB;
+}
+
+.OnboardBtnGhost {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: 2px solid var(--Border);
+  background: white;
+  color: var(--Muted);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.OnboardBtnGhost:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  color: var(--Text);
+  background: #FAFAFE;
+}
+
+/* Loading spinner */
+.OnboardSpinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: onboardSpin 0.7s linear infinite;
+}
+
+@keyframes onboardSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Error alert ── */
+.OnboardAlert {
+  margin-top: 18px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #FEF2F2, #FFF1F2);
+  border: 1px solid #FECACA;
+  border-radius: 14px;
+  color: #DC2626;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: onboardFadeSlideIn 0.3s ease-out;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .OnboardShell {
+    padding: 16px;
+  }
+
+  .OnboardCard {
+    padding: 28px 22px 24px;
+    border-radius: 22px;
+  }
+
+  .OnboardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .OnboardTitle {
+    font-size: 20px;
+  }
+
+  .OnboardProgressStep {
+    min-width: 56px;
+  }
+
+  .OnboardProgressDot {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .OnboardProgressLabel {
+    font-size: 10px;
+  }
+
+  .OnboardProgressConnector {
+    min-width: 16px;
+  }
+
+  .OnboardOrb { display: none; }
+
+  .OnboardWelcome { font-size: 14px; }
+
+  .OnboardReviewGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== ONBOARDING ROUND 2 ===== */
+
+/* Floating decorative orbs */
+@keyframes onboardFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -20px) scale(1.05); }
+  66%      { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes onboardFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-25px, 25px) scale(1.08); }
+  66%      { transform: translate(20px, -10px) scale(0.92); }
+}
+
+@keyframes onboardFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(15px, 20px) scale(1.04); }
+}
+
+@keyframes onboardCardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.OnboardShell {
+  position: relative;
+  overflow: hidden;
+}
+
+.OnboardOrb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.OnboardOrb--1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.35), transparent 70%);
+  top: -60px;
+  right: -80px;
+  animation: onboardFloat1 8s ease-in-out infinite;
+}
+
+.OnboardOrb--2 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.3), transparent 70%);
+  bottom: -40px;
+  left: -60px;
+  animation: onboardFloat2 10s ease-in-out infinite;
+}
+
+.OnboardOrb--3 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.25), transparent 70%);
+  top: 40%;
+  left: 50%;
+  animation: onboardFloat3 12s ease-in-out infinite;
+}
+
+/* Card entrance animation */
+.OnboardCard {
+  animation: onboardCardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+  position: relative;
+}
+
+/* Welcome header */
+.OnboardWelcome {
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 15px;
+  color: var(--Muted);
+  line-height: 1.5;
+  animation: onboardFadeSlideIn 0.5s ease-out 0.2s both;
+}
+
+.OnboardWelcomeHighlight {
+  color: var(--Primary);
+  font-weight: 700;
+}
+
+/* Enhanced option hover glow */
+.OnboardOption:hover {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08), 0 12px 28px -6px rgba(99, 102, 241, 0.18);
+}
+
+.OnboardOption--active {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), 0 12px 28px -6px rgba(99, 102, 241, 0.2);
+  transform: translateY(-3px) scale(1.02);
+}
+
+.OnboardOption:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.OnboardLevel:hover {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08), 0 8px 20px -4px rgba(99, 102, 241, 0.12);
+}
+
+.OnboardLevel--active {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), 0 8px 20px -4px rgba(99, 102, 241, 0.15);
+}
+
+/* ── Character counter ── */
+.OnboardCharCount {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.OnboardCharCount--low {
+  color: #EF4444;
+}
+
+.OnboardCharCount--ok {
+  color: #10B981;
+}
+
+/* ── Review / Summary step ── */
+.OnboardReviewGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.OnboardReviewItem {
+  background: linear-gradient(135deg, #F9FAFB, #F3F4FF);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: 16px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.OnboardReviewItem:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -3px rgba(99, 102, 241, 0.12);
+}
+
+.OnboardReviewItemLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--Muted);
+  margin-bottom: 6px;
+}
+
+.OnboardReviewItemValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--Text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.OnboardReviewItemEdit {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--Primary);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.OnboardReviewItem:hover .OnboardReviewItemEdit {
+  opacity: 1;
+}
+
+/* Full-width review item for goal */
+.OnboardReviewItem--full {
+  grid-column: 1 / -1;
+}
+
+.OnboardReviewItem--full .OnboardReviewItemValue {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #374151;
+}
+
+/* Progress complete state */
+@keyframes onboardProgressComplete {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18); }
+  50%      { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.3); }
+}
+
+.OnboardProgressDot--complete {
+  border-color: #10B981;
+  background: #10B981;
+  color: white;
+  animation: onboardProgressComplete 2s ease infinite;
+}
+
+.OnboardProgressConnector--complete {
+  background: #10B981;
+}
+
+/* Submit ready glow */
+@keyframes onboardReadyGlow {
+  0%, 100% { box-shadow: 0 4px 14px -3px rgba(99, 102, 241, 0.4); }
+  50%      { box-shadow: 0 4px 20px -3px rgba(99, 102, 241, 0.6), 0 0 0 3px rgba(99, 102, 241, 0.12); }
+}
+
+.OnboardBtnPrimary--ready {
+  animation: onboardReadyGlow 2s ease infinite;
+}
+
+/* Review confirm section */
+.OnboardReviewConfirm {
+  margin-top: 18px;
+  padding: 16px;
+  background: linear-gradient(135deg, #ECFDF5, #F0FDF4);
+  border: 1px solid #A7F3D0;
+  border-radius: 14px;
+  text-align: center;
+  font-size: 14px;
+  color: #065F46;
+  font-weight: 500;
+  animation: onboardFadeSlideIn 0.4s ease-out 0.3s both;
+}
