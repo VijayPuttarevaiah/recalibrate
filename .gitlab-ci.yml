@@ -166,9 +166,12 @@ submit-dcode-job:
  
 publish:
   stage: publish
+  tags:
+    - Project2
   image: docker:24
   variables:
     DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: "tcp://docker:2375"
   services:
     - docker:24-dind
   script:
