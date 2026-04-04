@@ -11,7 +11,6 @@ Flow:
 """
 
 import json
-import re
 import os
 import requests
 from datetime import date, timedelta
@@ -25,7 +24,7 @@ from goals.models.task_models import Task
 from goals.models.goal_adjustment_models import GoalAdjustment
 from goals.progress.summarizer import build_progress_summary, format_summary_for_llm
 from goals.integrations.web_search_service import gather_research
-from goals.ai.llm_service import _strip_code_fences, extract_json, _validate_task_list
+from goals.ai.llm_service import strip_code_fences, extract_json, validate_task_list
 from replan.detect.service import detect_missed_tasks
 
 
@@ -54,6 +53,91 @@ def _ensure_goal_not_ended(goal: Goal, today: date) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Goal has already ended. Nothing to replan.",
         )
+
+
+def _ensure_goal_can_be_replanned(goal: Goal) -> None:
+    if goal.status == "paused":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot replan a paused goal. Resume it first.",
+        )
+
+
+def _build_replan_progress(
+    db: Session,
+    *,
+    goal_id: int,
+    goal_title: str,
+    today: date,
+) -> tuple[dict, str, int]:
+    summary = build_progress_summary(db, goal_id, as_of=today)
+    progress_text = format_summary_for_llm(summary, goal_title)
+    missed_count = summary["stats"]["missed"]
+    return summary, progress_text, missed_count
+
+
+def _generate_replan_tasks_or_502(
+    *,
+    goal: Goal,
+    today: date,
+    progress_text: str,
+) -> list[dict]:
+    all_new_tasks = _generate_all_new_tasks(
+        goal=goal,
+        today=today,
+        progress_text=progress_text,
+    )
+
+    if len(all_new_tasks) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "Replan failed: LLM could not generate replacement tasks. "
+                "Your existing plan has NOT been modified. "
+                "Please try again in a moment."
+            ),
+        )
+
+    return all_new_tasks
+
+
+def _apply_replan_to_db(
+    db: Session,
+    *,
+    goal_id: int,
+    today: date,
+    new_tasks: list[dict],
+) -> int:
+    _mark_missed_tasks(db, goal_id)
+    tasks_deleted = _delete_future_pending_tasks(db, goal_id, today)
+    _insert_new_tasks(db, goal_id, new_tasks)
+    return tasks_deleted
+
+
+def _log_adjustment(
+    db: Session,
+    *,
+    goal: Goal,
+    missed_count: int,
+    summary: dict,
+    tasks_deleted: int,
+    tasks_created: int,
+    explanation: str,
+) -> GoalAdjustment:
+    adjustment = GoalAdjustment(
+        goal_id=goal.id,
+        missed_task_count=missed_count,
+        completed_task_count=summary["stats"]["completed"],
+        total_task_count=summary["stats"]["total_tasks"],
+        tasks_deleted=tasks_deleted,
+        tasks_created=tasks_created,
+        original_end_date=goal.end_date,
+        new_end_date=goal.end_date,
+        explanation=explanation,
+    )
+    db.add(adjustment)
+    db.commit()
+    return adjustment
 
 
 def _generate_all_new_tasks(
@@ -136,24 +220,17 @@ def replan_goal(db: Session, user_id: int, goal_id: int) -> dict:
     explain trade-offs.
     """
 
-    # 1. Validate ownership
     goal = _get_goal_or_404(db, user_id, goal_id)
-
-    if goal.status == "paused":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot replan a paused goal. Resume it first.",
-        )
-
     today = date.today()
-
+    _ensure_goal_can_be_replanned(goal)
     _ensure_goal_not_ended(goal, today)
 
-    # 2. Build progress summary (compact — works for 2-year goals)
-    summary = build_progress_summary(db, goal_id, as_of=today)
-    progress_text = format_summary_for_llm(summary, goal.title)
-
-    missed_count = summary["stats"]["missed"]
+    summary, progress_text, missed_count = _build_replan_progress(
+        db,
+        goal_id=goal_id,
+        goal_title=goal.title,
+        today=today,
+    )
     if missed_count == 0:
         return {
             "adjusted": False,
@@ -161,44 +238,19 @@ def replan_goal(db: Session, user_id: int, goal_id: int) -> dict:
             "stats": summary["stats"],
         }
 
-    # ──────────────────────────────────────────────────────────────
-    # 3. GENERATE NEW TASKS FIRST (before deleting anything!)
-    #    If LLM fails, we abort and keep the old plan intact.
-    # ──────────────────────────────────────────────────────────────
-    all_new_tasks = _generate_all_new_tasks(
+    all_new_tasks = _generate_replan_tasks_or_502(
         goal=goal,
         today=today,
         progress_text=progress_text,
     )
 
-    # ──────────────────────────────────────────────────────────────
-    # 5. SAFETY CHECK: if LLM generated nothing, ABORT.
-    #    Don't delete old tasks — keep the existing plan.
-    # ──────────────────────────────────────────────────────────────
-    if len(all_new_tasks) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=(
-                "Replan failed: LLM could not generate replacement tasks. "
-                "Your existing plan has NOT been modified. "
-                "Please try again in a moment."
-            ),
-        )
+    tasks_deleted = _apply_replan_to_db(
+        db,
+        goal_id=goal.id,
+        today=today,
+        new_tasks=all_new_tasks,
+    )
 
-    # ──────────────────────────────────────────────────────────────
-    # 6. NOW safe to modify the database — we have replacement tasks
-    # ──────────────────────────────────────────────────────────────
-
-    # Mark overdue tasks as "missed"
-    _mark_missed_tasks(db, goal_id)
-
-    # Delete old future pending tasks
-    tasks_deleted = _delete_future_pending_tasks(db, goal_id, today)
-
-    # Insert the new tasks
-    _insert_new_tasks(db, goal.id, all_new_tasks)
-
-    # 7. Generate trade-off explanation
     explanation = _generate_explanation(
         goal_title=goal.title,
         category=goal.category,
@@ -207,20 +259,15 @@ def replan_goal(db: Session, user_id: int, goal_id: int) -> dict:
         remaining_days=(goal.end_date - today).days,
     )
 
-    # 8. Log the adjustment
-    adjustment = GoalAdjustment(
-        goal_id=goal.id,
-        missed_task_count=missed_count,
-        completed_task_count=summary["stats"]["completed"],
-        total_task_count=summary["stats"]["total_tasks"],
+    adjustment = _log_adjustment(
+        db,
+        goal=goal,
+        missed_count=missed_count,
+        summary=summary,
         tasks_deleted=tasks_deleted,
         tasks_created=len(all_new_tasks),
-        original_end_date=goal.end_date,
-        new_end_date=goal.end_date,
         explanation=explanation,
     )
-    db.add(adjustment)
-    db.commit()
 
     return {
         "adjusted": True,
@@ -371,8 +418,6 @@ def _generate_explanation(
         )
 
 
-
-
 def _call_llm_for_tasks(prompt: str) -> list[dict]:
     """Shared LLM call logic for task generation."""
 
@@ -408,13 +453,13 @@ def _call_llm_for_tasks(prompt: str) -> list[dict]:
         data = response.json()
 
         content = data["choices"][0]["message"]["content"].strip()
-        content = _strip_code_fences(content)
+        content = strip_code_fences(content)
 
         json_array = extract_json(content)
         if not json_array:
             raise ValueError("No JSON array found in response")
         tasks = json.loads(json_array)
-        _validate_task_list(tasks)
+        validate_task_list(tasks)
 
         return tasks
 

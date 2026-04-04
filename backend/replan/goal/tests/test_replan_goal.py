@@ -22,6 +22,7 @@ COMPLETED_COUNT = 2
 COMPLETED_COUNT_NO_MISSED = 5
 TOTAL_TASKS = 10
 
+
 def make_goal(goal_id, user_id, title, end_date, **overrides):
     g = MagicMock()
     g.id = goal_id
@@ -32,10 +33,12 @@ def make_goal(goal_id, user_id, title, end_date, **overrides):
     g.notes = overrides.get("notes")
     return g
 
+
 def _set_goal_lookup(db, goal):
     query = db.query.return_value
     filtered = query.filter.return_value
     filtered.first.return_value = goal
+
 
 def test_red_404_no_goal():
     """Goal not found → HTTP 404."""
@@ -47,6 +50,7 @@ def test_red_404_no_goal():
         replan_goal(db, user_id=DEFAULT_USER_ID, goal_id=999)
     assert exc.value.status_code == HTTP_NOT_FOUND
 
+
 def test_red_404_wrong_user():
     """Goal belongs to different user → HTTP 404."""
     from replan.goal.service import replan_goal
@@ -56,6 +60,7 @@ def test_red_404_wrong_user():
     with pytest.raises(HTTPException) as exc:
         replan_goal(db, user_id=OTHER_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert exc.value.status_code == HTTP_NOT_FOUND
+
 
 def test_red_400_goal_ended():
     """end_date in the past → HTTP 400."""
@@ -73,6 +78,7 @@ def test_red_400_goal_ended():
         replan_goal(db, user_id=DEFAULT_USER_ID, goal_id=DEFAULT_GOAL_ID)
     assert exc.value.status_code == HTTP_BAD_REQUEST
     assert "ended" in exc.value.detail.lower()
+
 
 @patch("replan.goal.service.build_progress_summary")
 @patch("replan.goal.service.format_summary_for_llm")
@@ -100,6 +106,7 @@ def test_green_not_adjusted(mock_format, mock_summary):
     assert result["adjusted"] is False
     assert "on track" in result["message"].lower()
     db.commit.assert_not_called()
+
 
 @patch("replan.goal.service.gather_research", return_value="")
 @patch("replan.goal.service._generate_replan_tasks", return_value=[])

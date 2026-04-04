@@ -131,11 +131,13 @@ def create_goal_with_tasks(db, goal_data):
         logger.info(f"Generated {len(tasks)} tasks for {current_start} → {current_end}")
 
         for task_data in tasks:
-            db.add(Task(
-                goal_id=goal.id,
-                title=task_data["title"],
-                due_date=task_data["date"],
-            ))
+            db.add(
+                Task(
+                    goal_id=goal.id,
+                    title=task_data["title"],
+                    due_date=task_data["date"],
+                )
+            )
 
         db.commit()
         current_start = current_end + timedelta(days=1)
@@ -145,10 +147,14 @@ def create_goal_with_tasks(db, goal_data):
 
 def _get_user_goal(db, user_id: int, goal_id: int) -> Goal:
     """Fetch a goal owned by the given user or raise 404."""
-    goal = db.query(Goal).filter(
-        Goal.id == goal_id,
-        Goal.user_id == user_id,
-    ).first()
+    goal = (
+        db.query(Goal)
+        .filter(
+            Goal.id == goal_id,
+            Goal.user_id == user_id,
+        )
+        .first()
+    )
 
     if not goal:
         raise HTTPException(
@@ -166,7 +172,7 @@ def pause_goal(db, user_id: int, goal_id: int) -> dict:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot pause a goal with status '{goal.status}'. "
-                   f"Only goals with status {PAUSABLE_STATUSES} can be paused.",
+            f"Only goals with status {PAUSABLE_STATUSES} can be paused.",
         )
 
     goal.status = "paused"
@@ -179,6 +185,102 @@ def pause_goal(db, user_id: int, goal_id: int) -> dict:
         "paused_at": goal.paused_at.isoformat(),
         "message": "Goal paused successfully. All reminders stopped.",
     }
+
+
+def _resolve_effective_end_date(goal: Goal, body, today: date) -> date:
+    """Resolve the end date to use when resuming a paused goal."""
+    mode = getattr(body, "mode", None) if body else None
+    if mode == "new_end_date":
+        return body.new_end_date
+    return goal.end_date
+
+
+def _build_pause_context(
+    *,
+    progress_text: str,
+    pause_days: int,
+    remaining_days: int,
+) -> str:
+    return (
+        f"{progress_text}\n\n"
+        f"The user paused this goal for {pause_days} days. "
+        f"There are {remaining_days} days remaining until the deadline."
+    )
+
+
+def _gen_resume_tasks_chunks(
+    *,
+    goal: Goal,
+    today: date,
+    effective_end_date: date,
+    pause_context: str,
+) -> list[dict]:
+    all_new_tasks: list[dict] = []
+    current_start = today
+
+    while current_start <= effective_end_date:
+        current_end = min(
+            current_start + timedelta(days=CHUNK_DAYS),
+            effective_end_date,
+        )
+
+        resume_context = ReplanContext(
+            goal_title=goal.title,
+            category=goal.category,
+            start_date=current_start,
+            end_date=current_end,
+            goal_end_date=effective_end_date,
+            notes=goal.notes,
+            progress_context=pause_context,
+            research_context="",
+        )
+
+        new_tasks = generate_resume_tasks(resume_context)
+        all_new_tasks.extend(new_tasks)
+
+        current_start = current_end + timedelta(days=1)
+
+    return all_new_tasks
+
+
+def _normalize_due_date(due) -> date:
+    if isinstance(due, str):
+        return date.fromisoformat(due)
+    return due
+
+
+def _replace_pending_tasks(
+    *,
+    db,
+    goal_id: int,
+    new_tasks: list[dict],
+) -> int:
+    pending_tasks = (
+        db.query(Task)
+        .filter(
+            Task.goal_id == goal_id,
+            Task.status == "pending",
+        )
+        .all()
+    )
+    tasks_deleted = len(pending_tasks)
+
+    for task in pending_tasks:
+        db.delete(task)
+    db.flush()
+
+    for task_data in new_tasks:
+        db.add(
+            Task(
+                goal_id=goal_id,
+                title=task_data["title"],
+                due_date=_normalize_due_date(task_data["date"]),
+                status="pending",
+            )
+        )
+    db.flush()
+
+    return tasks_deleted
 
 
 def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
@@ -194,15 +296,11 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot resume a goal with status '{goal.status}'. "
-                   f"Only paused goals can be resumed.",
+            f"Only paused goals can be resumed.",
         )
 
     today = date.today()
-
-    if body and body.mode == "new_end_date":
-        effective_end_date = body.new_end_date
-    else:
-        effective_end_date = goal.end_date
+    effective_end_date = _resolve_effective_end_date(goal, body, today)
 
     if effective_end_date <= today:
         raise HTTPException(
@@ -215,53 +313,31 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
 
     pause_days = (today - goal.paused_at.date()).days if goal.paused_at else 0
     remaining_days = (effective_end_date - today).days
-    pause_context = (
-        f"{progress_text}\n\n"
-        f"The user paused this goal for {pause_days} days. "
-        f"There are {remaining_days} days remaining until the deadline."
+    pause_context = _build_pause_context(
+        progress_text=progress_text,
+        pause_days=pause_days,
+        remaining_days=remaining_days,
     )
 
-    all_new_tasks = []
-    current_start = today
-    while current_start <= effective_end_date:
-        current_end = min(current_start + timedelta(days=CHUNK_DAYS), effective_end_date)
-        resume_context = ReplanContext(
-            goal_title=goal.title,
-            category=goal.category,
-            start_date=current_start,
-            end_date=current_end,
-            goal_end_date=effective_end_date,
-            notes=goal.notes,
-            progress_context=pause_context,
-            research_context="",
-        )
-        new_tasks = generate_resume_tasks(resume_context)
-        all_new_tasks.extend(new_tasks)
-        current_start = current_end + timedelta(days=1)
+    all_new_tasks = _gen_resume_tasks_chunks(
+        goal=goal,
+        today=today,
+        effective_end_date=effective_end_date,
+        pause_context=pause_context,
+    )
 
     if len(all_new_tasks) == 0:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Resume failed: could not generate new tasks. "
-                   "Your goal has NOT been modified. Please try again.",
+            "Your goal has NOT been modified. Please try again.",
         )
 
-    pending_tasks = (
-        db.query(Task)
-        .filter(Task.goal_id == goal_id, Task.status == "pending")
-        .all()
+    tasks_deleted = _replace_pending_tasks(
+        db=db,
+        goal_id=goal.id,
+        new_tasks=all_new_tasks,
     )
-    tasks_deleted = len(pending_tasks)
-    for task in pending_tasks:
-        db.delete(task)
-    db.flush()
-
-    for task_data in all_new_tasks:
-        due = task_data["date"]
-        if isinstance(due, str):
-            due = date.fromisoformat(due)
-        db.add(Task(goal_id=goal.id, title=task_data["title"], due_date=due, status="pending"))
-    db.flush()
 
     goal.end_date = effective_end_date
     goal.status = "in_progress"
@@ -276,7 +352,7 @@ def resume_goal(db, user_id: int, goal_id: int, body=None) -> dict:
             "completed_tasks": summary["stats"]["completed"],
             "old_pending_removed": tasks_deleted,
             "new_tasks_generated": len(all_new_tasks),
-            "remaining_days": (effective_end_date - today).days,
+            "remaining_days": remaining_days,
         },
         "new_end_date": effective_end_date.isoformat(),
         "message": f"Goal resumed with {len(all_new_tasks)} new tasks generated.",

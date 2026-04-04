@@ -22,6 +22,7 @@ COMPLETED_COUNT_DEFAULT = 5
 DELETED_COUNT_DEFAULT = 3
 CREATED_COUNT_DEFAULT = 4
 
+
 @dataclass(frozen=True)
 class AdjustmentParams:
     id: int = DEFAULT_ADJUSTMENT_ID
@@ -31,6 +32,7 @@ class AdjustmentParams:
     deleted: int = DELETED_COUNT_DEFAULT
     created: int = CREATED_COUNT_DEFAULT
     explanation: str = "Adj."
+
 
 def make_adjustment(params: AdjustmentParams | None = None):
     if params is None:
@@ -46,11 +48,13 @@ def make_adjustment(params: AdjustmentParams | None = None):
     a.created_at = datetime(2026, 3, 1, 12, 0, 0)
     return a
 
+
 def _set_history_return(db, adjustments):
     query = db.query.return_value
     filtered = query.filter.return_value
     ordered = filtered.order_by.return_value
     ordered.all.return_value = adjustments
+
 
 @patch("replan.routes.router.check_goal_needs_replan")
 def test_red_check_delegates(mock_check):
@@ -74,6 +78,7 @@ def test_red_check_delegates(mock_check):
     )
     mock_check.assert_called_once_with(db, DEFAULT_GOAL_ID, threshold=DEFAULT_THRESHOLD)
 
+
 @patch("replan.routes.router.replan_goal")
 def test_red_trigger_user_id(mock_replan):
     """user_id from JWT must be forwarded to replan_goal — not hardcoded."""
@@ -87,6 +92,7 @@ def test_red_trigger_user_id(mock_replan):
         db=db,
     )
     mock_replan.assert_called_once_with(db, ALT_USER_ID, DEFAULT_GOAL_ID)
+
 
 def test_red_history_returns_list():
     """History endpoint must return a list."""
@@ -105,6 +111,7 @@ def test_red_history_returns_list():
     assert isinstance(result, list)
     assert len(result) == DEFAULT_ADJUSTMENT_ID
 
+
 def test_green_default_threshold():
     """Inspect check route — default threshold must be 3."""
     from replan.routes.router import check_replan_status
@@ -115,6 +122,7 @@ def test_green_default_threshold():
         assert default_value.default == DEFAULT_THRESHOLD
     else:
         assert default_value == DEFAULT_THRESHOLD
+
 
 @patch("replan.routes.router.replan_goal")
 def test_green_404_propagates(mock_replan):
@@ -131,6 +139,7 @@ def test_green_404_propagates(mock_replan):
         )
     assert exc.value.status_code == HTTP_NOT_FOUND
 
+
 def test_green_empty_history():
     """No adjustments exist → return [] not None."""
     from replan.routes.router import get_adjustment_history
@@ -143,6 +152,7 @@ def test_green_empty_history():
         db=db,
     )
     assert result == []
+
 
 def test_green_history_created_iso():
     """created_at in history items must be a string in ISO format."""
@@ -160,6 +170,7 @@ def test_green_history_created_iso():
     )
     assert isinstance(result[0].created_at, str)
     assert "2026-03-01" in result[0].created_at
+
 
 @patch("replan.routes.router.check_goal_needs_replan")
 def test_refactor_check_no_query(mock_check):
@@ -182,6 +193,7 @@ def test_refactor_check_no_query(mock_check):
         db=db,
     )
     db.query.assert_not_called()
+
 
 def test_refactor_history_order_by():
     """History query must use .order_by() for DESC created_at."""

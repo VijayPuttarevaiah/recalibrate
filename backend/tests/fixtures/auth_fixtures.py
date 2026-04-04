@@ -5,6 +5,7 @@ from auth.models.user_models import User
 VERIFICATION_CODE_LENGTH = 6
 PASSWORD_RESET_CODE_LENGTH = 8
 
+
 @pytest.fixture(autouse=True)
 def clear_code_stores():
     from auth.email_verification.service import verification_codes
@@ -15,6 +16,7 @@ def clear_code_stores():
     yield
     verification_codes.clear()
     reset_codes.clear()
+
 
 @pytest.fixture(autouse=True)
 def mock_email_sender(monkeypatch):
@@ -27,6 +29,7 @@ def mock_email_sender(monkeypatch):
     monkeypatch.setattr("auth.email_verification.service.send_email", fake_send_email)
     monkeypatch.setattr("auth.password_reset.service.send_email", fake_send_email)
     return sent_emails
+
 
 @pytest.fixture
 def register_user(client):
@@ -46,6 +49,7 @@ def register_user(client):
 
     return _register
 
+
 @pytest.fixture
 def verify_user(db_session):
     def _verify(email: str, verified: bool = True):
@@ -56,6 +60,7 @@ def verify_user(db_session):
         return user
 
     return _verify
+
 
 @pytest.fixture
 def verification_code(monkeypatch):
@@ -69,6 +74,7 @@ def verification_code(monkeypatch):
         _generate,
     )
     return code
+
 
 @pytest.fixture
 def password_reset_code(monkeypatch):

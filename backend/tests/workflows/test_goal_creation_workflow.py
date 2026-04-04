@@ -13,6 +13,7 @@ CREATED_GOAL_ID = 42
 CHUNK_INDEX_START = 0
 CHUNK_INDEX_NEXT = 1
 
+
 def test_minimal_create_goal_node():
     """Test that the create_goal node initializes correctly."""
     db = MagicMock()
@@ -41,6 +42,7 @@ def test_minimal_create_goal_node():
     ):
         result = graph.invoke(state)
     assert "goal_id" in result, "Goal ID should be in the result."
+
 
 def test_minimal_generate_tasks():
     """Test that the generate_tasks node initializes correctly."""
@@ -71,6 +73,7 @@ def test_minimal_generate_tasks():
         result = graph.invoke(state)
     assert "tasks" in result, "Tasks should be in the result."
 
+
 def test_minimal_workflow_exec():
     """Test that the workflow executes minimally."""
     db = MagicMock()
@@ -100,6 +103,7 @@ def test_minimal_workflow_exec():
         result = graph.invoke(state)
     assert "goal_id" in result, "Goal ID should be in the result."
     assert "tasks" in result, "Tasks should be in the result."
+
 
 def test_create_goal_persists():
     """create_goal should persist a Goal and return its id."""
@@ -134,6 +138,7 @@ def test_create_goal_persists():
     assert created_goal.start_date == date(2026, 3, 1)
     assert created_goal.end_date == date(2026, 3, 31)
     assert result["goal_id"] == CREATED_GOAL_ID
+
 
 def test_generate_tasks_calls_llm():
     """generate_tasks should call LLM and increment chunk index."""

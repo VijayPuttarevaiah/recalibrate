@@ -1,6 +1,5 @@
 from datetime import date
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from goals.models.task_models import Task
 
 RECENT_TASKS_LIMIT = 5
@@ -130,7 +129,7 @@ def format_summary_for_llm(summary: dict, goal_title: str) -> str:
         f"Overall: {stats['completed']}/{stats['total_tasks']} tasks done "
         f"({stats['completion_rate']}% of past tasks completed)",
         f"Missed/overdue: {stats['missed']} tasks",
-        f"Remaining to plan: from today onwards",
+        "Remaining to plan: from today onwards",
         "",
     ]
 

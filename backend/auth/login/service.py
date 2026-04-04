@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from auth.repositories.user_repository import UserRepository
 from auth.utils.password import verify_password
 from jose import jwt

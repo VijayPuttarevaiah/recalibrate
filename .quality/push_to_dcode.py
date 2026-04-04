@@ -7,13 +7,17 @@ Replaces the bash script to avoid shell environment issues in CI.
 
 import sys
 import os
-import requests 
+import requests
+
 
 def main():
     # --- ARGUMENT VALIDATION ---
     if len(sys.argv) != 5:
         print("Error: Incorrect number of arguments.", file=sys.stderr)
-        print(f"Usage: {sys.argv[0]} <project-id> <api-key> <directory-to-upload> <commit-hash>", file=sys.stderr)
+        print(
+            f"Usage: {sys.argv[0]} <project-id> <api-key> <directory-to-upload> <commit-hash>",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     project_id = sys.argv[1]
@@ -29,8 +33,8 @@ def main():
     # --- POPULATE FILE ARGUMENTS ---
     print(f"Collecting files from '{file_dir}'...")
     files_to_upload = {}
-    open_files = [] # To store file handles for proper closing
-    
+    open_files = []  # To store file handles for proper closing
+
     try:
         # Find all files in the directory
         file_paths = []
@@ -48,7 +52,7 @@ def main():
         for i, file_path in enumerate(file_paths, 1):
             field_name = f"file{i}"
             # Open file in binary read mode
-            file_handle = open(file_path, 'rb')
+            file_handle = open(file_path, "rb")
             open_files.append(file_handle)
             # Add to the files dictionary
             files_to_upload[field_name] = (os.path.basename(file_path), file_handle)
@@ -58,7 +62,7 @@ def main():
         headers = {
             "X-API-Key": api_key,
             "X-Commit-ID": commit_sha,
-            "X-Tool": "DesigniteJava"
+            "X-Tool": "DesigniteJava",
         }
 
         print(f"Sending {len(files_to_upload)} file(s) to {url}...")
@@ -77,7 +81,10 @@ def main():
 
     except requests.exceptions.HTTPError as e:
         # This catches 4xx and 5xx responses
-        print(f"Error: HTTP request failed with status code {e.response.status_code}.", file=sys.stderr)
+        print(
+            f"Error: HTTP request failed with status code {e.response.status_code}.",
+            file=sys.stderr,
+        )
         print(f"Server response (if any): {e.response.text}", file=sys.stderr)
         sys.exit(1)
     except requests.exceptions.RequestException as e:
@@ -88,6 +95,7 @@ def main():
         # Ensure all file handles are closed
         for f in open_files:
             f.close()
+
 
 if __name__ == "__main__":
     main()

@@ -14,6 +14,7 @@ MISSED_TASK_COUNT_LOW = 1
 MISSED_TASK_COUNT_HIGH = 5
 TASK_ID_START = 1
 
+
 def make_task(id, goal_id, title, status, due_date):
     t = MagicMock()
     t.id = id
@@ -23,16 +24,19 @@ def make_task(id, goal_id, title, status, due_date):
     t.due_date = due_date
     return t
 
+
 def _set_missed_tasks(db, tasks):
     query = db.query.return_value
     filtered = query.filter.return_value
     ordered = filtered.order_by.return_value
     ordered.all.return_value = tasks
 
+
 def _set_completed_count(db, count):
     query = db.query.return_value
     filtered = query.filter.return_value
     filtered.count.return_value = count
+
 
 def test_red_response_keys():
     """Response dict must have all 6 required keys."""
@@ -51,6 +55,7 @@ def test_red_response_keys():
         "needs_replan",
     }
     assert required.issubset(result.keys())
+
 
 def test_red_needs_replan_true():
     """needs_replan=True when missed >= threshold."""
@@ -77,6 +82,7 @@ def test_red_needs_replan_true():
     )
     assert result["needs_replan"] is True
 
+
 def test_red_needs_replan_false():
     """needs_replan=False when missed < threshold."""
     from replan.services.replan_service import check_goal_needs_replan
@@ -101,6 +107,7 @@ def test_red_needs_replan_false():
     )
     assert result["needs_replan"] is False
 
+
 def test_green_missed_count():
     """missed_count equals number of overdue pending tasks."""
     from replan.services.replan_service import check_goal_needs_replan
@@ -122,6 +129,7 @@ def test_green_missed_count():
     result = check_goal_needs_replan(db, goal_id=DEFAULT_GOAL_ID)
     assert result["missed_count"] == MISSED_TASK_COUNT_HIGH
 
+
 def test_green_goal_id_echoed():
     """goal_id in response must match input."""
     from replan.services.replan_service import check_goal_needs_replan
@@ -131,6 +139,7 @@ def test_green_goal_id_echoed():
     _set_completed_count(db, 0)
     result = check_goal_needs_replan(db, goal_id=ALT_GOAL_ID)
     assert result["goal_id"] == ALT_GOAL_ID
+
 
 def test_refactor_threshold_config():
     """threshold=1 flags 1 missed task; threshold=5 does not."""

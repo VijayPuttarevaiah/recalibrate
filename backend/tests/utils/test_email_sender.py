@@ -1,10 +1,8 @@
 # Tests for utils/email_sender.py
-import pytest
 from auth.utils.email_sender import config, send_email
 import smtplib
 
-import os
-import types
+
 
 def test_send_email(monkeypatch):
     # Patch smtplib.SMTP to avoid real email sending

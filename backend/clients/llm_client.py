@@ -105,7 +105,9 @@ class LLMClient:
             "messages": [
                 {
                     "role": "user",
-                    "content": (f"{prompt}\n\nInput JSON:\n{json.dumps(user_payload)}"),
+                    "content": (
+                        f"{prompt}\n\nInput JSON:\n{json.dumps(user_payload)}"
+                    ),
                 }
             ],
             "temperature": 0,
@@ -155,7 +157,7 @@ class LLMClient:
             end = text.rfind("}")
             if start != -1 and end != -1 and end > start:
                 try:
-                    parsed = json.loads(text[start : end + 1])
+                    parsed = json.loads(text[start: end + 1])
                     return parsed if isinstance(parsed, dict) else None
                 except json.JSONDecodeError:
                     logger.warning("LLM response is not valid JSON")

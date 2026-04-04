@@ -1,7 +1,18 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from goals.goal.schemas import GoalCreate, GoalResponse, GoalWithTasksResponse, GoalResumeRequest
-from goals.goal.service import create_goal_with_tasks, get_user_goals, get_goal_tasks, pause_goal, resume_goal
+from goals.goal.schemas import (
+    GoalCreate,
+    GoalResponse,
+    GoalWithTasksResponse,
+    GoalResumeRequest,
+)
+from goals.goal.service import (
+    create_goal_with_tasks,
+    get_user_goals,
+    get_goal_tasks,
+    pause_goal,
+    resume_goal,
+)
 from core.db_session import get_db
 from auth.utils.auth import get_current_user
 

@@ -94,4 +94,9 @@ class ChatMessage(Base):
         }
 
     def __repr__(self) -> str:
-        return f"ChatMessage(id={self.id}, session_id={self.session_id}, role={self.role!r})"
+        parts = [
+            f"id={self.id}",
+            f"session_id={self.session_id}",
+            f"role={self.role!r}",
+        ]
+        return "ChatMessage(" + ", ".join(parts) + ")"

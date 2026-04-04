@@ -80,12 +80,24 @@ def _strip_code_fences(content: str) -> str:
     return content.replace("```json", "").replace("```", "").strip()
 
 
+def strip_code_fences(content: str) -> str:
+    """Public wrapper for removing markdown code fences from LLM outputs."""
+
+    return _strip_code_fences(content)
+
+
 def _validate_task_list(tasks: list) -> None:
     if not isinstance(tasks, list):
         raise ValueError("LLM did not return a list")
     for task in tasks:
         if "title" not in task or "date" not in task:
             raise ValueError("Invalid task structure")
+
+
+def validate_task_list(tasks: list) -> None:
+    """Public wrapper for validating the expected task list structure."""
+
+    return _validate_task_list(tasks)
 
 
 def _parse_llm_json_response(content: str) -> list:

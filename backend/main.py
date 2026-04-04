@@ -27,11 +27,6 @@ from onboarding.routers.onboarding_router import router as onboarding_router
 # Import database session management and the base model for SQLAlchemy
 from core.db_session import DBSession
 from core.base import Base
-import auth.models
-import goals.models
-import chat.models
-import notifications.models
-import onboarding.models
 from core.logging_config import LogManager
 
 # Initialize logging via Singleton

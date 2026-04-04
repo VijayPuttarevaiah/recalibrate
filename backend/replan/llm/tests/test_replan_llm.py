@@ -9,6 +9,7 @@ from replan.llm.service import (
 
 EXPECTED_TASK_COUNT_TWO = 2
 
+
 def test_llm_tasks_valid():
     """Test _call_llm_for_tasks with a valid LLM response."""
     mock_response = MagicMock()
@@ -36,6 +37,7 @@ def test_llm_tasks_valid():
             assert tasks[0]["title"] == "Task 1"
             assert tasks[1]["date"] == "2026-03-08"
 
+
 def test_llm_tasks_invalid():
     """Test _call_llm_for_tasks with an invalid LLM response."""
     mock_response = MagicMock()
@@ -50,6 +52,7 @@ def test_llm_tasks_invalid():
             with pytest.raises(ValueError, match="No JSON array found in LLM response"):
                 call_llm_for_tasks("test prompt")
 
+
 def test_llm_tasks_missing_key():
     """Fail fast when OPENROUTER_API_KEY is missing."""
     import replan.llm.service as replan_llm
@@ -59,6 +62,7 @@ def test_llm_tasks_missing_key():
             with pytest.raises(ValueError, match="OPENROUTER_API_KEY"):
                 replan_llm.call_llm_for_tasks("test prompt")
             mock_post.assert_not_called()
+
 
 def test_llm_tasks_first_array():
     """If response contains multiple JSON arrays, use the first one."""
@@ -86,6 +90,7 @@ def test_llm_tasks_first_array():
             assert len(tasks) == 1
             assert tasks[0]["title"] == "Task A"
 
+
 def test_llm_tasks_invalid_date():
     """Date must be YYYY-MM-DD; invalid formats should raise."""
     mock_response = MagicMock()
@@ -101,6 +106,7 @@ def test_llm_tasks_invalid_date():
         with patch("requests.post", return_value=mock_response):
             with pytest.raises(ValueError, match="date format"):
                 call_llm_for_tasks("test prompt")
+
 
 def test_generate_replan_tasks():
     """Test generate_replan_tasks with mocked _call_llm_for_tasks."""
@@ -121,6 +127,7 @@ def test_generate_replan_tasks():
         tasks = generate_replan_tasks(request)
         assert len(tasks) == 1
         assert tasks[0]["title"] == "Task 1"
+
 
 def test_generate_explanation():
     """Test generate_replan_explanation with mocked LLM response."""

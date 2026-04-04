@@ -1,8 +1,8 @@
 # routes/task_routes.py
+from domain.goal_status import TASK_STATUSES as VALID_STATUSES
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from goals.models.task_models import Task
 from goals.models.goal_models import Goal
@@ -10,8 +10,6 @@ from core.db_session import get_db
 from auth.utils.auth import get_current_user
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
-
-from domain.goal_status import TASK_STATUSES as VALID_STATUSES
 
 
 class TaskStatusUpdate(BaseModel):
@@ -131,3 +129,7 @@ def batch_update_tasks(
 
     db.commit()
     return {"updated_task_ids": updated, "new_status": body.status}
+
+
+# Publicly export helper for testing
+get_user_task = _get_user_task
