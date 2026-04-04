@@ -11,6 +11,10 @@ RUN npm install
 # Copy the rest of the source code
 COPY . .
 
+# Accept API URL as build arg and write to .env for Vite
+ARG VITE_API_BASE_URL
+RUN if [ -n "$VITE_API_BASE_URL" ]; then echo "VITE_API_BASE_URL=$VITE_API_BASE_URL" > .env; fi
+
 # Build the frontend
 RUN npm run build
 
