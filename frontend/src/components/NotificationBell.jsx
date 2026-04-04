@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { use_auth } from "../hooks/use_auth.js";
 import { useParams } from "react-router-dom";  
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export default function NotificationBell() {
   const { user_id: userId } = use_auth();

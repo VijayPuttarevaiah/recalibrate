@@ -4,7 +4,7 @@
  * Handles both regular requests and SSE streaming.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 function authHeaders() {
   const token = localStorage.getItem("agp_auth_token");

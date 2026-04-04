@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
-const API = "http://localhost:8000";
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 const INTERESTS = [
@@ -71,7 +71,7 @@ export default function Onboarding() {
     try {
       const userId = localStorage.getItem("pending_user_id") || 1;
 
-      await axios.post("http://localhost:8000/onboarding/preferences", {
+      await axios.post(`${API}/onboarding/preferences`, {
         user_id:          parseInt(userId),
         interest:         form.interest,
         experience_level: form.experience_level,
