@@ -166,12 +166,11 @@ submit-dcode-job:
  
 publish:
   stage: publish
-  tags:
-    - Project2
   image: docker:24
   variables:
     DOCKER_TLS_CERTDIR: ""
-    DOCKER_HOST: "unix:///var/run/docker.sock"
+  services:
+    - docker:24-dind
   script:
     - docker --version
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
