@@ -7,7 +7,7 @@ import requests
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "openai/gpt-4o-mini"
+MODEL = os.getenv("LLM_MODEL") or "openai/gpt-4o-mini"
 MAX_MISSED_TITLES_FOR_PROMPT = 10
 EXPLANATION_TEMPERATURE = 0.3
 TASK_GENERATION_TEMPERATURE = 0.2

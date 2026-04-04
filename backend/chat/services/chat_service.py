@@ -33,7 +33,7 @@ from chat.models.chat_models import ChatSession, ChatMessage
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "openai/gpt-4o-mini"
+MODEL = os.getenv("LLM_MODEL") or "openai/gpt-4o-mini"
 
 MAX_HISTORY_MESSAGES = 20
 RATE_LIMIT_PER_HOUR = 50

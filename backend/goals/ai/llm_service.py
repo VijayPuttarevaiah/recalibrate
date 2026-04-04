@@ -8,7 +8,7 @@ from goals.integrations.web_search_service import gather_research
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "openai/gpt-4o-mini"
+MODEL = os.getenv("LLM_MODEL") or "openai/gpt-4o-mini"
 DEFAULT_TEMPERATURE = 0.2
 DEFAULT_TIMEOUT = 60
 
