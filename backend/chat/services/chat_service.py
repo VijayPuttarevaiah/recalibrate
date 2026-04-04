@@ -24,8 +24,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 
-from chat.services import context_builder as _context_builder
-from chat.services import rate_limit as _rate_limit
+import chat.services.context_builder as _context_builder
+import chat.services.rate_limit as _rate_limit
 
 
 from goals.models.goal_models import Goal
