@@ -1,6 +1,6 @@
 /**
  * @file App.jsx
- * Clean, Proper Route Structure with Auth + Toast
+ * Updated with AI Chat routes
  */
 
 import React from "react";
@@ -22,6 +22,9 @@ import VerifyResetCode from "./pages/VerifyResetCode.jsx";
 import SetNewPassword from "./pages/SetNewPassword.jsx";
 import CreateGoal from "./pages/CreateGoal.jsx";
 import GoalTasksPage from "./pages/GoalTask.jsx";
+import ChatPage from "./pages/ChatPage.jsx";
+import Onboarding from "./pages/Onboarding";
+import Roadmap from "./pages/Roadmap";
 
 
 // Auth Gate
@@ -42,6 +45,8 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/verify-reset" element={<VerifyResetCode />} />
             <Route path="/set-new-password" element={<SetNewPassword />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/roadmap/:userId" element={<Roadmap />} />
           </Route>
 
           {/* ---------------- PRIVATE ROUTES ---------------- */}
@@ -55,6 +60,10 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/goals/:goalId/tasks" element={<GoalTasksPage />} />
             <Route path="/create-goal" element={<CreateGoal />} />
+
+            {/* AI Chat — full page */}
+            <Route path="/goals/:goalId/chat" element={<ChatPage />} />
+            <Route path="/goals/:goalId/tasks/:taskId/chat" element={<ChatPage />} />
           </Route>
 
           {/* ---------------- FALLBACK ---------------- */}

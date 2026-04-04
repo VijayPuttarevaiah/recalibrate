@@ -157,6 +157,7 @@ const CreateGoal = () => {
   const [detectedCategory, setDetectedCategory] = useState(null);
   const [followUpQuestions, setFollowUpQuestions] = useState([]);
   const [followUpAnswers, setFollowUpAnswers] = useState({});
+  const [followUpContext, setFollowUpContext] = useState("");
   const [goalCreated, setGoalCreated] = useState(null);
 
   const token = localStorage.getItem("agp_auth_token");
@@ -171,6 +172,7 @@ const CreateGoal = () => {
     setDetectedCategory(null);
     setFollowUpQuestions([]);
     setFollowUpAnswers({});
+    setFollowUpContext("");
     setGoalCreated(null);
   };
 
@@ -192,13 +194,17 @@ const CreateGoal = () => {
   };
 
   /* Build API payload */
-  const buildPayload = (extraNote = "") => {
+  const buildPayload = (noteOverride = null) => {
     const userId = localStorage.getItem("agp_user_id");
+    const combinedNote =
+      noteOverride !== null
+        ? noteOverride
+        : [form.note, followUpContext].filter(Boolean).join("\n") || null;
     return {
       goal_text: form.goal,
       start_date: form.startDate,
       end_date: form.endDate,
-      note: [form.note, extraNote].filter(Boolean).join("\n") || null,
+      note: combinedNote,
       ...(userId && { user_id: parseInt(userId) }),
     };
   };
@@ -258,18 +264,26 @@ const CreateGoal = () => {
       const extraNote = followUpQuestions
         .map((q, i) => `${q}: ${followUpAnswers[i] || ""}`)
         .join("\n");
+      const mergedFollowUpContext = [followUpContext, extraNote]
+        .filter(Boolean)
+        .join("\n");
+      const mergedNote = [form.note, mergedFollowUpContext]
+        .filter(Boolean)
+        .join("\n") || null;
 
-      const data = await callCategoryAPI(buildPayload(extraNote));
+      const data = await callCategoryAPI(buildPayload(mergedNote));
 
       setDetectedCategory(data.category);
 
       if (data.status === "accepted" && data.goal_id) {
         setGoalCreated(data.goal_id);
         setFollowUpQuestions([]);
+        setFollowUpContext("");
         toast.success(data.message || "Goal created successfully!");
       } else if (data.status === "needs_more_info") {
         setFollowUpQuestions(data.follow_up_questions || []);
         setFollowUpAnswers({});
+        setFollowUpContext(mergedFollowUpContext);
         toast.info("A few more details needed.");
       }
     } catch (err) {

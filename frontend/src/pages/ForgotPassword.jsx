@@ -25,15 +25,16 @@ export default function ForgotPassword() {
 
     setLoading(true);
     try {
-      // Company standard: do not reveal whether the account exists.
       await AuthApi.request_password_reset({ email: email.trim() });
-
-      setInfo("If an account exists for this email, we sent a reset code.");
+      setInfo("Reset code sent to your email.");
       navigate(`/verify-reset?email=${encodeURIComponent(email.trim())}`);
     } catch (err) {
-      // Keep message generic to avoid account enumeration.
-      setInfo("If an account exists for this email, we sent a reset code.");
-      navigate(`/verify-reset?email=${encodeURIComponent(email.trim())}`);
+      const msg = err?.response?.data?.detail || err?.message || "";
+      if (msg.toLowerCase().includes("not found")) {
+        setError("No account found with this email address.");
+      } else {
+        setError(msg || "Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

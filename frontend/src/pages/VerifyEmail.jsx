@@ -1,12 +1,17 @@
-import React, { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { create_auth_api } from "../utils/auth_api.js";
 import { use_resend_timer } from "../hooks/use_resend_timer.js";
+import { format_time } from "../utils/format_time.js";
 
 const AuthApi = create_auth_api();
 
-export default function VerifyEmail() {
+const COUNTDOWN_SECONDS = 120;
+const DEFAULT_MAX_RESENDS = 3;
+
+export default function VerifyEmail({ maxResends = DEFAULT_MAX_RESENDS }) {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const prefilled_email = useMemo(() => params.get("email") || "", [params]);
 
   const [email, setEmail] = useState(prefilled_email);
@@ -17,8 +22,16 @@ export default function VerifyEmail() {
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [resend_loading, setResendLoading] = useState(false);
+  const [resend_count, setResendCount] = useState(0);
 
-  const { time_left, is_blocked, start_timer } = use_resend_timer(60);
+  const { time_left, is_blocked, start_timer } = use_resend_timer(COUNTDOWN_SECONDS);
+
+  const resends_exhausted = resend_count >= maxResends;
+  const resends_remaining = maxResends - resend_count;
+
+  useEffect(() => {
+    start_timer();
+  }, [start_timer]);
 
   const can_submit = email.trim().length > 0 && code.trim().length > 0 && !loading;
 
@@ -32,6 +45,17 @@ export default function VerifyEmail() {
     try {
       await AuthApi.verify_email({ email: email.trim(), code: code.trim() });
       setSuccess(true);
+      // Navigate to onboarding if coming from registration, otherwise login
+      const next = params.get("next");
+      const emailParam = encodeURIComponent(email.trim());
+
+      setTimeout(() => {
+        if (next === "onboarding") {
+          navigate(`/onboarding?email=${emailParam}`);
+        } else {
+          navigate("/login");
+        }
+      }, 1000); // 1 second delay so user sees the success message
     } catch (err) {
       setError(err.message || "Verification failed.");
     } finally {
@@ -43,11 +67,13 @@ export default function VerifyEmail() {
     setError("");
     setInfo("");
 
+    if (resends_exhausted) return;
     if (!email.trim()) return setError("Please enter your email first.");
 
     setResendLoading(true);
     try {
       await AuthApi.resend_verification({ email: email.trim() });
+      setResendCount((prev) => prev + 1);
       setInfo("We sent a new verification code. Please check your inbox.");
       start_timer();
     } catch (err) {
@@ -104,15 +130,17 @@ export default function VerifyEmail() {
           className="Button ButtonGhost"
           type="button"
           onClick={handle_resend}
-          disabled={resend_loading || is_blocked}
+          disabled={resend_loading || is_blocked || resends_exhausted}
         >
           {resend_loading ? "Resending..." : "Resend code"}
         </button>
 
-        {is_blocked ? (
-          <span className="Muted">Resend available in {time_left}s</span>
+        {resends_exhausted ? (
+          <span className="Muted">Resend limit reached.</span>
+        ) : is_blocked ? (
+          <span className="Muted">Resend available in {format_time(time_left)}</span>
         ) : (
-          <span className="Muted">You can request a new code.</span>
+          <span className="Muted">{resends_remaining} resends remaining. You can request a new code.</span>
         )}
       </div>
 

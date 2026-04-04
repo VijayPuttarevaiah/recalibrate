@@ -8,6 +8,7 @@ import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { create_auth_api } from "../utils/auth_api.js";
 import { is_valid_email, password_error } from "../utils/validators.js";
+import { passwordToggleStyle } from "../utils/styles.js";
 
 // Initialize the API adapter. This boundary allows the component to remain 
 // agnostic of the actual backend implementation (Mock vs. FastAPI).
@@ -23,6 +24,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   /**
    * useMemo: Performance optimization for real-time validation feedback.
@@ -53,28 +55,25 @@ export default function Register() {
 
     setLoading(true);
     try {
-      /**
-       * Communication via API Adapter:
-       * The component expects the backend to trigger an email verification 
-       * process upon successful registration.
-       */
-      await AuthApi.register_user({ 
+      const response = await AuthApi.register_user({ 
         email: email.trim(), 
         password,
         first_name: firstName.trim(),
         last_name: lastName.trim()
       });
-      
-      // // Send the verification code immediately after registration
-      await AuthApi.send_verification_code({ email: email.trim() });
 
-      // Navigate to verification screen, passing email as a query param for better UX.
-      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+      // Save user_id for onboarding to use after verification
+      if (response?.id) {
+        localStorage.setItem("pending_user_id", response.id);
+      }
+
+      // Send verification code then go to verify screen
+      await AuthApi.send_verification_code({ email: email.trim() });
+      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}&next=onboarding`);
+
     } catch (err) {
-      // Gracefully map caught errors to the UI error state.
       setError(err.message || "Registration failed.");
     } finally {
-      // Reset loading state regardless of outcome.
       setLoading(false);
     }
   }
@@ -126,15 +125,25 @@ export default function Register() {
         {/* Password Input Field with Real-time Feedback */}
         <label className="Field">
           <span className="FieldLabel">Password</span>
-          <input
-            className="Input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min 8 chars, upper, lower, digit, symbol"
-            autoComplete="new-password"
-          />
-          {/* Conditional rendering for validation hints */}
+          <div style={{ position: "relative" }}>
+            <input
+              className="Input"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min 8 chars, upper, lower, digit, symbol"
+              autoComplete="new-password"
+              style={{ paddingRight: "3.5rem" }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              style={passwordToggleStyle}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
           {password && pw_error ? <p className="Hint HintError">{pw_error}</p> : null}
         </label>
 

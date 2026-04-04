@@ -1,0 +1,30 @@
+stages:
+  - run-dj
+  - submit-dcode
+
+run-dj-job:
+  stage: run-dj
+  image: openjdk:26-ea-jdk
+  tags:
+    - dalfcs_docker_kvm
+  script:
+    - echo "Downloading DesigniteJava"
+    - curl https://designite-tools.com/assets/DesigniteJava.jar -o DesigniteJava.jar
+    - echo "Running DesigniteJava"
+    - mkdir smells/
+    - java -jar $CI_PROJECT_DIR/DesigniteJava.jar -i $CI_PROJECT_DIR -o $CI_PROJECT_DIR/smells/ -d
+  artifacts:
+    paths:
+      - smells/
+
+
+submit-dcode-job:
+  stage: submit-dcode
+  image: python:3.10-alpine
+  tags:
+    - dalfcs_docker_kvm
+  dependencies:
+    - run-dj-job
+  script:
+    - pip3 install -r $CI_PROJECT_DIR/.quality/requirements.txt
+    - python3 $CI_PROJECT_DIR/.quality/push_to_dcode.py $DCODE_PROJECT_ID $DCODE_API_KEY $CI_PROJECT_DIR/smells/ $CI_COMMIT_SHA

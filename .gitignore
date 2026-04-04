@@ -6,3 +6,5 @@ __pycache__
 .DS_Store
 test.db
 backend/logs/
+.envdocs/smells/*.csv
+docs/smells/*.log

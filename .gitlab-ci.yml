@@ -1,19 +1,23 @@
 # This file is a template-style CI/CD pipeline adapted for this project.
 # Stages run in order; jobs in same stage can run in parallel.
-
+# First 4 stages run on all branches; publish and deploy only on develop/main.
+ 
 stages:
   - build
   - test
+  - run-dpy
+  - submit-dcode
   - publish
   - deploy
-
+ 
 variables:
   DOCKER_REPO: "docker.io/vijayputtarevaiah/projectgroup2"
-  # Backend and frontend images share a single DockerHub repo but use distinct tags per commit
   DOCKER_BACKEND_IMAGE: "$DOCKER_REPO:backend-$CI_COMMIT_SHORT_SHA"
   DOCKER_FRONTEND_IMAGE: "$DOCKER_REPO:frontend-$CI_COMMIT_SHORT_SHA"
-
-build:
+ 
+# ── Build ─────────────────────────────────────────────────────────────────────
+ 
+backend-build:
   stage: build
   image: python:3.11
   before_script:
@@ -28,8 +32,10 @@ build:
     - echo "Dependencies installed successfully"
   rules:
     - if: '$CI_COMMIT_BRANCH'
-
-frontend_build:
+      changes:
+        - backend/**/*
+ 
+frontend-build:
   stage: build
   image: node:20-alpine
   script:
@@ -38,8 +44,12 @@ frontend_build:
     - npm run build
   rules:
     - if: '$CI_COMMIT_BRANCH'
-
-test:
+      changes:
+        - frontend/**/*
+ 
+# ── Test ──────────────────────────────────────────────────────────────────────
+ 
+backend-test:
   stage: test
   image: python:3.11
   before_script:
@@ -49,10 +59,111 @@ test:
     - pip install --upgrade pip
     - pip install uv
     - uv sync --frozen
-    - uv run pytest -q tests/models tests/utils tests/services/test_goal.py || (code=$?; if [ "$code" -eq 5 ]; then echo "No tests found, skipping"; else exit "$code"; fi)
+    - uv run pytest
   rules:
     - if: '$CI_COMMIT_BRANCH'
-
+      changes:
+        - backend/**/*
+ 
+backend-test-coverage:
+  stage: test
+  image: python:3.11
+  before_script:
+    - pip install uv
+  script:
+    - cd backend
+    - pip install --upgrade pip
+    - pip install uv
+    - uv sync --frozen
+    - |
+      {
+        echo "=== Python Syntax Check ==="
+        python -m compileall . || echo "SKIP: compile issues"
+        echo "=== Running Pytest with Coverage ==="
+        uv run pytest -v --tb=short \
+          --cov=. \
+          --cov-config=.coveragerc \
+          --cov-report=term-missing \
+          --cov-report=html:coverage_html \
+          --cov-report=xml:coverage.xml \
+          || echo "Some tests failed"
+        echo "=== Backend Test Complete ==="
+      } 2>&1 | tee backend_test_output.log
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    name: "backend-test-$CI_COMMIT_SHORT_SHA"
+    expose_as: "Coverage Report"
+    paths:
+      - backend/backend_test_output.log
+      - backend/coverage_html/
+      - backend/coverage.xml
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: backend/coverage.xml
+    expire_in: 1 week
+    when: always
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - backend/**/*
+ 
+frontend-test:
+  stage: test
+  image: node:20-alpine
+  script:
+    - cd frontend
+    - npm install
+    - npm run test -- --run
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - frontend/**/*
+ 
+# ── Designite ─────────────────────────────────────────────────────────────────
+ 
+run-dpy-job:
+  stage: run-dpy
+  image: python:3.12
+  tags:
+    - dalfcs_docker_kvm
+  script:
+    - echo "Downloading DPy"
+    - curl -L https://www.designite-tools.com/assets/DPy-linux.zip -o DPy-linux.zip
+    - mkdir DPy && unzip DPy-linux.zip -d DPy/
+    - chmod +x DPy/DPy
+    - echo "Running DPy"
+    - mkdir smells/
+    - DPy/DPy analyze -i $CI_PROJECT_DIR/backend -o $CI_PROJECT_DIR/smells/ -f csv
+  artifacts:
+    name: "designite-smells-$CI_COMMIT_SHORT_SHA"
+    expose_as: "DPy Smell Reports"
+    paths:
+      - smells/
+    expire_in: 4 weeks
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - backend/**/*
+ 
+submit-dcode-job:
+  stage: submit-dcode
+  image: python:3.10-alpine
+  tags:
+    - dalfcs_docker_kvm
+  dependencies:
+    - run-dpy-job
+  script:
+    - pip3 install -r $CI_PROJECT_DIR/.quality/requirements.txt
+    - python3 $CI_PROJECT_DIR/.quality/push_to_dcode.py $DCODE_PROJECT_ID $DCODE_API_KEY $CI_PROJECT_DIR/smells/ $CI_COMMIT_SHA
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      changes:
+        - backend/**/*
+ 
+# ── Publish ───────────────────────────────────────────────────────────────────
+ 
 publish:
   stage: publish
   tags:
@@ -66,22 +177,20 @@ publish:
   script:
     - docker --version
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-    # Build and push backend image
     - docker build -f backend/Dockerfile -t "$DOCKER_BACKEND_IMAGE" backend
     - docker push "$DOCKER_BACKEND_IMAGE"
-    # Build and push frontend image; pass API base URL so the SPA talks to the right backend
     - docker build -f frontend/Dockerfile -t "$DOCKER_FRONTEND_IMAGE" --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL" frontend
     - docker push "$DOCKER_FRONTEND_IMAGE"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
-        # Public URL the frontend will hit for the production backend
-        VITE_API_BASE_URL: "http://3.22.221.134:8073"
+        VITE_API_BASE_URL: "http://3.137.140.97:8074"
     - if: '$CI_COMMIT_BRANCH == "develop"'
       variables:
-        # Public URL the frontend will hit for the development backend
-        VITE_API_BASE_URL: "http://3.22.221.134:8074"
-
+        VITE_API_BASE_URL: "http://3.137.140.97:8073"
+ 
+# ── Deploy ────────────────────────────────────────────────────────────────────
+ 
 deploy:
   image: alpine:latest
   stage: deploy
@@ -91,36 +200,32 @@ deploy:
     - chmod 400 "$EC2_SSH_KEY"
     - apk add --no-cache openssh-client
   script:
-    # 1. Login to Docker Hub on EC2
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
-    # 2. Ensure Docker network exists (your mysql_db must already be attached to this)
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker image prune -af || true"
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker network create app_net || true"
-    # 3. Pull latest backend and frontend images for this commit
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker pull $DOCKER_BACKEND_IMAGE && docker pull $DOCKER_FRONTEND_IMAGE"
-    # 4. Remove old containers (ignore error if they don't exist)
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME || true"
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME_FRONTEND || true"
-    # 5. Run new backend container (connects to existing mysql_db)
-    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $HOST_PORT:8000 --name $APP_NAME --restart always -e DATABASE_URL=$DATABASE_URL -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY $DOCKER_BACKEND_IMAGE"
-    # 6. Run new frontend container
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $HOST_PORT:8000 --name $APP_NAME --restart always -e DATABASE_URL=$DATABASE_URL -e GOOGLE_API_KEY=$GOOGLE_API_KEY -e OPENROUTER_API_KEY=$OPENROUTER_API_KEY -e SERPER_API_KEY=$SERPER_API_KEY -e LLM_MODEL=$LLM_MODEL $DOCKER_BACKEND_IMAGE"
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker run -d --network app_net -p $FRONTEND_HOST_PORT:80 --name $APP_NAME_FRONTEND --restart always $DOCKER_FRONTEND_IMAGE"
   environment:
     name: $ENV_NAME
-    url: "http://3.22.221.134:$FRONTEND_HOST_PORT"
+    url: "http://3.137.140.97:$FRONTEND_HOST_PORT"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       variables:
         ENV_NAME: production
         APP_NAME: my-app
-        HOST_PORT: "8073"
+        HOST_PORT: "8074"
         APP_NAME_FRONTEND: my-app-frontend
-        FRONTEND_HOST_PORT: "80"
+        FRONTEND_HOST_PORT: "8082"
         DATABASE_URL: "mysql+pymysql://user:password@mysql_db:3306/backend_db"
     - if: '$CI_COMMIT_BRANCH == "develop"'
       variables:
         ENV_NAME: development
         APP_NAME: my-app-dev
-        HOST_PORT: "8074"
+        HOST_PORT: "8073"
         APP_NAME_FRONTEND: my-app-dev-frontend
         FRONTEND_HOST_PORT: "8081"
         DATABASE_URL: "mysql+pymysql://user:password@mysql_db:3306/backend_db"
+ 

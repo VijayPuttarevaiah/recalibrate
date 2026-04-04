@@ -117,6 +117,14 @@ export function create_auth_api() {
       }
     },
 
+    async resend_verification(payload) {
+      try {
+        return await post_json("/send-code", payload);
+      } catch (err) {
+        throw new Error(get_error_message(err, "Failed to resend verification code"));
+      }
+    },
+
     /**
      * Authenticates user and returns a JWT session token.
      * Expected Endpoint: POST /login

@@ -1,3 +1,5 @@
+from core.base import Base
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -9,7 +11,6 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-import os
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -23,9 +24,10 @@ if db_url:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+
+# Import all models so they're discovered by Base.metadata
+
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -64,16 +66,18 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    config_section = config.get_section(
+        config.config_ini_section,
+        {},
+    )
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        config_section,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

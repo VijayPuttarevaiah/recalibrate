@@ -1,0 +1,225 @@
+2026-04-03 19:23:27 - INFO - [logging.py:15] - invoking license validation...
+2026-04-03 19:23:27 - ERROR - [logging.py:9] - Error collecting machine info for license validation
+NoneType: None
+2026-04-03 19:23:27 - INFO - [logging.py:15] - invoking license validation...
+2026-04-03 19:23:27 - ERROR - [logging.py:9] - Error collecting machine info for license validation
+NoneType: None
+2026-04-03 19:23:27 - INFO - [logging.py:15] - License type: LicenseType.Trial
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing ...
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.alembic
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.alembic.versions
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.email_verification
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.email_verification.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.login
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.login.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.logout
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.logout.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.models
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.password_reset
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.password_reset.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.register
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.register.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.repositories
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.routers
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.schemas
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.services
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.auth.utils
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.models
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.routers
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.schemas
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.services
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.tests.router
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.tests.service
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.tests.service.context
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.tests.service.llm
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.tests.service.quick_actions
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.tests.service.sessions
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.tests.service.utils
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.chat.utils
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.clients
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.config
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.core
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.domain
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.exceptions
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.ai
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.category
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.goal
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.goal.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.goal.tests.integration
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.goal.tests.pause_resume
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.goal.tests.task
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.integrations
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.models
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.progress
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.progress.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.roadmap
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.roadmap.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.routers
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.schemas
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.services
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.task
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.goals.utils
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.health
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.health.routers
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.notifications
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.notifications.models
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.notifications.routers
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.notifications.schemas
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.notifications.services
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.notifications.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.notifications.tests.notification
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.notifications.tests.reminder
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.onboarding
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.onboarding.models
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.onboarding.routers
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.onboarding.schemas
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.onboarding.services
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.onboarding.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.check
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.check.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.detect
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.detect.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.goal
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.goal.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.llm
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.llm.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.routers
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.routes
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.routes.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.schemas
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.services
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.replan.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.tests.db
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.tests.fixtures
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.tests.models
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.tests.schemas
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.tests.utils
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.tests.workflows
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Parsing package: backend.workflows
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.alembic
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.alembic.versions
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.email_verification
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.email_verification.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.login
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.login.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.logout
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.logout.tests
+2026-04-03 19:23:27 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.models
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.password_reset
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.password_reset.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.register
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.register.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.repositories
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.routers
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.schemas
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.services
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.auth.utils
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.models
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.routers
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.schemas
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.services
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.tests.router
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.tests.service
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.tests.service.context
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.tests.service.llm
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.tests.service.quick_actions
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.tests.service.sessions
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.tests.service.utils
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.chat.utils
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.clients
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.config
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.core
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.domain
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.exceptions
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.ai
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.category
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.goal
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.goal.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.goal.tests.integration
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.goal.tests.pause_resume
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.goal.tests.task
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.integrations
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.models
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.progress
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.progress.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.roadmap
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.roadmap.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.routers
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.schemas
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.services
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.task
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.goals.utils
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.health
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.health.routers
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.notifications
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.notifications.models
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.notifications.routers
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.notifications.schemas
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.notifications.services
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.notifications.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.notifications.tests.notification
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.notifications.tests.reminder
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.onboarding
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.onboarding.models
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.onboarding.routers
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.onboarding.schemas
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.onboarding.services
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.onboarding.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.check
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.check.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.detect
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.detect.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.goal
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.goal.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.llm
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.llm.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.routers
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.routes
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.routes.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.schemas
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.services
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.replan.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.tests
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.tests.db
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.tests.fixtures
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.tests.models
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.tests.schemas
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.tests.utils
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.tests.workflows
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Second pass of parsing for package: backend.workflows
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Calculating metrics ...
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Detecting code smells ...
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Detecting design smells ...
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Detecting architecture smells ...
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Detecting machine learning smells ...
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Collect dependencies ...
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Analysis complete.
+2026-04-03 19:23:28 - INFO - [logging.py:15] - Preparing analysis summary ...
+2026-04-03 19:23:29 - INFO - [logging.py:15] - CSV data successfully exported to C:\Users\Adity\Downloads\group02\dpy_smell_report_final\backend_function_metrics.csv
+2026-04-03 19:23:29 - INFO - [logging.py:15] - Successfully exported CSV data to backend_function_metrics.csv
+2026-04-03 19:23:29 - INFO - [logging.py:15] - CSV data successfully exported to C:\Users\Adity\Downloads\group02\dpy_smell_report_final\backend_class_module_metrics.csv
+2026-04-03 19:23:29 - INFO - [logging.py:15] - Successfully exported CSV data to backend_class_module_metrics.csv
+2026-04-03 19:23:29 - INFO - [logging.py:15] - CSV data successfully exported to C:\Users\Adity\Downloads\group02\dpy_smell_report_final\backend_implementation_smells.csv
+2026-04-03 19:23:29 - INFO - [logging.py:15] - Successfully exported CSV data to backend_implementation_smells.csv
+2026-04-03 19:23:29 - INFO - [logging.py:15] - CSV data successfully exported to C:\Users\Adity\Downloads\group02\dpy_smell_report_final\backend_design_smells.csv
+2026-04-03 19:23:29 - INFO - [logging.py:15] - Successfully exported CSV data to backend_design_smells.csv
+2026-04-03 19:23:29 - INFO - [logging.py:15] - No architecture smells found.
+2026-04-03 19:23:29 - INFO - [logging.py:15] - No ML smells found.
+2026-04-03 19:23:29 - INFO - [logging.py:15] - Done.

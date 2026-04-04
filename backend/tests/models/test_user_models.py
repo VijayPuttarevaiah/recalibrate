@@ -1,6 +1,6 @@
 # Tests for models/user_models.py
-from models.user_models import User
-import pytest
+from auth.models.user_models import User
+
 
 def test_user_model_creation(db_session):
     user = User(
