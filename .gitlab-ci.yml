@@ -171,7 +171,9 @@ publish:
   image: docker:24
   variables:
     DOCKER_TLS_CERTDIR: ""
-    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_HOST: "tcp://docker:2375"
+  services:
+    - docker:24-dind
   script:
     - docker --version
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
@@ -199,6 +201,7 @@ deploy:
     - apk add --no-cache openssh-client
   script:
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "echo \"$DOCKERHUB_TOKEN\" | docker login -u \"$DOCKERHUB_USERNAME\" --password-stdin"
+    - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker image prune -af || true"
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker network create app_net || true"
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker pull $DOCKER_BACKEND_IMAGE && docker pull $DOCKER_FRONTEND_IMAGE"
     - ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "docker container rm -f $APP_NAME || true"
