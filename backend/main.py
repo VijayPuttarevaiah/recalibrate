@@ -39,14 +39,6 @@ allowed_origins = [
     "http://localhost:3000",
     "http://localhost:80",
     "http://localhost",
-    # Production - EC2 public IP
-    "http://3.137.140.97",
-    "http://3.137.140.97:8080",
-    "http://3.137.140.97:8081",
-    "http://3.137.140.97:8082",
-    # Backend endpoints (Swagger UI)
-    "http://3.137.140.97:8074",
-    "http://3.137.140.97:8073",
 ]
 # Define the lifespan of the application (startup and shutdown events)
 

@@ -8,7 +8,6 @@ A full-stack goal planning application that helps users create, track, pause, an
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [How to Run](#how-to-run)
-- [Deployed Environments](#deployed-environments)
 - [Environment Variables](#environment-variables)
 - [API Endpoints](#api-endpoints)
 - [Use Case Scenarios](#use-case-scenarios)
@@ -196,24 +195,6 @@ To build for production:
 npm run build
 # Output in frontend/dist/ — can be served with any static file server or Nginx
 ```
-
----
-
-## Deployed Environments
-
-The application is continuously deployed to AWS EC2 instances. The following are the live deployment URLs:
-
-| Environment | Frontend | Backend API | API Docs |
-|-------------|----------|------------|----------|
-| **develop** | http://3.137.140.97:8081 | http://3.137.140.97:8073 | http://3.137.140.97:8073/docs |
-| **main** | http://3.137.140.97:8082 | http://3.137.140.97:8074 | http://3.137.140.97:8074/docs |
-
-**Notes:**
-- The `develop` branch is automatically deployed to ports 8081 (frontend) and 8073 (backend) on each push
-- The `main` branch is automatically deployed to ports 8082 (frontend) and 8074 (backend) on each push
-- API documentation is available at the `/docs` endpoint for interactive testing via Swagger UI
-
----
 
 ## Environment Variables
 
