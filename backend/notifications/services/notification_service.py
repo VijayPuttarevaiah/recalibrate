@@ -51,7 +51,7 @@ def build_email_html(title: str, message: str) -> str:
         "      </div>",
         '      <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0 20px 0;">',
         '      <p style="font-size: 12px; color: #6b7280; text-align: center;">',
-        "        This is an automated reminder from your Adaptive Goal Planner.",
+        "        This is an automated reminder from Recalibrate.",
         "      </p>",
         "    </div>",
         "  </body>",

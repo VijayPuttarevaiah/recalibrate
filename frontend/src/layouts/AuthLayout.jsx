@@ -18,8 +18,8 @@ export default function AuthLayout() {
       {/* Centralized card structure to ensure visual consistency for all auth forms. */}
       <div className="AuthCard">
         <div className="AuthHeader">
-          {/* Brand Identity: AGP (Adaptive Goal Planner) */}
-          <div className="AuthBadge">Adaptive Goal Planner</div>
+          {/* Brand Identity: AGP (Recalibrate) */}
+          <div className="AuthBadge">Recalibrate</div>
           <h1 className="AuthTitle">Achieve More</h1>
           <p className="AuthSubtitle">Turn your aspirations into actionable goals today.</p>
         </div>
@@ -32,7 +32,7 @@ export default function AuthLayout() {
       </div>
       
       {/* Footnote: Provides academic context for the project (CSCI 5308). */}
-      <p className="AuthFootnote">© 2026 Adaptive Goal Planner · CSCI 5308 Group Project</p>
+      <p className="AuthFootnote">© 2026 Recalibrate · CSCI 5308 Group Project</p>
     </div>
   );
 }

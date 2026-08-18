@@ -36,7 +36,7 @@ class LLMClient:
                 "Content-Type": "application/json",
                 # ADD THESE TWO LINES BELOW
                 "HTTP-Referer": "http://localhost:8000",
-                "X-Title": "Adaptive Goal Planner",
+                "X-Title": "Recalibrate",
             }
             response = httpx.post(
                 url,

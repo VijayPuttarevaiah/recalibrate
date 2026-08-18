@@ -26,7 +26,7 @@ export default function Navbar() {
 
         {/* Brand */}
         <NavLink className="NavbarBrand" to="/dashboard">
-          Adaptive Goal Planner
+          Recalibrate
         </NavLink>
 
         <nav className="NavbarLinks">
