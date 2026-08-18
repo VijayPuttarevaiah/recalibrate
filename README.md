@@ -1,6 +1,6 @@
 # Recalibrate
 
-A full-stack goal planning application that helps users create, track, pause, and resume personal goals with intelligent task generation and adaptive replanning.
+A full-stack planning application that helps users create, track, pause, and resume personal goals with intelligent task generation and adaptive replanning.
 
 ## Table of Contents
 
